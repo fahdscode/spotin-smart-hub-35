@@ -52,11 +52,11 @@ const Index = () => {
   ];
 
   const handleRoleClick = (path: string) => {
-    if (path === "/receptionist" || path === "/ceo") {
+    if (path === "/receptionist" || path === "/ceo" || path === "/client") {
       navigate(path);
     } else {
       // Show coming soon message for other roles
-      alert("This interface is coming soon! Currently available: Receptionist and CEO dashboards.");
+      alert("This interface is coming soon! Currently available: Receptionist, CEO, and Client Portal.");
     }
   };
 
@@ -90,7 +90,7 @@ const Index = () => {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Demo Version - Currently showing Receptionist and CEO interfaces
+            Demo Version - Currently showing Receptionist, CEO, and Client Portal interfaces
           </p>
         </div>
       </div>
