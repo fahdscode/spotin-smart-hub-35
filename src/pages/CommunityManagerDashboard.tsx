@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Users, Ticket, TrendingUp, Plus, Eye, Edit, QrCode } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Ticket, TrendingUp, Plus, Eye, Edit, QrCode } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 
 interface Event {
   id: string;
@@ -27,6 +28,7 @@ interface Event {
 }
 
 const CommunityManagerDashboard = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([
     {
       id: "EVT-001",
@@ -126,19 +128,24 @@ const CommunityManagerDashboard = () => {
       <SpotinHeader />
       
       <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Community Manager</h1>
-            <p className="text-muted-foreground">Create and manage events, track attendance and revenue</p>
-          </div>
-          <Dialog open={isCreateEventOpen} onOpenChange={setIsCreateEventOpen}>
-            <DialogTrigger asChild>
-              <Button variant="professional" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Event
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
+          <div className="flex justify-between items-center flex-1">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Community Manager</h1>
+              <p className="text-muted-foreground">Create and manage events, track attendance and revenue</p>
+            </div>
+            <Dialog open={isCreateEventOpen} onOpenChange={setIsCreateEventOpen}>
+              <DialogTrigger asChild>
+                <Button variant="professional" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Event
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create New Event</DialogTitle>
                 <DialogDescription>
@@ -235,6 +242,7 @@ const CommunityManagerDashboard = () => {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
 
         {/* Metrics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

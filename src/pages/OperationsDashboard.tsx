@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, AlertTriangle, TrendingDown, TrendingUp, DollarSign, Truck, Zap, Home, Users2, BarChart3, Calculator } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +18,12 @@ const OperationsDashboard = () => {
   const stockItems = [
     { id: 1, name: "Coffee Beans - Premium", current: 12, minimum: 25, maximum: 100, unit: "kg", category: "Coffee", status: "low" },
     { id: 2, name: "Milk - Whole", current: 45, minimum: 20, maximum: 80, unit: "liters", category: "Dairy", status: "good" },
-    { id: 3, name: "Sugar Packets", current: 150, minimum: 100, maximum: 500, unit: "pcs", category: "Supplies", status: "good" },
-    { id: 4, name: "Paper Cups - Large", current: 35, minimum: 50, maximum: 300, unit: "pcs", category: "Supplies", status: "low" },
-    { id: 5, name: "Tea Bags - Assorted", current: 8, minimum: 30, maximum: 150, unit: "boxes", category: "Tea", status: "critical" },
-    { id: 6, name: "Sparkling Water", current: 24, minimum: 15, maximum: 60, unit: "bottles", category: "Beverages", status: "good" },
+    { id: 3, name: "Sugar", current: 15, minimum: 10, maximum: 50, unit: "kg", category: "Ingredients", status: "good" },
+    { id: 4, name: "Flour", current: 8, minimum: 12, maximum: 40, unit: "kg", category: "Ingredients", status: "low" },
+    { id: 5, name: "Tea Leaves - Assorted", current: 2.8, minimum: 5, maximum: 20, unit: "kg", category: "Tea", status: "critical" },
+    { id: 6, name: "Cocoa Powder", current: 1.2, minimum: 2, maximum: 10, unit: "kg", category: "Ingredients", status: "critical" },
+    { id: 7, name: "Butter", current: 3.5, minimum: 3, maximum: 15, unit: "kg", category: "Dairy", status: "good" },
+    { id: 8, name: "Eggs", current: 24, minimum: 36, maximum: 100, unit: "dozen", category: "Dairy", status: "low" },
   ];
 
   const expenses = [
@@ -310,71 +312,119 @@ const OperationsDashboard = () => {
 
           {/* Control Panel Tab */}
           <TabsContent value="control" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* System Controls */}
               <Card>
                 <CardHeader>
                   <CardTitle>System Controls</CardTitle>
-                  <CardDescription>Advanced operational controls</CardDescription>
+                  <CardDescription>Bulk operations and settings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="card" className="h-20 flex-col">
-                      <Package className="h-6 w-6 mb-2" />
-                      <span className="text-sm">Bulk Restock</span>
-                    </Button>
-                    <Button variant="card" className="h-20 flex-col">
-                      <BarChart3 className="h-6 w-6 mb-2" />
-                      <span className="text-sm">Usage Analytics</span>
-                    </Button>
-                    <Button variant="card" className="h-20 flex-col">
-                      <AlertTriangle className="h-6 w-6 mb-2" />
-                      <span className="text-sm">Alert Settings</span>
-                    </Button>
-                    <Button variant="card" className="h-20 flex-col">
-                      <Truck className="h-6 w-6 mb-2" />
-                      <span className="text-sm">Supplier Portal</span>
-                    </Button>
-                  </div>
+                  <Button variant="professional" className="w-full">
+                    <Package className="h-4 w-4" />
+                    Bulk Restock All Items
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Bell className="h-4 w-4" />
+                    Configure Alert Settings
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <FileText className="h-4 w-4" />
+                    Generate Inventory Report
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <DollarSign className="h-4 w-4" />
+                    Add Bill to Operation Manager
+                  </Button>
                 </CardContent>
               </Card>
 
+              {/* Facility Management */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Activities</CardTitle>
-                  <CardDescription>Latest operational updates</CardDescription>
+                  <CardTitle>Facility Management</CardTitle>
+                  <CardDescription>Room and membership operations</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg">
-                      <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">Low Stock Alert</p>
-                        <p className="text-xs text-muted-foreground">Coffee beans below minimum threshold</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                      </div>
+                <CardContent className="space-y-4">
+                  <Button variant="professional" className="w-full">
+                    <Building className="h-4 w-4" />
+                    Add Room
+                  </Button>
+                  <Button variant="professional" className="w-full">
+                    <Users className="h-4 w-4" />
+                    Add Membership
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Calendar className="h-4 w-4" />
+                    Day Use Ticket Pricing
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Product Pricing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Product Pricing</CardTitle>
+                  <CardDescription>Manage product and service prices</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Coffee</span>
+                      <span className="font-medium">$4.50</span>
                     </div>
-                    
-                    <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg">
-                      <Truck className="h-4 w-4 text-success mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">Delivery Completed</p>
-                        <p className="text-xs text-muted-foreground">Milk and sugar supplies delivered</p>
-                        <p className="text-xs text-muted-foreground">1 day ago</p>
-                      </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Tea</span>
+                      <span className="font-medium">$3.00</span>
                     </div>
-                    
-                    <div className="flex items-start gap-3 p-3 bg-info/10 rounded-lg">
-                      <DollarSign className="h-4 w-4 text-info mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">Payment Processed</p>
-                        <p className="text-xs text-muted-foreground">Monthly rent payment completed</p>
-                        <p className="text-xs text-muted-foreground">3 days ago</p>
-                      </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Pastry</span>
+                      <span className="font-medium">$5.50</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Hot Desk (Daily)</span>
+                      <span className="font-medium">$25.00</span>
                     </div>
                   </div>
+                  <Button variant="outline" className="w-full">
+                    <DollarSign className="h-4 w-4" />
+                    Update Pricing
+                  </Button>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Recent Activities */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activities</CardTitle>
+                <CardDescription>Latest system updates and changes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-2 w-2 bg-success rounded-full"></div>
+                    <span>Coffee beans restocked - 50kg added</span>
+                    <span className="text-muted-foreground ml-auto">2h ago</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-2 w-2 bg-warning rounded-full"></div>
+                    <span>Low milk alert triggered</span>
+                    <span className="text-muted-foreground ml-auto">4h ago</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-2 w-2 bg-info rounded-full"></div>
+                    <span>Monthly expense report generated</span>
+                    <span className="text-muted-foreground ml-auto">1d ago</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-2 w-2 bg-success rounded-full"></div>
+                    <span>New meeting room added to facility</span>
+                    <span className="text-muted-foreground ml-auto">2d ago</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

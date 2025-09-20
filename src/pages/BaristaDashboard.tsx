@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Coffee, Clock, CheckCircle, MapPin, Plus } from "lucide-react";
+import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 interface Order {
   id: string;
@@ -17,6 +18,7 @@ interface Order {
 }
 
 const BaristaDashboard = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "ORD-001",
@@ -89,9 +91,15 @@ const BaristaDashboard = () => {
       <SpotinHeader />
       
       <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Barista Station</h1>
-          <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Barista Station</h1>
+            <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
+          </div>
         </div>
 
         {/* Quick Stats */}

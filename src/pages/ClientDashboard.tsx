@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Coffee, Users, Calendar, User, MapPin, Clock, ShoppingCart, QrCode, TrendingUp, CreditCard } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, Calendar, ShoppingCart, Plus, Minus, MapPin, Clock, DollarSign, CreditCard, User, Mail, Phone, Award, FileText, Coffee, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -102,11 +102,12 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="traffic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="traffic">Live Traffic</TabsTrigger>
             <TabsTrigger value="drinks">Order Drinks</TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="account">My Account</TabsTrigger>
+            <TabsTrigger value="receipt">My Receipts</TabsTrigger>
           </TabsList>
 
           {/* Live Traffic Tab */}
@@ -381,6 +382,121 @@ const ClientDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* My Receipts Tab */}
+          <TabsContent value="receipt" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>Your recent purchases and receipts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Recent Receipt */}
+                  <Card className="border border-success/20 bg-success/5">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">Receipt #SPT-2024-001</CardTitle>
+                          <CardDescription>Today, 2:30 PM</CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-success">$12.50</p>
+                          <p className="text-sm text-success">Paid</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Cappuccino x2</span>
+                          <span>$9.00</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Croissant x1</span>
+                          <span>$3.50</span>
+                        </div>
+                        <div className="border-t pt-2 flex justify-between font-medium">
+                          <span>Total</span>
+                          <span>$12.50</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">Payment Method: Card ending in ****1234</p>
+                        <p className="text-sm text-muted-foreground">Location: SpotIN Downtown</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Previous Receipts */}
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">Receipt #SPT-2024-002</p>
+                          <p className="text-sm text-muted-foreground">Yesterday, 10:15 AM</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">$7.50</p>
+                          <p className="text-sm text-success">Paid</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Latte x1, Muffin x1
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">Day Pass #DP-2024-045</p>
+                          <p className="text-sm text-muted-foreground">Dec 15, 2024</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">$25.00</p>
+                          <p className="text-sm text-success">Paid</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Hot Desk - Full Day Access
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">Membership #MEM-PRO-001</p>
+                          <p className="text-sm text-muted-foreground">Dec 1, 2024</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">$120.00</p>
+                          <p className="text-sm text-success">Paid</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Professional Monthly Membership
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="mt-6 flex gap-2">
+                  <Button variant="outline" className="flex-1">
+                    <FileText className="h-4 w-4" />
+                    Export All Receipts
+                  </Button>
+                  <Button variant="professional" className="flex-1">
+                    <DollarSign className="h-4 w-4" />
+                    Request Invoice
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
