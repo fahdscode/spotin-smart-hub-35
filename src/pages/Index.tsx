@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Users, Shield, Coffee, Calendar, TrendingUp, Package } from "lucide-react";
+import { Users, Shield, Coffee, Calendar, TrendingUp, Package, UserCheck } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import RoleCard from "@/components/RoleCard";
 
@@ -49,10 +49,17 @@ const Index = () => {
       path: "/operations",
       variant: "default" as const
     },
+    {
+      title: "CRM System",
+      description: "Customer relationships, leads, follow-ups, analytics",
+      icon: UserCheck,
+      path: "/crm",
+      variant: "primary" as const
+    },
   ];
 
   const handleRoleClick = (path: string) => {
-    if (path === "/receptionist" || path === "/ceo" || path === "/client" || path === "/operations" || path === "/barista" || path === "/community") {
+    if (path === "/receptionist" || path === "/ceo" || path === "/client" || path === "/operations" || path === "/barista" || path === "/community" || path === "/crm") {
       navigate(path);
     } else {
       // Show coming soon message for other roles
@@ -90,7 +97,7 @@ const Index = () => {
 
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            Demo Version - All interfaces now available: Receptionist, CEO, Client Portal, Operations Manager, Barista, and Community Manager
+            Demo Version - All interfaces now available: Receptionist, CEO, Client Portal, Operations Manager, Barista, Community Manager, and CRM System
           </p>
         </div>
       </div>
