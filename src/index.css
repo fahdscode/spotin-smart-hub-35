@@ -2,59 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SpotIN Design System - Professional Co-working Space Management
-All colors MUST be HSL.
+/* SpotIN Design System - Natural Co-working Space Management
+All colors MUST be HSL. Based on organic brand palette.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 15% 15%;
+    --background: 60 14% 91%;
+    --foreground: 40 97% 19%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 15% 15%;
+    --card-foreground: 40 97% 19%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 15% 15%;
+    --popover-foreground: 40 97% 19%;
 
-    /* Professional Blue Primary */
-    --primary: 217 91% 60%;
+    /* SpotIN Green Primary */
+    --primary: 108 16% 41%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 116 14% 50%;
 
-    /* Clean Secondary */
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 15% 25%;
+    /* Natural Secondary */
+    --secondary: 84 23% 80%;
+    --secondary-foreground: 40 97% 19%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 60 14% 88%;
+    --muted-foreground: 39 92% 23%;
 
-    /* Green Accent */
-    --accent: 158 64% 52%;
+    /* Orange Accent */
+    --accent: 31 96% 52%;
     --accent-foreground: 0 0% 100%;
-    --accent-hover: 158 64% 47%;
+    --accent-hover: 31 92% 43%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --border: 84 23% 80%;
+    --input: 84 23% 80%;
+    --ring: 108 16% 41%;
 
     --radius: 0.75rem;
 
-    /* SpotIN Specific Colors */
-    --success: 142 76% 36%;
+    /* SpotIN Brand Colors */
+    --success: 116 14% 50%;
     --success-foreground: 0 0% 100%;
-    --warning: 48 96% 53%;
-    --warning-foreground: 222 15% 15%;
-    --info: 199 89% 48%;
+    --warning: 31 96% 52%;
+    --warning-foreground: 40 97% 19%;
+    --info: 31 92% 43%;
     --info-foreground: 0 0% 100%;
 
-    /* Gradients */
+    /* Brand Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(214 32% 97%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 65%) 50%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(84 23% 85%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(116 14% 50%) 50%, hsl(var(--accent)) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(var(--primary) / 0.05);
@@ -84,51 +84,51 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 13% 9%;
-    --foreground: 210 40% 98%;
+    --background: 39 92% 8%;
+    --foreground: 60 14% 91%;
 
-    --card: 220 13% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 40 97% 12%;
+    --card-foreground: 60 14% 91%;
 
-    --popover: 220 13% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 40 97% 12%;
+    --popover-foreground: 60 14% 91%;
 
-    /* Professional Blue Primary (lighter in dark mode) */
-    --primary: 217 91% 65%;
-    --primary-foreground: 220 13% 9%;
-    --primary-hover: 217 91% 70%;
+    /* SpotIN Green Primary (brighter in dark mode) */
+    --primary: 116 14% 60%;
+    --primary-foreground: 40 97% 8%;
+    --primary-hover: 108 16% 55%;
 
-    /* Dark Secondary */
-    --secondary: 220 13% 15%;
-    --secondary-foreground: 210 40% 98%;
+    /* Dark Natural Secondary */
+    --secondary: 39 92% 15%;
+    --secondary-foreground: 60 14% 91%;
 
-    --muted: 220 13% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 40 97% 15%;
+    --muted-foreground: 84 23% 65%;
 
-    /* Green Accent (brighter in dark mode) */
-    --accent: 158 64% 57%;
-    --accent-foreground: 220 13% 9%;
-    --accent-hover: 158 64% 62%;
+    /* Orange Accent (brighter in dark mode) */
+    --accent: 31 96% 62%;
+    --accent-foreground: 40 97% 8%;
+    --accent-hover: 31 96% 68%;
 
     --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 60 14% 91%;
 
-    --border: 220 13% 15%;
-    --input: 220 13% 15%;
-    --ring: 217 91% 65%;
+    --border: 40 97% 15%;
+    --input: 40 97% 15%;
+    --ring: 116 14% 60%;
 
-    /* SpotIN Dark Mode Colors */
-    --success: 142 76% 46%;
-    --success-foreground: 220 13% 9%;
-    --warning: 48 96% 58%;
-    --warning-foreground: 220 13% 9%;
-    --info: 199 89% 58%;
-    --info-foreground: 220 13% 9%;
+    /* SpotIN Dark Brand Colors */
+    --success: 116 14% 60%;
+    --success-foreground: 40 97% 8%;
+    --warning: 31 96% 62%;
+    --warning-foreground: 40 97% 8%;
+    --info: 31 92% 53%;
+    --info-foreground: 40 97% 8%;
 
-    /* Dark Mode Gradients */
+    /* Dark Brand Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(220 13% 13%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 70%) 50%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(39 92% 15%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(116 14% 65%) 50%, hsl(var(--accent)) 100%);
 
     /* Dark Mode Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.5);

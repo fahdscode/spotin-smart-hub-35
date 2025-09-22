@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
+import RoomBooking from "@/components/RoomBooking";
 import { useNavigate } from "react-router-dom";
 
 const ReceptionistDashboard = () => {
@@ -29,7 +31,7 @@ const ReceptionistDashboard = () => {
     { 
       title: "Room Booking", 
       description: "Reserve meeting rooms", 
-      icon: Calendar, 
+      icon: DoorOpen, 
       action: "booking",
       variant: "info" as const
     },
@@ -83,24 +85,36 @@ const ReceptionistDashboard = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {quickActions.map((action) => (
-                    <Card key={action.action} className="hover:shadow-card transition-all duration-200 cursor-pointer group">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-lg ${
-                            action.variant === "success" ? "bg-success/10 text-success" :
-                            action.variant === "warning" ? "bg-warning/10 text-warning" :
-                            action.variant === "info" ? "bg-info/10 text-info" :
-                            "bg-primary/10 text-primary"
-                          }`}>
-                            <action.icon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-foreground">{action.title}</h3>
-                            <p className="text-sm text-muted-foreground">{action.description}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <Dialog key={action.action}>
+                      <DialogTrigger asChild>
+                        <Card className="hover:shadow-card transition-all duration-200 cursor-pointer group">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className={`p-3 rounded-lg ${
+                                action.variant === "success" ? "bg-success/10 text-success" :
+                                action.variant === "warning" ? "bg-warning/10 text-warning" :
+                                action.variant === "info" ? "bg-info/10 text-info" :
+                                "bg-primary/10 text-primary"
+                              }`}>
+                                <action.icon className="h-6 w-6" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-foreground">{action.title}</h3>
+                                <p className="text-sm text-muted-foreground">{action.description}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </DialogTrigger>
+                      {action.action === "booking" && (
+                        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+                          <DialogHeader>
+                            <DialogTitle>Room Booking System</DialogTitle>
+                          </DialogHeader>
+                          <RoomBooking />
+                        </DialogContent>
+                      )}
+                    </Dialog>
                   ))}
                 </div>
               </CardContent>
