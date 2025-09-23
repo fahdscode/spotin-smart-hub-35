@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { ArrowLeft, Calendar, Users, Ticket, TrendingUp, Plus, Eye, Edit, QrCode } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Ticket, TrendingUp, Plus, Eye, Edit, QrCode, Package, DollarSign, Clock, UserCheck } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
+import StockReports from "@/components/StockReports";
+import FinanceReports from "@/components/FinanceReports";
+import PendingOrders from "@/components/PendingOrders";
+import EventRegistration from "@/components/EventRegistration";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -244,195 +248,185 @@ const CommunityManagerDashboard = () => {
         </div>
       </div>
 
-        {/* Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Total Revenue"
-            value={`€${totalRevenue.toLocaleString()}`}
-            icon={TrendingUp}
-            variant="success"
-          />
-          <MetricCard
-            title="Tickets Sold"
-            value={totalTicketsSold.toString()}
-            icon={Ticket}
-            variant="info"
-          />
-          <MetricCard
-            title="Upcoming Events"
-            value={upcomingEvents.toString()}
-            icon={Calendar}
-            variant="default"
-          />
-          <MetricCard
-            title="Avg. Attendance"
-            value={`${averageAttendance}%`}
-            icon={Users}
-            variant="default"
-          />
-        </div>
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="events" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="events" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="registration" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Registration
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="stock" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Stock
+            </TabsTrigger>
+            <TabsTrigger value="finance" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Finance
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Events Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Events Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList>
-                <TabsTrigger value="all">All Events ({events.length})</TabsTrigger>
-                <TabsTrigger value="published">Published ({events.filter(e => e.status === "published").length})</TabsTrigger>
-                <TabsTrigger value="draft">Drafts ({events.filter(e => e.status === "draft").length})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all" className="space-y-4 mt-6">
-                {events.map((event) => (
-                  <div key={event.id} className="p-6 border rounded-lg bg-card hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{event.title}</h3>
-                          <Badge className={getStatusColor(event.status)}>
-                            {event.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
-                          <span className="bg-muted px-2 py-1 rounded text-xs font-medium">{event.category}</span>
-                          <span>{event.date} at {event.time}</span>
-                          <span>€{event.price} per ticket</span>
-                        </div>
-                        {event.description && (
-                          <p className="text-sm text-muted-foreground mb-3">{event.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-primary">{event.ticketsSold}</div>
-                        <div className="text-sm text-muted-foreground">Tickets Sold</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold">{event.capacity}</div>
-                        <div className="text-sm text-muted-foreground">Capacity</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-accent">€{event.revenue}</div>
-                        <div className="text-sm text-muted-foreground">Revenue</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-success">
-                          {Math.round((event.ticketsSold / event.capacity) * 100)}%
-                        </div>
-                        <div className="text-sm text-muted-foreground">Sold Rate</div>
-                      </div>
-                    </div>
+          {/* Events Tab */}
+          <TabsContent value="events" className="space-y-6">
+            {/* Metrics Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <MetricCard
+                title="Total Revenue"
+                value={`€${totalRevenue.toLocaleString()}`}
+                icon={TrendingUp}
+                variant="success"
+              />
+              <MetricCard
+                title="Tickets Sold"
+                value={totalTicketsSold.toString()}
+                icon={Ticket}
+                variant="info"
+              />
+              <MetricCard
+                title="Upcoming Events"
+                value={upcomingEvents.toString()}
+                icon={Calendar}
+                variant="default"
+              />
+              <MetricCard
+                title="Avg. Attendance"
+                value={`${averageAttendance}%`}
+                icon={Users}
+                variant="default"
+              />
+            </div>
 
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
-                        View Details
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                        <Edit className="h-4 w-4" />
-                        Edit Event
-                      </Button>
-                      {event.status === "published" && (
-                        <Button variant="outline" size="sm" className="flex items-center gap-2">
-                          <QrCode className="h-4 w-4" />
-                          Generate QR
-                        </Button>
-                      )}
-                      {event.status === "draft" && (
-                        <Button variant="professional" size="sm">
-                          Publish Event
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="published" className="space-y-4 mt-6">
-                {events.filter(event => event.status === "published").map((event) => (
-                  <div key={event.id} className="p-6 border rounded-lg bg-card border-primary/20">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{event.title}</h3>
-                          <Badge className={getStatusColor(event.status)}>
-                            {event.status}
-                          </Badge>
+            {/* Events Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Events Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="all">All Events ({events.length})</TabsTrigger>
+                    <TabsTrigger value="published">Published ({events.filter(e => e.status === "published").length})</TabsTrigger>
+                    <TabsTrigger value="draft">Drafts ({events.filter(e => e.status === "draft").length})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all" className="space-y-4 mt-6">
+                    {events.map((event) => (
+                      <div key={event.id} className="p-6 border rounded-lg bg-card hover:shadow-sm transition-shadow">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold">{event.title}</h3>
+                              <Badge className={getStatusColor(event.status)}>
+                                {event.status}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
+                              <span className="bg-muted px-2 py-1 rounded text-xs font-medium">{event.category}</span>
+                              <span>{event.date} at {event.time}</span>
+                              <span>€{event.price} per ticket</span>
+                            </div>
+                            {event.description && (
+                              <p className="text-sm text-muted-foreground mb-3">{event.description}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
-                          <span className="bg-muted px-2 py-1 rounded text-xs font-medium">{event.category}</span>
-                          <span>{event.date} at {event.time}</span>
-                          <span>€{event.price} per ticket</span>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                          <div className="bg-muted p-3 rounded">
+                            <div className="text-2xl font-bold text-primary">{event.ticketsSold}</div>
+                            <div className="text-sm text-muted-foreground">Tickets Sold</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded">
+                            <div className="text-2xl font-bold">{event.capacity}</div>
+                            <div className="text-sm text-muted-foreground">Capacity</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded">
+                            <div className="text-2xl font-bold text-accent">€{event.revenue}</div>
+                            <div className="text-sm text-muted-foreground">Revenue</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded">
+                            <div className="text-2xl font-bold text-success">
+                              {Math.round((event.ticketsSold / event.capacity) * 100)}%
+                            </div>
+                            <div className="text-sm text-muted-foreground">Sold Rate</div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-4 gap-4 mb-4">
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-primary">{event.ticketsSold}</div>
-                        <div className="text-sm text-muted-foreground">Tickets Sold</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold">{event.capacity}</div>
-                        <div className="text-sm text-muted-foreground">Capacity</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-accent">€{event.revenue}</div>
-                        <div className="text-sm text-muted-foreground">Revenue</div>
-                      </div>
-                      <div className="bg-muted p-3 rounded">
-                        <div className="text-2xl font-bold text-success">
-                          {Math.round((event.ticketsSold / event.capacity) * 100)}%
-                        </div>
-                        <div className="text-sm text-muted-foreground">Sold Rate</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="draft" className="space-y-4 mt-6">
-                {events.filter(event => event.status === "draft").map((event) => (
-                  <div key={event.id} className="p-6 border rounded-lg bg-card border-muted">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{event.title}</h3>
-                          <Badge className={getStatusColor(event.status)}>
-                            {event.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground mb-3">
-                          <span className="bg-muted px-2 py-1 rounded text-xs font-medium">{event.category}</span>
-                          <span>{event.date} at {event.time}</span>
-                          <span>€{event.price} per ticket</span>
+
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <Edit className="h-4 w-4" />
+                            Edit Event
+                          </Button>
+                          {event.status === "published" && (
+                            <Button variant="outline" size="sm" className="flex items-center gap-2">
+                              <QrCode className="h-4 w-4" />
+                              Generate QR
+                            </Button>
+                          )}
+                          {event.status === "draft" && (
+                            <Button variant="professional" size="sm">
+                              Publish Event
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button variant="professional" size="sm">
-                        Publish Event
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
-                        <Edit className="h-4 w-4" />
-                        Edit Draft
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                    ))}
+                  </TabsContent>
+                  
+                  <TabsContent value="published" className="space-y-4 mt-6">
+                    {events.filter(event => event.status === "published").map((event) => (
+                      <div key={event.id} className="p-6 border rounded-lg bg-card border-primary/20">
+                        {/* ... keep existing code */}
+                      </div>
+                    ))}
+                  </TabsContent>
+                  
+                  <TabsContent value="draft" className="space-y-4 mt-6">
+                    {events.filter(event => event.status === "draft").map((event) => (
+                      <div key={event.id} className="p-6 border rounded-lg bg-card border-muted">
+                        {/* ... keep existing code */}
+                      </div>
+                    ))}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Registration Tab */}
+          <TabsContent value="registration">
+            <EventRegistration events={events} />
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders">
+            <PendingOrders />
+          </TabsContent>
+
+          {/* Stock Tab */}
+          <TabsContent value="stock">
+            <StockReports />
+          </TabsContent>
+
+          {/* Finance Tab */}
+          <TabsContent value="finance">
+            <FinanceReports />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
