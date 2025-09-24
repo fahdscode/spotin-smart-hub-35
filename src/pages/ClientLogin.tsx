@@ -83,7 +83,7 @@ const ClientLogin = () => {
       if (!result.success || !result.client) {
         toast({
           title: "Login Failed",
-          description: result.error || "Invalid credentials",
+          description: result.error || "Invalid phone number or password. Please check your credentials and try again.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -96,7 +96,7 @@ const ClientLogin = () => {
       if (!isPasswordValid) {
         toast({
           title: "Login Failed",
-          description: "Invalid username or password.",
+          description: "Invalid phone number or password. Please check your credentials and try again.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -118,7 +118,7 @@ const ClientLogin = () => {
         barcode: result.client.barcode
       }));
 
-      navigate("/client-dashboard");
+      navigate("/client");
     } catch (error: any) {
       console.error('Login error:', error);
       toast({

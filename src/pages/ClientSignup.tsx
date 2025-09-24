@@ -132,16 +132,25 @@ const ClientSignup = () => {
       }));
 
       setTimeout(() => {
-        navigate("/client-dashboard");
+        navigate("/client");
       }, 1500);
       
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Failed to create account. Please try again.",
-        variant: "destructive",
-      });
+      const errorMessage = error.message || "Failed to create account. Please try again.";
+      if (errorMessage.includes('unique constraint') || errorMessage.includes('already exists')) {
+        toast({
+          title: "Account Already Exists",
+          description: "An account with this phone number or email already exists.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     }
     
     setIsLoading(false);
