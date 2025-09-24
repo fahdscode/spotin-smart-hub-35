@@ -1,215 +1,134 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Ticket, Edit, Save, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Ticket, Settings, DollarSign } from "lucide-react";
+
+// Mock data for day use tickets - replace with actual Supabase integration later
+const mockTicketSettings = {
+  name: "Day Use Pass",
+  price: 25.00,
+  description: "Full day access to workspace, WiFi, and common areas",
+  is_active: true
+};
 
 const DayUseTicketControls = () => {
-  const [ticketSettings, setTicketSettings] = useState<any>(null);
+  const [settings, setSettings] = useState(mockTicketSettings);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    price: '',
-    description: '',
-    is_active: true
-  });
 
-  useEffect(() => {
-    fetchTicketSettings();
-  }, []);
-
-  const fetchTicketSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('day_use_ticket_settings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      setTicketSettings(data);
-      if (data) {
-        setEditForm({
-          name: data.name,
-          price: data.price.toString(),
-          description: data.description || '',
-          is_active: data.is_active
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching ticket settings:', error);
-      toast.error('Failed to load ticket settings');
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const price = parseFloat(editForm.price);
-      if (isNaN(price) || price < 0) {
-        toast.error('Please enter a valid price');
-        return;
-      }
-
-      const ticketData = {
-        name: editForm.name.trim(),
-        price: price,
-        description: editForm.description.trim(),
-        is_active: editForm.is_active
-      };
-
-      if (ticketSettings?.id) {
-        // Update existing setting
-        const { error } = await supabase
-          .from('day_use_ticket_settings')
-          .update(ticketData)
-          .eq('id', ticketSettings.id);
-
-        if (error) throw error;
-      } else {
-        // Create new setting
-        const { error } = await supabase
-          .from('day_use_ticket_settings')
-          .insert(ticketData);
-
-        if (error) throw error;
-      }
-
-      setIsEditing(false);
-      await fetchTicketSettings();
-      toast.success('Day use ticket settings updated successfully');
-    } catch (error) {
-      console.error('Error saving ticket settings:', error);
-      toast.error('Failed to save ticket settings');
-    }
-  };
-
-  const handleCancel = () => {
-    if (ticketSettings) {
-      setEditForm({
-        name: ticketSettings.name,
-        price: ticketSettings.price.toString(),
-        description: ticketSettings.description || '',
-        is_active: ticketSettings.is_active
-      });
-    }
+  const handleSave = () => {
+    // TODO: Implement save to Supabase when table is created
     setIsEditing(false);
   };
 
-  if (!ticketSettings && !isEditing) {
-    return (
-      <div className="text-center space-y-4">
-        <p className="text-muted-foreground">No day use ticket settings configured</p>
-        <Button onClick={() => setIsEditing(true)} variant="professional">
-          <Ticket className="h-4 w-4 mr-2" />
-          Setup Day Use Ticket
-        </Button>
-      </div>
-    );
-  }
+  const handleCancel = () => {
+    setSettings(mockTicketSettings);
+    setIsEditing(false);
+  };
 
   return (
-    <div className="space-y-4">
-      {!isEditing ? (
-        // Display Mode
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">{ticketSettings?.name}</h4>
-              <Badge variant={ticketSettings?.is_active ? "default" : "secondary"}>
-                {ticketSettings?.is_active ? "Active" : "Inactive"}
-              </Badge>
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Ticket className="h-5 w-5 text-primary" />
+            <CardTitle>Day Use Tickets</CardTitle>
+          </div>
+          <Badge variant={settings.is_active ? "default" : "secondary"}>
+            {settings.is_active ? "Active" : "Inactive"}
+          </Badge>
+        </div>
+        <CardDescription>
+          Manage day use ticket pricing and availability for walk-in customers
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {!isEditing ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div>
+                <h3 className="font-semibold">{settings.name}</h3>
+                <p className="text-sm text-muted-foreground">{settings.description}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary flex items-center gap-1">
+                  <DollarSign className="h-5 w-5" />
+                  {settings.price.toFixed(2)}
+                </div>
+                <p className="text-sm text-muted-foreground">per day</p>
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Price:</span>
-                <span className="font-medium">${ticketSettings?.price?.toFixed(2)}</span>
-              </div>
-              {ticketSettings?.description && (
-                <div>
-                  <span className="text-xs text-muted-foreground">Description:</span>
-                  <p className="text-sm">{ticketSettings.description}</p>
-                </div>
-              )}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Ticket Sales Active</span>
+              <Switch 
+                checked={settings.is_active} 
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, is_active: checked }))}
+              />
             </div>
 
             <Button 
-              onClick={() => setIsEditing(true)} 
+              onClick={() => setIsEditing(true)}
               variant="outline" 
-              size="sm" 
               className="w-full"
             >
-              <Edit className="h-4 w-4 mr-2" />
+              <Settings className="h-4 w-4 mr-2" />
               Edit Settings
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        // Edit Mode
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="ticket-name">Ticket Name</Label>
-            <Input
-              id="ticket-name"
-              value={editForm.name}
-              onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g., Standard Day Use Ticket"
-            />
           </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ticket Name</label>
+              <Input
+                value={settings.name}
+                onChange={(e) => setSettings(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter ticket name"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ticket-price">Price ($)</Label>
-            <Input
-              id="ticket-price"
-              type="number"
-              step="0.01"
-              min="0"
-              value={editForm.price}
-              onChange={(e) => setEditForm(prev => ({ ...prev, price: e.target.value }))}
-              placeholder="0.00"
-            />
-          </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Price ($)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={settings.price}
+                onChange={(e) => setSettings(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                placeholder="Enter price"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ticket-description">Description</Label>
-            <Input
-              id="ticket-description"
-              value={editForm.description}
-              onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Brief description of the ticket"
-            />
-          </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Input
+                value={settings.description}
+                onChange={(e) => setSettings(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter description"
+              />
+            </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={editForm.is_active}
-              onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, is_active: checked }))}
-            />
-            <Label>Active</Label>
-          </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Active</span>
+              <Switch 
+                checked={settings.is_active} 
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, is_active: checked }))}
+              />
+            </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleSave} variant="professional" className="flex-1">
-              <Save className="h-4 w-4 mr-2" />
-              Save
-            </Button>
-            <Button onClick={handleCancel} variant="outline" className="flex-1">
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} className="flex-1">
+                Save Changes
+              </Button>
+              <Button onClick={handleCancel} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

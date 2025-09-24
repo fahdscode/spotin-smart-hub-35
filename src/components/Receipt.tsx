@@ -1,230 +1,163 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Receipt as ReceiptIcon, Download, Mail, Ticket } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Receipt as ReceiptIcon, Download, Mail, Check } from "lucide-react";
 
 interface ReceiptItem {
   name: string;
+  quantity: number;
   price: number;
-  quantity?: number;
+  total: number;
 }
 
 interface ReceiptProps {
-  sessionId: string;
-  clientId: string;
-  onClose: () => void;
+  receiptNumber?: string;
+  customerName?: string;
+  items?: ReceiptItem[];
+  subtotal?: number;
+  discount?: number;
+  total?: number;
+  paymentMethod?: string;
+  date?: string;
 }
 
-const Receipt = ({ sessionId, clientId, onClose }: ReceiptProps) => {
-  const [client, setClient] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
-  const [dayUseTicket, setDayUseTicket] = useState<any>(null);
-  const [receipt, setReceipt] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+const Receipt = ({ 
+  receiptNumber = "RCP-2024-001",
+  customerName = "Demo Customer",
+  items = [
+    { name: "Coffee - Large", quantity: 2, price: 4.50, total: 9.00 },
+    { name: "Meeting Room - 1hr", quantity: 1, price: 15.00, total: 15.00 },
+    { name: "Day Use Pass", quantity: 1, price: 25.00, total: 25.00 }
+  ],
+  subtotal = 49.00,
+  discount = 4.90,
+  total = 44.10,
+  paymentMethod = "Credit Card",
+  date = new Date().toLocaleDateString()
+}: ReceiptProps) => {
+  const [emailSent, setEmailSent] = useState(false);
 
-  useEffect(() => {
-    generateReceipt();
-  }, [sessionId, clientId]);
-
-  const generateReceipt = async () => {
-    try {
-      // Get client info
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', clientId)
-        .single();
-
-      // Get session info
-      const { data: sessionData } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single();
-
-      // Get day use ticket settings if client has membership
-      let dayUseTicketData = null;
-      if (clientData?.has_membership) {
-        const { data: ticketData } = await supabase
-          .from('day_use_ticket_settings')
-          .select('*')
-          .eq('is_active', true)
-          .single();
-        dayUseTicketData = ticketData;
-      }
-
-      setClient(clientData);
-      setSession(sessionData);
-      setDayUseTicket(dayUseTicketData);
-
-      // Generate receipt items
-      const items: ReceiptItem[] = [
-        {
-          name: `${sessionData.session_type} - ${sessionData.seat_number || sessionData.room_number}`,
-          price: 0, // Base session is free for members, could be configurable
-        }
-      ];
-
-      // Add day use ticket if client has membership
-      if (clientData?.has_membership && dayUseTicketData) {
-        items.push({
-          name: dayUseTicketData.name,
-          price: parseFloat(dayUseTicketData.price),
-        });
-      }
-
-      const totalAmount = items.reduce((sum, item) => sum + item.price, 0);
-
-      // Create receipt record in database
-      const { data: receiptData } = await supabase
-        .from('receipts')
-        .insert({
-          session_id: sessionId,
-          client_id: clientId,
-          total_amount: totalAmount,
-          items: JSON.stringify(items),
-          day_use_ticket_added: !!(clientData?.has_membership && dayUseTicketData),
-          day_use_ticket_price: dayUseTicketData ? parseFloat(dayUseTicketData.price) : 0,
-        })
-        .select()
-        .single();
-
-      setReceipt({ ...receiptData, items });
-      setLoading(false);
-
-    } catch (error) {
-      console.error('Error generating receipt:', error);
-      setLoading(false);
-    }
+  const handleEmailReceipt = () => {
+    // TODO: Implement email functionality
+    setEmailSent(true);
+    setTimeout(() => setEmailSent(false), 3000);
   };
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+  const handleDownload = () => {
+    // TODO: Implement PDF download
+    console.log("Downloading receipt...");
   };
-
-  const formatDuration = (checkIn: string, checkOut: string) => {
-    const duration = new Date(checkOut).getTime() - new Date(checkIn).getTime();
-    const hours = Math.floor(duration / (1000 * 60 * 60));
-    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
-
-  if (loading) {
-    return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6">
-          <div className="text-center">Generating receipt...</div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center pb-4">
-        <div className="flex justify-center mb-2">
-          <ReceiptIcon className="h-8 w-8 text-primary" />
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <ReceiptIcon className="h-6 w-6 text-primary" />
+          <CardTitle className="text-xl">SpotIn Receipt</CardTitle>
         </div>
-        <CardTitle>SpotIN Receipt</CardTitle>
-        <p className="text-sm text-muted-foreground">Thank you for visiting!</p>
+        <CardDescription className="text-sm">
+          Your coworking space transaction
+        </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Client Info */}
-        <div className="space-y-2">
+        {/* Receipt Header */}
+        <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="font-medium">Client:</span>
-            <span>{client?.name}</span>
-          </div>
-          {client?.has_membership && (
-            <div className="flex justify-between">
-              <span className="font-medium">Membership:</span>
-              <Badge variant="default">{client.membership_type}</Badge>
-            </div>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Session Details */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="font-medium">Session Type:</span>
-            <span>{session?.session_type}</span>
+            <span className="text-muted-foreground">Receipt #:</span>
+            <span className="font-mono">{receiptNumber}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Location:</span>
-            <span>{session?.seat_number || session?.room_number}</span>
+            <span className="text-muted-foreground">Customer:</span>
+            <span>{customerName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Check-in:</span>
-            <span className="text-sm">{formatTime(session?.check_in_time)}</span>
+            <span className="text-muted-foreground">Date:</span>
+            <span>{date}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Check-out:</span>
-            <span className="text-sm">{formatTime(session?.check_out_time || new Date().toISOString())}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium">Duration:</span>
-            <span>{formatDuration(session?.check_in_time, session?.check_out_time || new Date().toISOString())}</span>
+            <span className="text-muted-foreground">Payment:</span>
+            <Badge variant="outline">{paymentMethod}</Badge>
           </div>
         </div>
 
         <Separator />
 
-        {/* Receipt Items */}
-        <div className="space-y-2">
-          <h4 className="font-medium">Items:</h4>
-          {receipt?.items?.map((item: ReceiptItem, index: number) => (
-            <div key={index} className="flex justify-between text-sm">
-              <span>{item.name}</span>
-              <span>${item.price.toFixed(2)}</span>
+        {/* Items */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm">Items</h3>
+          {items.map((item, index) => (
+            <div key={index} className="flex justify-between items-start text-sm">
+              <div className="flex-1">
+                <div className="font-medium">{item.name}</div>
+                <div className="text-muted-foreground">
+                  ${item.price.toFixed(2)} × {item.quantity}
+                </div>
+              </div>
+              <div className="font-mono">${item.total.toFixed(2)}</div>
             </div>
           ))}
         </div>
 
-        {/* Day Use Ticket */}
-        {dayUseTicket && client?.has_membership && (
-          <div className="bg-success/10 border border-success/20 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Ticket className="h-4 w-4 text-success" />
-              <span className="font-medium text-success">Day Use Ticket Added!</span>
-            </div>
-            <p className="text-sm text-muted-foreground">{dayUseTicket.description}</p>
-          </div>
-        )}
-
         <Separator />
 
-        {/* Total */}
-        <div className="flex justify-between font-bold text-lg">
-          <span>Total:</span>
-          <span>${receipt?.total_amount?.toFixed(2) || '0.00'}</span>
-        </div>
-
-        {/* Receipt ID */}
-        <div className="text-center text-xs text-muted-foreground">
-          Receipt ID: {receipt?.id?.slice(-8)}
+        {/* Totals */}
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span className="font-mono">${subtotal.toFixed(2)}</span>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Member Discount (10%):</span>
+              <span className="font-mono">-${discount.toFixed(2)}</span>
+            </div>
+          )}
+          <Separator />
+          <div className="flex justify-between font-semibold text-lg">
+            <span>Total:</span>
+            <span className="font-mono">${total.toFixed(2)}</span>
+          </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-2 pt-4">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            onClick={handleEmailReceipt}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            disabled={emailSent}
+          >
+            {emailSent ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Sent!
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleDownload}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+          >
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Mail className="h-4 w-4 mr-2" />
-            Email
-          </Button>
         </div>
 
-        <Button onClick={onClose} className="w-full">
-          Close
-        </Button>
+        <div className="text-center text-xs text-muted-foreground pt-4 border-t">
+          Thank you for choosing SpotIn!<br />
+          Visit us again soon.
+        </div>
       </CardContent>
     </Card>
   );
