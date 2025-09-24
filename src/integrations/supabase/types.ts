@@ -14,179 +14,326 @@ export type Database = {
   }
   public: {
     Tables: {
-      clients: {
+      check_ins: {
         Row: {
-          barcode: string | null
+          checked_in_at: string
+          checked_out_at: string | null
           created_at: string
-          email: string | null
-          has_membership: boolean | null
           id: string
-          membership_expires_at: string | null
-          membership_type: string | null
-          name: string
-          phone: string | null
-          updated_at: string
+          status: string
+          user_id: string
         }
         Insert: {
-          barcode?: string | null
+          checked_in_at?: string
+          checked_out_at?: string | null
           created_at?: string
-          email?: string | null
-          has_membership?: boolean | null
           id?: string
-          membership_expires_at?: string | null
-          membership_type?: string | null
-          name: string
-          phone?: string | null
-          updated_at?: string
+          status?: string
+          user_id: string
         }
         Update: {
-          barcode?: string | null
+          checked_in_at?: string
+          checked_out_at?: string | null
           created_at?: string
-          email?: string | null
-          has_membership?: boolean | null
           id?: string
-          membership_expires_at?: string | null
-          membership_type?: string | null
-          name?: string
-          phone?: string | null
-          updated_at?: string
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
-      day_use_ticket_settings: {
+      feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          emoji: string
+          feedback_type: string
+          id: string
+          rating: number
+          user_id: string
+          visit_date: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          emoji: string
+          feedback_type?: string
+          id?: string
+          rating: number
+          user_id: string
+          visit_date: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          emoji?: string
+          feedback_type?: string
+          id?: string
+          rating?: number
+          user_id?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
+      memberships: {
         Row: {
           created_at: string
-          description: string | null
+          discount_percentage: number
           id: string
-          is_active: boolean | null
-          name: string
-          price: number
-          updated_at: string
+          is_active: boolean
+          perks: string[] | null
+          plan_name: string
+          total_savings: number
+          user_id: string
         }
         Insert: {
           created_at?: string
-          description?: string | null
+          discount_percentage?: number
           id?: string
-          is_active?: boolean | null
-          name: string
-          price?: number
-          updated_at?: string
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name: string
+          total_savings?: number
+          user_id: string
         }
         Update: {
           created_at?: string
-          description?: string | null
+          discount_percentage?: number
           id?: string
-          is_active?: boolean | null
-          name?: string
-          price?: number
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name?: string
+          total_savings?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          barcode: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          role: string
           updated_at?: string
+          user_id: string
+        }
+        Update: {
+          barcode?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
       receipts: {
         Row: {
-          client_id: string
-          created_at: string
-          day_use_ticket_added: boolean | null
-          day_use_ticket_price: number | null
+          amount: number
           id: string
-          issued_at: string
-          items: Json
-          session_id: string
+          line_items: Json | null
+          payment_method: string
+          receipt_date: string
+          receipt_number: string
           total_amount: number
+          transaction_type: string
+          user_id: string
         }
         Insert: {
-          client_id: string
-          created_at?: string
-          day_use_ticket_added?: boolean | null
-          day_use_ticket_price?: number | null
+          amount: number
           id?: string
-          issued_at?: string
-          items?: Json
-          session_id: string
-          total_amount?: number
+          line_items?: Json | null
+          payment_method?: string
+          receipt_date?: string
+          receipt_number: string
+          total_amount: number
+          transaction_type: string
+          user_id: string
         }
         Update: {
-          client_id?: string
-          created_at?: string
-          day_use_ticket_added?: boolean | null
-          day_use_ticket_price?: number | null
+          amount?: number
           id?: string
-          issued_at?: string
-          items?: Json
-          session_id?: string
+          line_items?: Json | null
+          payment_method?: string
+          receipt_date?: string
+          receipt_number?: string
           total_amount?: number
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          room_id: string
+          start_time: string
+          status: string
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          room_id: string
+          start_time: string
+          status?: string
+          total_amount: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          room_id?: string
+          start_time?: string
+          status?: string
+          total_amount?: number
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "receipts_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "reservations_room_id_fkey"
+            columns: ["room_id"]
             isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "receipts_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
       }
-      sessions: {
+      rooms: {
         Row: {
-          check_in_time: string
-          check_out_time: string | null
-          client_id: string
+          amenities: string[] | null
+          capacity: number
           created_at: string
+          description: string | null
+          hourly_rate: number
           id: string
-          room_number: string | null
-          seat_number: string | null
-          session_type: string
-          status: string
-          updated_at: string
+          image_url: string | null
+          is_available: boolean
+          name: string
         }
         Insert: {
-          check_in_time?: string
-          check_out_time?: string | null
-          client_id: string
+          amenities?: string[] | null
+          capacity?: number
           created_at?: string
+          description?: string | null
+          hourly_rate?: number
           id?: string
-          room_number?: string | null
-          seat_number?: string | null
-          session_type: string
-          status?: string
-          updated_at?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
         }
         Update: {
-          check_in_time?: string
-          check_out_time?: string | null
-          client_id?: string
+          amenities?: string[] | null
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          hourly_rate?: number
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      session_line_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          price: number
+          quantity: number
+          status: string
+          user_id: string
+        }
+        Insert: {
           created_at?: string
           id?: string
-          room_number?: string | null
-          seat_number?: string | null
-          session_type?: string
+          item_name: string
+          price: number
+          quantity?: number
           status?: string
-          updated_at?: string
+          user_id: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "sessions_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          price?: number
+          quantity?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_analytics: {
+        Row: {
+          check_ins: number
+          created_at: string
+          date: string
+          events_attended: number
+          favorite_items: Json | null
+          id: string
+          orders_placed: number
+          rooms_booked: number
+          time_spent_minutes: number
+          total_spent: number
+          user_id: string
+        }
+        Insert: {
+          check_ins?: number
+          created_at?: string
+          date: string
+          events_attended?: number
+          favorite_items?: Json | null
+          id?: string
+          orders_placed?: number
+          rooms_booked?: number
+          time_spent_minutes?: number
+          total_spent?: number
+          user_id: string
+        }
+        Update: {
+          check_ins?: number
+          created_at?: string
+          date?: string
+          events_attended?: number
+          favorite_items?: Json | null
+          id?: string
+          orders_placed?: number
+          rooms_booked?: number
+          time_spent_minutes?: number
+          total_spent?: number
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_barcode: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
