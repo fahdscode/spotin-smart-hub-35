@@ -16,12 +16,9 @@ const ManagementLogin = () => {
 
   const demoAccounts = [
     { username: "receptiondemo", password: "1234", role: "Receptionist", path: "/receptionist" },
-    { username: "ceodemo", password: "1234", role: "CEO", path: "/ceo" },
-    { username: "superadmindemo", password: "1234", role: "Super Admin", path: "/ceo" },
-    { username: "communitydemo", password: "1234", role: "Community Manager", path: "/community" },
-    { username: "operationsdemo", password: "1234", role: "Operations", path: "/operations" },
     { username: "baristademo", password: "1234", role: "Barista", path: "/barista" },
-    { username: "crmdemo", password: "1234", role: "CRM", path: "/crm" },
+    { username: "operationsdemo", password: "1234", role: "Operations", path: "/operations" },
+    { username: "ceodemo", password: "1234", role: "CEO", path: "/ceo" },
   ];
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -85,19 +82,19 @@ const ManagementLogin = () => {
         <div className="grid grid-cols-4 gap-3 text-center">
           <div className="flex flex-col items-center space-y-2">
             <Shield className="h-5 w-5 text-blue-600" />
-            <span className="text-xs text-gray-600">Admin</span>
+            <span className="text-xs text-gray-600">Reception</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <BarChart3 className="h-5 w-5 text-slate-600" />
-            <span className="text-xs text-gray-600">Analytics</span>
+            <span className="text-xs text-gray-600">Barista</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Users2 className="h-5 w-5 text-blue-600" />
-            <span className="text-xs text-gray-600">CRM</span>
+            <span className="text-xs text-gray-600">Operations</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Building2 className="h-5 w-5 text-slate-600" />
-            <span className="text-xs text-gray-600">Operations</span>
+            <span className="text-xs text-gray-600">Admin</span>
           </div>
         </div>
 
@@ -142,7 +139,7 @@ const ManagementLogin = () => {
             <div className="mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600 mb-3 text-center">Quick Demo Access</p>
               <div className="grid grid-cols-2 gap-2">
-                {demoAccounts.slice(0, 4).map((account) => (
+                {demoAccounts.map((account) => (
                   <Button
                     key={account.username}
                     onClick={() => handleDemoLogin(account)}
@@ -159,26 +156,6 @@ const ManagementLogin = () => {
                   </Button>
                 ))}
               </div>
-              {demoAccounts.length > 4 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {demoAccounts.slice(4).map((account) => (
-                    <Button
-                      key={account.username}
-                      onClick={() => handleDemoLogin(account)}
-                      variant="outline"
-                      size="sm"
-                      className="h-10 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50"
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-medium">{account.role}</span>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          Demo
-                        </Badge>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="mt-4 text-center">

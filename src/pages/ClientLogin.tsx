@@ -78,7 +78,7 @@ const ClientLogin = () => {
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Wifi className="h-6 w-6 text-yellow-600" />
-            <span className="text-sm text-gray-600">Join Events</span>
+            <span className="text-sm text-gray-600">Quick Check-in</span>
           </div>
         </div>
 
@@ -129,7 +129,14 @@ const ClientLogin = () => {
               </Button>
             </div>
 
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center space-y-2">
+              <a
+                href="/client-signup"
+                className="text-sm text-green-600 hover:text-green-700 transition-colors font-medium"
+              >
+                Don't have an account? Sign up →
+              </a>
+              <br />
               <a
                 href="/management-login"
                 className="text-sm text-gray-500 hover:text-green-600 transition-colors"

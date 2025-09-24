@@ -12,8 +12,8 @@ import CeoDashboard from "./pages/CeoDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import OperationsDashboard from "./pages/OperationsDashboard";
 import BaristaDashboard from "./pages/BaristaDashboard";
-import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import CrmDashboard from "./pages/CrmDashboard";
+import ClientSignup from "./pages/ClientSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,8 +34,8 @@ const App = () => (
             <Route path="/client" element={<ClientDashboard />} />
             <Route path="/operations" element={<OperationsDashboard />} />
             <Route path="/barista" element={<BaristaDashboard />} />
-            <Route path="/community" element={<CommunityManagerDashboard />} />
             <Route path="/crm" element={<CrmDashboard />} />
+            <Route path="/client-signup" element={<ClientSignup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Camera, QrCode, UserCheck, UserX, Clock, AlertCircle } from "lucide-react";
-import QrScanner from "qr-scanner";
+import { Scan, QrCode, UserCheck, UserX, Clock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,12 +16,10 @@ interface ScanResult {
 }
 
 const BarcodeScanner = () => {
-  const [isScanning, setIsScanning] = useState(false);
-  const [manualBarcode, setManualBarcode] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Demo barcodes for testing
@@ -34,46 +31,27 @@ const BarcodeScanner = () => {
   };
 
   useEffect(() => {
-    return () => {
-      if (qrScannerRef.current) {
-        qrScannerRef.current.destroy();
-      }
-    };
+    // Focus on the barcode input when component mounts
+    if (barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
   }, []);
 
-  const startScanning = async () => {
-    try {
-      if (videoRef.current) {
-        qrScannerRef.current = new QrScanner(
-          videoRef.current,
-          (result) => {
-            handleScanResult(result.data);
-            stopScanning();
-          },
-          {
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-          }
-        );
-        
-        await qrScannerRef.current.start();
-        setIsScanning(true);
-      }
-    } catch (error) {
-      console.error('Camera access denied:', error);
-      toast({
-        title: "Camera Access Denied",
-        description: "Please allow camera access to scan barcodes",
-        variant: "destructive",
-      });
+  const handleBarcodeInput = (value: string) => {
+    setBarcodeInput(value);
+    
+    // Auto-process when barcode is complete (typically 8+ characters)
+    if (value.length >= 8) {
+      handleScanResult(value);
+      setBarcodeInput("");
     }
   };
 
-  const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && barcodeInput.trim()) {
+      handleScanResult(barcodeInput.trim());
+      setBarcodeInput("");
     }
-    setIsScanning(false);
   };
 
   const handleScanResult = async (barcode: string) => {
@@ -196,9 +174,9 @@ const BarcodeScanner = () => {
   };
 
   const handleManualScan = () => {
-    if (manualBarcode.trim()) {
-      handleScanResult(manualBarcode.trim());
-      setManualBarcode("");
+    if (barcodeInput.trim()) {
+      handleScanResult(barcodeInput.trim());
+      setBarcodeInput("");
     }
   };
 
@@ -212,76 +190,61 @@ const BarcodeScanner = () => {
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-slate-50 to-blue-50">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <QrCode className="h-6 w-6 text-blue-600" />
-            <CardTitle className="text-xl text-blue-700">Barcode Scanner</CardTitle>
+            <Scan className="h-6 w-6 text-blue-600" />
+            <CardTitle className="text-xl text-blue-700">Barcode Reader</CardTitle>
           </div>
           <CardDescription className="text-blue-600">
-            Scan client barcodes for instant check-in/out
+            Use barcode reader device or manual entry for check-in/out
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Camera Scanner */}
+          {/* Barcode Input */}
           <div className="space-y-4">
-            <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                style={{ display: isScanning ? 'block' : 'none' }}
+            <div className="text-center">
+              <div className="bg-blue-100 p-8 rounded-lg border-2 border-dashed border-blue-300">
+                <Scan className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-blue-700 mb-2">Ready to Scan</h3>
+                <p className="text-blue-600">Use your barcode reader device or type manually below</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-blue-700">Barcode Scanner Input</label>
+              <Input
+                ref={barcodeInputRef}
+                placeholder="Scan barcode here or type manually..."
+                value={barcodeInput}
+                onChange={(e) => handleBarcodeInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="h-14 text-lg text-center border-2 border-blue-200 focus:border-blue-500 transition-colors"
+                autoFocus
               />
-              {!isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                  <div className="text-center">
-                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">Camera preview will appear here</p>
-                  </div>
-                </div>
-              )}
+              <p className="text-xs text-blue-600 text-center">
+                Barcode will be processed automatically or press Enter
+              </p>
             </div>
             
             <div className="flex gap-3">
-              {!isScanning ? (
-                <Button
-                  onClick={startScanning}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                >
-                  <Camera className="h-5 w-5 mr-2" />
-                  Start Camera Scan
-                </Button>
-              ) : (
-                <Button
-                  onClick={stopScanning}
-                  variant="outline"
-                  className="flex-1 border-red-500 text-red-600 hover:bg-red-50"
-                  size="lg"
-                >
-                  Stop Scanning
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Manual Entry */}
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Or enter barcode manually</p>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter barcode (e.g., CLIENT12345)"
-                value={manualBarcode}
-                onChange={(e) => setManualBarcode(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
-                className="flex-1"
-              />
               <Button
                 onClick={handleManualScan}
-                disabled={!manualBarcode.trim()}
+                disabled={!barcodeInput.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <QrCode className="h-5 w-5 mr-2" />
+                Process Barcode
+              </Button>
+              <Button
+                onClick={() => {
+                  setBarcodeInput("");
+                  barcodeInputRef.current?.focus();
+                }}
                 variant="outline"
                 className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                size="lg"
               >
-                <QrCode className="h-4 w-4" />
+                Clear
               </Button>
             </div>
           </div>
