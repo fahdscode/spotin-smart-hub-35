@@ -587,6 +587,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_unique_barcode: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_client_by_id: {
         Args: { client_id: string }
         Returns: Json
