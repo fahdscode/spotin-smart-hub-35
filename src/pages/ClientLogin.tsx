@@ -7,6 +7,7 @@ import { Coffee, User, Phone, LogIn, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -79,10 +80,23 @@ const ClientLogin = () => {
       }
 
       const result = authResult as any;
-      if (!result.success) {
+      if (!result.success || !result.client) {
         toast({
           title: "Login Failed",
           description: result.error || "Invalid credentials",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify password with bcryptjs
+      const isPasswordValid = await bcrypt.compare(password, result.client.password_hash);
+      
+      if (!isPasswordValid) {
+        toast({
+          title: "Login Failed",
+          description: "Invalid phone number or password",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -94,7 +108,7 @@ const ClientLogin = () => {
         description: `Welcome back, ${result.client.full_name}!`,
       });
 
-      // Store client data
+      // Store client data (exclude password hash)
       localStorage.setItem('spotinClientData', JSON.stringify({
         id: result.client.id,
         clientCode: result.client.client_code,
