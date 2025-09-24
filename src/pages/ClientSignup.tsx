@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Coffee, User, Phone, Lock, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import bcrypt from "bcryptjs";
 
 const ClientSignup = () => {
   const [formData, setFormData] = useState({
@@ -17,10 +19,6 @@ const ClientSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const generateBarcode = () => {
-    return 'BC' + Math.random().toString(36).substr(2, 8).toUpperCase();
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,18 +55,69 @@ const ClientSignup = () => {
       return;
     }
 
-    // Simulate account creation
-    const userBarcode = generateBarcode();
-    
-    toast({
-      title: "Account Created Successfully!",
-      description: `Welcome ${formData.fullName}! Your barcode: ${userBarcode}`,
-    });
+    try {
+      // Generate unique client code and hash password
+      const { data: clientCodeData, error: codeError } = await supabase.rpc('generate_client_code');
+      
+      if (codeError) {
+        throw codeError;
+      }
 
-    // Simulate delay and redirect to client portal
-    setTimeout(() => {
-      navigate("/client");
-    }, 1500);
+      const clientCode = clientCodeData;
+      const barcode = clientCode; // Use client code as barcode content
+      const passwordHash = await bcrypt.hash(formData.password, 10);
+
+      // Insert new client
+      const { error: insertError } = await supabase
+        .from('clients')
+        .insert({
+          client_code: clientCode,
+          barcode: barcode,
+          full_name: formData.fullName,
+          phone: formData.phone,
+          email: formData.email || null,
+          password_hash: passwordHash
+        });
+
+      if (insertError) {
+        if (insertError.message.includes('phone')) {
+          toast({
+            title: "Phone Number Taken",
+            description: "This phone number is already registered",
+            variant: "destructive",
+          });
+        } else {
+          throw insertError;
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      toast({
+        title: "Account Created Successfully!",
+        description: `Welcome ${formData.fullName}! Your client ID: ${clientCode}`,
+      });
+
+      // Store client info and redirect
+      localStorage.setItem('spotinClientData', JSON.stringify({
+        clientCode,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email
+      }));
+
+      setTimeout(() => {
+        navigate("/client");
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive",
+      });
+    }
     
     setIsLoading(false);
   };
@@ -181,7 +230,7 @@ const ClientSignup = () => {
             
             <div className="mt-6 pt-4 border-t border-gray-200 text-center">
               <p className="text-sm text-gray-600 mb-3">
-                Your unique barcode will be generated automatically
+                Your unique client ID and barcode will be generated automatically
               </p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <div className="flex items-center justify-center gap-2 text-green-700">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Users, TrendingUp, Calendar, ShoppingCart, Plus, Minus, MapPin, Clock, DollarSign, CreditCard, User, Mail, Phone, Award, FileText, Coffee, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,18 @@ import { useNavigate } from "react-router-dom";
 const ClientDashboard = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useState<Array<{id: number, name: string, price: number, quantity: number}>>([]);
+  const [clientData, setClientData] = useState<any>(null);
+
+  useEffect(() => {
+    // Get client data from localStorage
+    const storedData = localStorage.getItem('spotinClientData');
+    if (storedData) {
+      setClientData(JSON.parse(storedData));
+    } else {
+      // Redirect to login if no client data found
+      navigate('/client-login');
+    }
+  }, [navigate]);
 
   const drinkMenu = [
     { id: 1, name: "Espresso", price: 2.50, category: "Coffee", available: true },
@@ -116,9 +128,9 @@ const ClientDashboard = () => {
           <TabsContent value="barcode" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <BarcodeCard 
-                userBarcode="CLIENT12345"
-                userName="Demo Client"
-                userEmail="demo@spotin.com"
+                clientCode={clientData?.clientCode || clientData?.barcode || "C-2025-DEMO01"}
+                userName={clientData?.fullName || "Demo Client"}
+                userEmail={clientData?.email || "demo@spotin.com"}
               />
               
               <Card>
@@ -144,7 +156,7 @@ const ClientDashboard = () => {
                       </div>
                       <div>
                         <p className="font-medium">Show Your Barcode</p>
-                        <p className="text-sm text-muted-foreground">Display this QR code or share your barcode ID</p>
+                        <p className="text-sm text-muted-foreground">Display this barcode or share your client ID</p>
                       </div>
                     </div>
                     
@@ -172,8 +184,8 @@ const ClientDashboard = () => {
                   <div className="bg-gradient-to-r from-green-50 to-orange-50 border border-green-200 rounded-lg p-4">
                     <h4 className="font-medium text-green-800 mb-2">💡 Pro Tips</h4>
                     <ul className="text-sm text-green-700 space-y-1">
-                      <li>• Save the QR code to your phone for quick access</li>
-                      <li>• Memorize your barcode ID: <strong>CLIENT12345</strong></li>
+                      <li>• Save the barcode to your phone for quick access</li>
+                      <li>• Memorize your client ID: <strong>{clientData?.clientCode || "C-2025-DEMO01"}</strong></li>
                       <li>• Staff can also enter your ID manually if needed</li>
                     </ul>
                   </div>

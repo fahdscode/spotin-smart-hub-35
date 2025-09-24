@@ -3,17 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Copy, Check } from "lucide-react";
-import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
 import { useToast } from "@/hooks/use-toast";
 
 interface BarcodeCardProps {
-  userBarcode?: string;
+  clientCode?: string;
   userName?: string;
   userEmail?: string;
 }
 
 const BarcodeCard = ({ 
-  userBarcode = "CLIENT12345", 
+  clientCode = "C-2025-DEMO01", 
   userName = "Demo Client",
   userEmail = "demo@spotin.com"
 }: BarcodeCardProps) => {
@@ -22,56 +22,101 @@ const BarcodeCard = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (canvasRef.current && userBarcode) {
-      generateQRCode();
+    if (canvasRef.current && clientCode) {
+      generateBarcode();
     }
-  }, [userBarcode]);
+  }, [clientCode]);
 
-  const generateQRCode = async () => {
+  const generateBarcode = () => {
     try {
       if (canvasRef.current) {
-        await QRCode.toCanvas(canvasRef.current, userBarcode, {
-          width: 200,
-          margin: 2,
-          color: {
-            dark: '#059669', // Green color for the QR code
-            light: '#FFFFFF'
-          }
+        JsBarcode(canvasRef.current, clientCode, {
+          format: "CODE128",
+          width: 2,
+          height: 100,
+          displayValue: true,
+          fontSize: 14,
+          margin: 10,
+          background: "#ffffff",
+          lineColor: "#059669"
         });
       }
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('Error generating barcode:', error);
     }
   };
 
-  const copyBarcode = async () => {
+  const copyClientCode = async () => {
     try {
-      await navigator.clipboard.writeText(userBarcode);
+      await navigator.clipboard.writeText(clientCode);
       setCopied(true);
       toast({
-        title: "Barcode Copied!",
-        description: "Your barcode has been copied to clipboard",
+        title: "Client ID Copied!",
+        description: "Your client ID has been copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast({
         title: "Copy Failed",
-        description: "Could not copy barcode to clipboard",
+        description: "Could not copy client ID to clipboard",
         variant: "destructive",
       });
     }
   };
 
-  const downloadQRCode = () => {
+  const downloadBarcode = () => {
     if (canvasRef.current) {
       const link = document.createElement('a');
-      link.download = `spotin-barcode-${userBarcode}.png`;
+      link.download = `spotin-barcode-${clientCode}.png`;
       link.href = canvasRef.current.toDataURL();
       link.click();
       toast({
-        title: "QR Code Downloaded!",
+        title: "Barcode Downloaded!",
         description: "Your barcode has been saved to your device",
       });
+    }
+  };
+
+  const printBarcode = () => {
+    if (canvasRef.current) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>SpotIn Client Barcode - ${clientCode}</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  text-align: center; 
+                  padding: 20px;
+                  background: white;
+                }
+                .header { margin-bottom: 20px; }
+                .barcode { margin: 20px 0; }
+                .info { margin-top: 20px; font-size: 14px; color: #666; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>SpotIn Coworking</h1>
+                <h2>Client Check-in Barcode</h2>
+              </div>
+              <div class="barcode">
+                <img src="${canvasRef.current.toDataURL()}" alt="Client Barcode" />
+              </div>
+              <div class="info">
+                <p><strong>Client:</strong> ${userName}</p>
+                <p><strong>Client ID:</strong> ${clientCode}</p>
+                <p><strong>Email:</strong> ${userEmail}</p>
+                <p>Show this barcode to reception for quick check-in/out</p>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      }
     }
   };
 
@@ -88,7 +133,7 @@ const BarcodeCard = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* QR Code Display */}
+        {/* Barcode Display */}
         <div className="flex justify-center">
           <div className="p-4 bg-white rounded-lg shadow-inner border-2 border-green-100">
             <canvas 
@@ -98,16 +143,16 @@ const BarcodeCard = ({
           </div>
         </div>
 
-        {/* Barcode Info */}
+        {/* Client Info */}
         <div className="space-y-3 text-center">
           <div>
-            <p className="text-sm text-muted-foreground">Barcode ID</p>
+            <p className="text-sm text-muted-foreground">Client ID</p>
             <div className="flex items-center justify-center gap-2 bg-white/80 rounded-lg p-3 border border-green-200">
-              <code className="font-mono text-lg font-bold text-green-700">{userBarcode}</code>
+              <code className="font-mono text-lg font-bold text-green-700">{clientCode}</code>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={copyBarcode}
+                onClick={copyClientCode}
                 className="h-6 w-6 p-0"
               >
                 {copied ? (
@@ -130,9 +175,9 @@ const BarcodeCard = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button
-            onClick={downloadQRCode}
+            onClick={downloadBarcode}
             variant="outline"
             className="border-green-500 text-green-600 hover:bg-green-50"
           >
@@ -140,7 +185,15 @@ const BarcodeCard = ({
             Download
           </Button>
           <Button
-            onClick={copyBarcode}
+            onClick={printBarcode}
+            variant="outline"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            <QrCode className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+          <Button
+            onClick={copyClientCode}
             variant="outline"
             className="border-orange-500 text-orange-600 hover:bg-orange-50"
           >
@@ -162,9 +215,10 @@ const BarcodeCard = ({
         <div className="bg-white/80 border border-green-200 rounded-lg p-4">
           <h4 className="font-medium text-green-800 mb-2">How to use:</h4>
           <ul className="text-sm text-green-700 space-y-1">
-            <li>• Show this QR code to reception</li>
-            <li>• Or share the barcode ID: <code>{userBarcode}</code></li>
+            <li>• Show this barcode to reception for check-in</li>
+            <li>• Or share the client ID: <code>{clientCode}</code></li>
             <li>• Scan again when leaving to check-out</li>
+            <li>• Keep this barcode safe and don't share with others</li>
           </ul>
         </div>
       </CardContent>
