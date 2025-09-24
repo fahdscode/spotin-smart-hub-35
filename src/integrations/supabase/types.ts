@@ -575,6 +575,10 @@ export type Database = {
         Args: { client_password: string; client_phone: string }
         Returns: Json
       }
+      checkout_client: {
+        Args: { p_checkout_by_user_id?: string; p_client_id: string }
+        Returns: Json
+      }
       generate_barcode: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -53,6 +53,38 @@ const ReceptionistDashboard = () => {
 
   useEffect(() => {
     fetchActiveSessions();
+    
+    // Set up real-time subscription for active sessions
+    const channel = supabase
+      .channel('active-sessions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'check_ins'
+        },
+        () => {
+          fetchActiveSessions();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'clients',
+          filter: 'active=eq.true'
+        },
+        () => {
+          fetchActiveSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchActiveSessions = async () => {
@@ -110,26 +142,19 @@ const ReceptionistDashboard = () => {
 
   const handleCheckOut = async (sessionId: string, clientData: any) => {
     try {
-      const { error } = await supabase
-        .from('check_ins')
-        .update({ 
-          status: 'checked_out',
-          checked_out_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+      // Use the unified checkout function
+      const { data, error } = await supabase.rpc('checkout_client', {
+        p_client_id: clientData.client_id,
+        p_checkout_by_user_id: null // Could be set to staff user ID if available
+      });
 
       if (error) throw error;
 
-      // Also log the check-out in check_in_logs
-      await supabase
-        .from('check_in_logs')
-        .insert({
-          client_id: clientData.client_id,
-          scanned_barcode: clientData.client?.barcode || 'manual',
-          action: 'check_out',
-          timestamp: new Date().toISOString(),
-          notes: 'Manual check-out via receptionist dashboard'
-        });
+      const result = data as { success: boolean; error?: string; message?: string };
+      
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to check out client');
+      }
 
       setShowReceipt(true);
       
@@ -137,9 +162,9 @@ const ReceptionistDashboard = () => {
       await fetchActiveSessions();
       
       toast.success(`${clientData.client?.full_name || 'Client'} checked out successfully`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking out client:', error);
-      toast.error('Failed to check out client');
+      toast.error(error.message || 'Failed to check out client');
     }
   };
 
