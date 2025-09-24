@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Search, Users, LogOut, QrCode, RefreshCw } from "lucide-react";
+import { Shield, Search, Users, LogOut, QrCode, RefreshCw, UserPlus } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -25,6 +25,15 @@ const AdminPanel = () => {
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "client",
+    password: ""
+  });
+  const [createLoading, setCreateLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -135,6 +144,70 @@ const AdminPanel = () => {
     return roleColors[role] || 'bg-gray-100 text-gray-800';
   };
 
+  const createUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateLoading(true);
+
+    try {
+      // Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: createFormData.email,
+        password: createFormData.password,
+        options: {
+          data: {
+            full_name: createFormData.name,
+            phone: createFormData.phone,
+            role: createFormData.role,
+          },
+          emailRedirectTo: `${window.location.origin}/client`
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Update the profile with the selected role if needed
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ 
+            role: createFormData.role,
+            phone: createFormData.phone 
+          })
+          .eq("user_id", authData.user.id);
+
+        if (profileError) {
+          console.warn("Profile update warning:", profileError);
+        }
+      }
+
+      toast({
+        title: "User Created",
+        description: `User ${createFormData.name} has been created with role: ${createFormData.role}`,
+      });
+
+      // Reset form and close
+      setCreateFormData({
+        name: "",
+        email: "",
+        phone: "",
+        role: "client",
+        password: ""
+      });
+      setShowCreateForm(false);
+      
+      // Refresh the profiles list
+      fetchProfiles();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -192,6 +265,110 @@ const AdminPanel = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Create User Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Create New User</CardTitle>
+              <Button 
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                variant={showCreateForm ? "outline" : "default"}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                {showCreateForm ? "Cancel" : "Add User"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showCreateForm && (
+            <CardContent>
+              <form onSubmit={createUser} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium">Full Name</label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={createFormData.name}
+                      onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
+                      required
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">Email</label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={createFormData.email}
+                      onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}
+                      required
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="phone" className="text-sm font-medium">Phone (Optional)</label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={createFormData.phone}
+                      onChange={(e) => setCreateFormData({ ...createFormData, phone: e.target.value })}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium">Password</label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={createFormData.password}
+                      onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
+                      required
+                      placeholder="Enter password"
+                      minLength={6}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="role" className="text-sm font-medium">Role</label>
+                    <select
+                      id="role"
+                      value={createFormData.role}
+                      onChange={(e) => setCreateFormData({ ...createFormData, role: e.target.value })}
+                      className="w-full border rounded px-3 py-2 bg-background"
+                      required
+                    >
+                      <option value="client">Client</option>
+                      <option value="receptionist">Receptionist</option>
+                      <option value="barista">Barista</option>
+                      <option value="community_manager">Community Manager</option>
+                      <option value="operations_manager">Operations Manager</option>
+                      <option value="finance_manager">Finance Manager</option>
+                      <option value="ceo">CEO</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowCreateForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={createLoading}>
+                    {createLoading ? "Creating..." : "Create User"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          )}
+        </Card>
 
         {/* Users Management */}
         <Card>
