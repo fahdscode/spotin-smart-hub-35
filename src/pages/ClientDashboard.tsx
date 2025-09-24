@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
+import BarcodeCard from "@/components/BarcodeCard";
 import { useNavigate } from "react-router-dom";
 
 const ClientDashboard = () => {
@@ -101,14 +102,85 @@ const ClientDashboard = () => {
           <MetricCard title="Membership Status" value="Premium" change="Expires in 28 days" icon={User} variant="success" />
         </div>
 
-        <Tabs defaultValue="traffic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="barcode" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="barcode">My Barcode</TabsTrigger>
             <TabsTrigger value="traffic">Live Traffic</TabsTrigger>
             <TabsTrigger value="drinks">Order Drinks</TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="account">My Account</TabsTrigger>
             <TabsTrigger value="receipt">My Receipts</TabsTrigger>
           </TabsList>
+
+          {/* My Barcode Tab */}
+          <TabsContent value="barcode" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BarcodeCard 
+                userBarcode="CLIENT12345"
+                userName="Demo Client"
+                userEmail="demo@spotin.com"
+              />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Check-in Instructions</CardTitle>
+                  <CardDescription>How to use your barcode for seamless access</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-700 text-sm font-bold">1</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">Arrive at Reception</p>
+                        <p className="text-sm text-muted-foreground">Head to the front desk when you arrive</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-700 text-sm font-bold">2</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">Show Your Barcode</p>
+                        <p className="text-sm text-muted-foreground">Display this QR code or share your barcode ID</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-700 text-sm font-bold">3</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">Get Checked In</p>
+                        <p className="text-sm text-muted-foreground">Staff will scan and assign you a workspace</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-orange-700 text-sm font-bold">4</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">Scan Again to Leave</p>
+                        <p className="text-sm text-muted-foreground">Show your barcode when checking out</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-green-50 to-orange-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-medium text-green-800 mb-2">💡 Pro Tips</h4>
+                    <ul className="text-sm text-green-700 space-y-1">
+                      <li>• Save the QR code to your phone for quick access</li>
+                      <li>• Memorize your barcode ID: <strong>CLIENT12345</strong></li>
+                      <li>• Staff can also enter your ID manually if needed</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Live Traffic Tab */}
           <TabsContent value="traffic" className="space-y-6">

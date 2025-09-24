@@ -8,6 +8,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
+import BarcodeScanner from "@/components/BarcodeScanner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -167,6 +168,22 @@ const ReceptionistDashboard = () => {
                           </CardContent>
                         </Card>
                       </DialogTrigger>
+                      {action.action === "checkin" && (
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                          <DialogHeader>
+                            <DialogTitle>Check-In Scanner</DialogTitle>
+                          </DialogHeader>
+                          <BarcodeScanner />
+                        </DialogContent>
+                      )}
+                      {action.action === "checkout" && (
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                          <DialogHeader>
+                            <DialogTitle>Check-Out Scanner</DialogTitle>
+                          </DialogHeader>
+                          <BarcodeScanner />
+                        </DialogContent>
+                      )}
                       {action.action === "booking" && (
                         <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
                           <DialogHeader>
