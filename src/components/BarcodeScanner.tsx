@@ -1,37 +1,32 @@
-import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Scan, QrCode, UserCheck, UserX, Clock, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { QrCode, User, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScanResult {
   barcode: string;
   userName: string;
   action: 'check-in' | 'check-out';
-  timestamp: string;
+  timestamp: Date;
+  clientId?: string;
+  clientCode?: string;
 }
 
-const BarcodeScanner = () => {
-  const [barcodeInput, setBarcodeInput] = useState("");
+export default function BarcodeScanner() {
+  const [barcodeInput, setBarcodeInput] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Demo barcodes for testing
-  const demoBarcodes = {
-    "CLIENT12345": "Demo Client",
-    "BC123456": "John Smith", 
-    "BC789012": "Sarah Johnson",
-    "BC345678": "Mike Chen"
-  };
-
   useEffect(() => {
-    // Focus on the barcode input when component mounts
+    // Focus the input field when component mounts
     if (barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
@@ -40,279 +35,319 @@ const BarcodeScanner = () => {
   const handleBarcodeInput = (value: string) => {
     setBarcodeInput(value);
     
-    // Auto-process when barcode is complete (typically 8+ characters)
-    if (value.length >= 8) {
+    // Auto-process when barcode is complete (assuming client codes follow C-YYYY-XXXXXX pattern)
+    if (value.length >= 10 && value.startsWith('C-')) {
       handleScanResult(value);
-      setBarcodeInput("");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && barcodeInput.trim()) {
       handleScanResult(barcodeInput.trim());
-      setBarcodeInput("");
     }
   };
 
   const handleScanResult = async (barcode: string) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    setScanResult(null);
+
     try {
-      // Check if it's a demo barcode first
-      if (demoBarcodes[barcode]) {
-        await processCheckInOut(barcode, demoBarcodes[barcode]);
-        return;
+      // First, try to find the client by barcode or client_code
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id, client_code, full_name, phone, email, barcode, is_active')
+        .or(`barcode.eq.${barcode},client_code.eq.${barcode}`)
+        .eq('is_active', true)
+        .single();
+
+      if (clientError || !clientData) {
+        // If not found in real data, check demo codes
+        const demoData = getDemoClientData(barcode);
+        if (demoData) {
+          await processCheckInOut(demoData.clientId, demoData.userName, barcode, demoData.clientCode);
+        } else {
+          toast({
+            title: "Client not found",
+            description: "No active client found with this barcode. Please check and try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Process check-in/out for real client
+        await processCheckInOut(clientData.id, clientData.full_name, barcode, clientData.client_code);
       }
-
-      // Check database for real user
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('full_name, barcode')
-        .eq('barcode', barcode)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Database Error",
-          description: "Could not verify barcode",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!profile) {
-        toast({
-          title: "Invalid Barcode",
-          description: "Barcode not found in system",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      await processCheckInOut(barcode, profile.full_name || 'Unknown User');
-      
     } catch (error) {
-      console.error('Error processing scan:', error);
+      console.error('Error processing barcode scan:', error);
       toast({
-        title: "Scan Error", 
-        description: "Could not process barcode scan",
+        title: "Scan Error",
+        description: "Failed to process barcode scan. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
+      setBarcodeInput('');
+      
+      // Refocus input after processing
+      setTimeout(() => {
+        if (barcodeInputRef.current) {
+          barcodeInputRef.current.focus();
+        }
+      }, 100);
     }
   };
 
-  const processCheckInOut = async (barcode: string, userName: string) => {
-    try {
-      // Check current check-in status
-      const { data: existingCheckIn, error: checkError } = await supabase
-        .from('check_ins')
-        .select('*')
-        .eq('user_id', `barcode-${barcode}`) // Using barcode as temp user ID for demo
-        .eq('status', 'checked_in')
-        .maybeSingle();
+  const getDemoClientData = (barcode: string) => {
+    const demoClients = [
+      { barcode: 'C-2024-000001', clientId: 'demo-1', userName: 'John Smith', clientCode: 'C-2024-000001' },
+      { barcode: 'C-2024-000002', clientId: 'demo-2', userName: 'Sarah Johnson', clientCode: 'C-2024-000002' },
+      { barcode: 'C-2024-000003', clientId: 'demo-3', userName: 'Mike Wilson', clientCode: 'C-2024-000003' },
+    ];
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
+    return demoClients.find(client => 
+      client.barcode === barcode || client.clientCode === barcode
+    );
+  };
+
+  const processCheckInOut = async (clientId: string, userName: string, barcode: string, clientCode: string) => {
+    try {
+      // Check current status
+      const { data: statusData, error: statusError } = await supabase.rpc('get_client_check_in_status', {
+        p_client_id: clientId
+      });
+
+      if (statusError) {
+        console.error('Error checking status:', statusError);
+        // Default to checked_out if we can't determine status
       }
 
-      let action: 'check-in' | 'check-out';
-      
-      if (existingCheckIn) {
-        // User is already checked in, so check them out
-        const { error: updateError } = await supabase
-          .from('check_ins')
-          .update({ 
-            status: 'checked_out',
-            checked_out_at: new Date().toISOString()
-          })
-          .eq('id', existingCheckIn.id);
+      const currentStatus = statusData || 'checked_out';
+      const newAction = currentStatus === 'checked_in' ? 'check-out' : 'check-in';
 
-        if (updateError) throw updateError;
-        action = 'check-out';
-        
-        toast({
-          title: "Check-out Successful!",
-          description: `${userName} has been checked out`,
-        });
-      } else {
-        // User is not checked in, so check them in
-        const { error: insertError } = await supabase
+      if (newAction === 'check-in') {
+        // Create new check-in record
+        const { error: checkInError } = await supabase
           .from('check_ins')
           .insert({
-            user_id: `barcode-${barcode}`, // Using barcode as temp user ID
+            client_id: clientId,
+            user_id: clientId, // Temporary for compatibility
             status: 'checked_in',
-            checked_in_at: new Date().toISOString()
+            checked_in_at: new Date().toISOString(),
           });
 
-        if (insertError) throw insertError;
-        action = 'check-in';
-        
+        if (checkInError) throw checkInError;
+
+        // Log the check-in
+        const { error: logError } = await supabase
+          .from('check_in_logs')
+          .insert({
+            client_id: clientId,
+            scanned_barcode: barcode,
+            action: 'check_in',
+            timestamp: new Date().toISOString(),
+          });
+
+        if (logError) console.error('Error logging check-in:', logError);
+
         toast({
-          title: "Check-in Successful!",
-          description: `${userName} has been checked in`,
+          title: "Check-in Successful",
+          description: `${userName} has been checked in successfully.`,
+        });
+      } else {
+        // Update existing check-in to checked out
+        const { error: checkOutError } = await supabase
+          .from('check_ins')
+          .update({
+            status: 'checked_out',
+            checked_out_at: new Date().toISOString(),
+          })
+          .eq('client_id', clientId)
+          .eq('status', 'checked_in');
+
+        if (checkOutError) throw checkOutError;
+
+        // Log the check-out
+        const { error: logError } = await supabase
+          .from('check_in_logs')
+          .insert({
+            client_id: clientId,
+            scanned_barcode: barcode,
+            action: 'check_out',
+            timestamp: new Date().toISOString(),
+          });
+
+        if (logError) console.error('Error logging check-out:', logError);
+
+        toast({
+          title: "Check-out Successful",
+          description: `${userName} has been checked out successfully.`,
         });
       }
 
-      // Add to scan results
+      // Update scan result
       const result: ScanResult = {
         barcode,
         userName,
-        action,
-        timestamp: new Date().toISOString()
+        action: newAction,
+        timestamp: new Date(),
+        clientId,
+        clientCode,
       };
 
       setScanResult(result);
-      setRecentScans(prev => [result, ...prev.slice(0, 4)]); // Keep last 5 scans
-      
+      setRecentScans(prev => [result, ...prev.slice(0, 4)]);
+
     } catch (error) {
-      console.error('Error processing check-in/out:', error);
+      console.error('Error in check-in/out process:', error);
       toast({
-        title: "Processing Error",
-        description: "Could not update check-in status",
+        title: "Process Error",
+        description: `Failed to process check-in/out for ${userName}.`,
         variant: "destructive",
       });
     }
   };
 
-  const handleManualScan = () => {
-    if (barcodeInput.trim()) {
-      handleScanResult(barcodeInput.trim());
-      setBarcodeInput("");
-    }
-  };
-
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString();
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Scanner Card */}
-      <Card className="border-2 border-blue-200 bg-gradient-to-br from-slate-50 to-blue-50">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Scan className="h-6 w-6 text-blue-600" />
-            <CardTitle className="text-xl text-blue-700">Barcode Reader</CardTitle>
-          </div>
-          <CardDescription className="text-blue-600">
-            Use barcode reader device or manual entry for check-in/out
+      {/* Barcode Input Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="h-5 w-5" />
+            Barcode Scanner
+          </CardTitle>
+          <CardDescription>
+            Scan client barcodes for check-in and check-out. Focus on the input field and scan or type the barcode.
           </CardDescription>
         </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Barcode Input */}
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="bg-blue-100 p-8 rounded-lg border-2 border-dashed border-blue-300">
-                <Scan className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-blue-700 mb-2">Ready to Scan</h3>
-                <p className="text-blue-600">Use your barcode reader device or type manually below</p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-blue-700">Barcode Scanner Input</label>
-              <Input
-                ref={barcodeInputRef}
-                placeholder="Scan barcode here or type manually..."
-                value={barcodeInput}
-                onChange={(e) => handleBarcodeInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="h-14 text-lg text-center border-2 border-blue-200 focus:border-blue-500 transition-colors"
-                autoFocus
-              />
-              <p className="text-xs text-blue-600 text-center">
-                Barcode will be processed automatically or press Enter
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button
-                onClick={handleManualScan}
-                disabled={!barcodeInput.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                size="lg"
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              ref={barcodeInputRef}
+              type="text"
+              placeholder="Scan or enter barcode here..."
+              value={barcodeInput}
+              onChange={(e) => handleBarcodeInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isProcessing}
+              className="text-lg font-mono"
+            />
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => handleScanResult(barcodeInput.trim())}
+                disabled={!barcodeInput.trim() || isProcessing}
+                className="flex-1"
               >
-                <QrCode className="h-5 w-5 mr-2" />
-                Process Barcode
+                {isProcessing ? 'Processing...' : 'Process Scan'}
               </Button>
-              <Button
+              <Button 
+                variant="outline" 
                 onClick={() => {
-                  setBarcodeInput("");
-                  barcodeInputRef.current?.focus();
+                  setBarcodeInput('');
+                  if (barcodeInputRef.current) {
+                    barcodeInputRef.current.focus();
+                  }
                 }}
-                variant="outline"
-                className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                size="lg"
               >
                 Clear
               </Button>
             </div>
           </div>
-
-          {/* Demo Barcodes */}
-          <Alert className="border-blue-200 bg-blue-50">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-blue-700">
-              <strong>Demo Barcodes:</strong> Try CLIENT12345, BC123456, BC789012, or BC345678
-            </AlertDescription>
-          </Alert>
+          
+          <Separator />
+          
+          <div className="space-y-2">
+            <h4 className="font-medium">Demo Barcodes (for testing)</h4>
+            <div className="flex flex-wrap gap-2">
+              {['C-2024-000001', 'C-2024-000002', 'C-2024-000003'].map((code) => (
+                <Button
+                  key={code}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBarcodeInput(code)}
+                  disabled={isProcessing}
+                >
+                  {code}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Scan Result */}
+      {/* Scan Result Card */}
       {scanResult && (
-        <Card className="border-2 border-green-200 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-full ${
-                scanResult.action === 'check-in' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-orange-100 text-orange-700'
-              }`}>
-                {scanResult.action === 'check-in' ? (
-                  <UserCheck className="h-6 w-6" />
-                ) : (
-                  <UserX className="h-6 w-6" />
-                )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {scanResult.action === 'check-in' ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-blue-500" />
+              )}
+              Latest Scan Result
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium">{scanResult.userName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Client ID: {scanResult.clientCode}</span>
+                  </div>
+                </div>
+                <Badge variant={scanResult.action === 'check-in' ? 'default' : 'secondary'}>
+                  {scanResult.action === 'check-in' ? 'CHECKED IN' : 'CHECKED OUT'}
+                </Badge>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold">{scanResult.userName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {scanResult.action === 'check-in' ? 'Checked In' : 'Checked Out'} • {formatTime(scanResult.timestamp)}
-                </p>
-                <p className="text-xs text-muted-foreground">Barcode: {scanResult.barcode}</p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>{formatTime(scanResult.timestamp)}</span>
               </div>
-              <Badge variant={scanResult.action === 'check-in' ? 'default' : 'secondary'}>
-                {scanResult.action.toUpperCase()}
-              </Badge>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Recent Scans */}
+      {/* Recent Scans Card */}
       {recentScans.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Scans
-            </CardTitle>
-            <CardDescription>Latest check-in/out activity</CardDescription>
+            <CardTitle>Recent Scans</CardTitle>
+            <CardDescription>Last few check-in/out activities</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentScans.map((scan, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{scan.userName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {scan.barcode} • {formatTime(scan.timestamp)}
-                    </p>
+                <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                  <div className="space-y-1">
+                    <div className="font-medium">{scan.userName}</div>
+                    <div className="text-sm text-muted-foreground">{scan.clientCode}</div>
                   </div>
-                  <Badge variant={scan.action === 'check-in' ? 'default' : 'secondary'}>
-                    {scan.action === 'check-in' ? 'IN' : 'OUT'}
-                  </Badge>
+                  <div className="text-right space-y-1">
+                    <Badge 
+                      variant={scan.action === 'check-in' ? 'default' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {scan.action === 'check-in' ? 'IN' : 'OUT'}
+                    </Badge>
+                    <div className="text-xs text-muted-foreground">
+                      {formatTime(scan.timestamp)}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -321,6 +356,4 @@ const BarcodeScanner = () => {
       )}
     </div>
   );
-};
-
-export default BarcodeScanner;
+}

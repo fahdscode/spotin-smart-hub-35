@@ -1,123 +1,201 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Users, TrendingUp, Calendar, ShoppingCart, Plus, Minus, MapPin, Clock, DollarSign, CreditCard, User, Mail, Phone, Award, FileText, Coffee, QrCode, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SpotinHeader from "@/components/SpotinHeader";
-import MetricCard from "@/components/MetricCard";
-import BarcodeCard from "@/components/BarcodeCard";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import MetricCard from '@/components/MetricCard';
+import SpotinHeader from '@/components/SpotinHeader';
+import BarcodeCard from '@/components/BarcodeCard';
+import { Progress } from '@/components/ui/progress';
+import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-const ClientDashboard = () => {
+interface ClientData {
+  id: string;
+  client_code: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  barcode: string;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface Drink {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  is_available: boolean;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  price: number;
+  capacity: number;
+  registered_attendees: number;
+  category: string;
+  location: string;
+}
+
+interface TrafficData {
+  current_occupancy: number;
+  max_capacity: number;
+  area: string;
+}
+
+export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [cart, setCart] = useState<Array<{id: number, name: string, price: number, quantity: number}>>([]);
-  const [clientData, setClientData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [trafficData, setTrafficData] = useState<TrafficData[]>([]);
+  const [checkInStatus, setCheckInStatus] = useState<string>('checked_out');
 
   useEffect(() => {
-    // Get client data from localStorage
-    const storedData = localStorage.getItem('spotinClientData');
-    if (storedData) {
-      const parsedData = JSON.parse(storedData);
-      setClientData(parsedData);
-      
-      // Always verify the session is still valid for security
-      verifyClientSession(parsedData.id);
+    const storedClientData = localStorage.getItem('spotinClientData');
+    if (storedClientData) {
+      try {
+        const parsedData = JSON.parse(storedClientData);
+        setClientData(parsedData);
+        verifyClientSession(parsedData.id);
+        fetchRealData();
+        fetchCheckInStatus(parsedData.id);
+      } catch (error) {
+        console.error('Error parsing client data:', error);
+        navigate('/client-login');
+      }
     } else {
-      // Redirect to login if no client data found
       navigate('/client-login');
     }
+    setLoading(false);
   }, [navigate]);
 
   const verifyClientSession = async (clientId: string) => {
     try {
-      const { data: result, error } = await supabase.rpc('get_client_by_id', {
+      const { data, error } = await supabase.rpc('get_client_by_id', {
         client_id: clientId
       });
 
-      const authResult = result as any;
-      if (error || !authResult.success) {
-        // Session invalid, redirect to login
-        handleLogout();
-        return;
+      const authResult = data as any;
+      if (error || !authResult?.success) {
+        throw new Error('Invalid session');
       }
-      
-      setIsLoading(false);
     } catch (error) {
-      console.error('Session verification error:', error);
-      // On error, redirect to login for security
+      console.error('Session verification failed:', error);
       handleLogout();
+    }
+  };
+
+  const fetchRealData = async () => {
+    try {
+      // Fetch drinks
+      const { data: drinksData, error: drinksError } = await supabase
+        .from('drinks')
+        .select('*')
+        .eq('is_available', true)
+        .order('category', { ascending: true });
+
+      if (drinksError) throw drinksError;
+      setDrinks(drinksData || []);
+
+      // Fetch events
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_active', true)
+        .gte('event_date', new Date().toISOString().split('T')[0])
+        .order('event_date', { ascending: true });
+
+      if (eventsError) throw eventsError;
+      setEvents(eventsData || []);
+
+      // Fetch traffic data
+      const { data: trafficDataResult, error: trafficError } = await supabase
+        .from('traffic_data')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(3);
+
+      if (trafficError) throw trafficError;
+      setTrafficData(trafficDataResult || []);
+
+    } catch (error) {
+      console.error('Error fetching real data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load latest data. Please refresh the page.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchCheckInStatus = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_client_check_in_status', {
+        p_client_id: clientId
+      });
+
+      if (error) throw error;
+      setCheckInStatus(data || 'checked_out');
+    } catch (error) {
+      console.error('Error fetching check-in status:', error);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('spotinClientData');
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
     navigate('/client-login');
   };
 
-  const drinkMenu = [
-    { id: 1, name: "Espresso", price: 2.50, category: "Coffee", available: true },
-    { id: 2, name: "Cappuccino", price: 3.20, category: "Coffee", available: true },
-    { id: 3, name: "Latte", price: 3.80, category: "Coffee", available: true },
-    { id: 4, name: "Green Tea", price: 2.00, category: "Tea", available: true },
-    { id: 5, name: "Fresh Orange Juice", price: 4.50, category: "Juice", available: false },
-    { id: 6, name: "Sparkling Water", price: 1.80, category: "Water", available: true },
-  ];
-
-  const upcomingEvents = [
-    { 
-      id: 1, 
-      title: "Networking Night", 
-      date: "2024-01-15", 
-      time: "18:00", 
-      price: 15, 
-      capacity: 50, 
-      registered: 32,
-      category: "Networking"
-    },
-    { 
-      id: 2, 
-      title: "Tech Talk: AI in Business", 
-      date: "2024-01-18", 
-      time: "14:00", 
-      price: 25, 
-      capacity: 30, 
-      registered: 18,
-      category: "Workshop"
-    },
-    { 
-      id: 3, 
-      title: "Startup Pitch Competition", 
-      date: "2024-01-22", 
-      time: "16:00", 
-      price: 10, 
-      capacity: 80, 
-      registered: 45,
-      category: "Competition"
-    },
-  ];
-
-  const addToCart = (drink: typeof drinkMenu[0]) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === drink.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === drink.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { ...drink, quantity: 1 }];
+  const addToCart = (drink: Drink) => {
+    const existingItem = cart.find(item => item.id === drink.id);
+    if (existingItem) {
+      setCart(cart.map(item => 
+        item.id === drink.id 
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+    } else {
+      setCart([...cart, { id: drink.id, name: drink.name, price: drink.price, quantity: 1 }]);
+    }
+    
+    toast({
+      title: "Added to cart",
+      description: `${drink.name} added to your order`,
     });
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCart(cart.filter(item => item.id !== itemId));
+  };
+
+  const updateCartQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity === 0) {
+      removeFromCart(itemId);
+    } else {
+      setCart(cart.map(item => 
+        item.id === itemId 
+          ? { ...item, quantity: newQuantity }
+          : item
+      ));
+    }
   };
 
   const getCartTotal = () => {
@@ -125,52 +203,68 @@ const ClientDashboard = () => {
   };
 
   const getCurrentLocation = () => {
-    return "Desk A-12"; // This would come from check-in system
+    return checkInStatus === 'checked_in' ? "Checked in - Active session" : "Not checked in";
   };
 
-  if (isLoading) {
+  const getTotalOccupancy = () => {
+    return trafficData.reduce((total, area) => total + area.current_occupancy, 0);
+  };
+
+  const getMaxCapacity = () => {
+    return trafficData.reduce((total, area) => total + area.max_capacity, 0);
+  };
+
+  if (loading || !clientData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-muted-foreground">Loading your dashboard...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
-  }
-
-  if (!clientData) {
-    return null; // Will redirect to login
   }
 
   return (
     <div className="min-h-screen bg-background">
       <SpotinHeader />
       
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/")} size="sm">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Client Portal</h2>
-              <p className="text-muted-foreground">Welcome back, {clientData.fullName}! Current location: {getCurrentLocation()}</p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, {clientData.full_name}!</h1>
+            <p className="text-muted-foreground">Member ID: {clientData.client_code}</p>
           </div>
-          <Button variant="outline" onClick={handleLogout} size="sm">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
+          <Button variant="outline" onClick={handleLogout}>
+            Sign Out
           </Button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <MetricCard title="Current Traffic" value="42" change="70% capacity" icon={Users} variant="info" />
-          <MetricCard title="My Orders Today" value="3" change="+1 from yesterday" icon={Coffee} variant="success" />
-          <MetricCard title="Events This Month" value="12" change="3 registered" icon={Calendar} variant="default" />
-          <MetricCard title="Membership Status" value="Premium" change="Expires in 28 days" icon={User} variant="success" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="Current Crowd"
+            value={getTotalOccupancy().toString()}
+            subtitle={`out of ${getMaxCapacity()} capacity`}
+            icon={Users}
+            trend={`${Math.round((getTotalOccupancy() / getMaxCapacity()) * 100)}% occupied`}
+          />
+          <MetricCard
+            title="Check-in Status"
+            value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'}
+            subtitle={checkInStatus === 'checked_in' ? 'Active session' : 'Ready to check in'}
+            icon={Clock}
+            trend={getCurrentLocation()}
+          />
+          <MetricCard
+            title="Cart Total"
+            value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'}
+            subtitle={`${cart.length} items in cart`}
+            icon={CreditCard}
+            trend={cart.length > 0 ? 'Ready to order' : 'Cart is empty'}
+          />
+          <MetricCard
+            title="Current Location"
+            value={getCurrentLocation()}
+            subtitle={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'}
+            icon={MapPin}
+          />
         </div>
 
         <Tabs defaultValue="barcode" className="space-y-6">
@@ -180,72 +274,277 @@ const ClientDashboard = () => {
             <TabsTrigger value="drinks">Order Drinks</TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="account">My Account</TabsTrigger>
-            <TabsTrigger value="receipt">My Receipts</TabsTrigger>
+            <TabsTrigger value="receipts">My Receipts</TabsTrigger>
           </TabsList>
 
-          {/* My Barcode Tab */}
           <TabsContent value="barcode" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <BarcodeCard 
-                clientCode={clientData.clientCode}
-                userName={clientData.fullName}
-                userEmail={clientData.email}
-              />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Check-in Instructions</CardTitle>
-                  <CardDescription>How to use your barcode for seamless access</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-green-700 text-sm font-bold">1</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Arrive at Reception</p>
-                        <p className="text-sm text-muted-foreground">Head to the front desk when you arrive</p>
-                      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Check-in Barcode</CardTitle>
+                <CardDescription>
+                  Show this barcode to reception staff for quick check-in and check-out
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BarcodeCard 
+                  clientCode={clientData.client_code}
+                  userName={clientData.full_name}
+                  userEmail={clientData.email}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="traffic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Space Traffic</CardTitle>
+                <CardDescription>
+                  Real-time occupancy and crowd information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Live Crowd Meter</h3>
+                    <Badge variant="secondary">Real-time</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Total Occupancy</span>
+                      <span>{getTotalOccupancy()}/{getMaxCapacity()}</span>
                     </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-green-700 text-sm font-bold">2</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Show Your Barcode</p>
-                        <p className="text-sm text-muted-foreground">Display this barcode or share your client ID</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-green-700 text-sm font-bold">3</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Get Checked In</p>
-                        <p className="text-sm text-muted-foreground">Staff will scan and assign you a workspace</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-orange-700 text-sm font-bold">4</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Scan Again to Leave</p>
-                        <p className="text-sm text-muted-foreground">Show your barcode when checking out</p>
-                      </div>
-                    </div>
+                    <Progress value={(getTotalOccupancy() / getMaxCapacity()) * 100} className="w-full" />
+                    <p className="text-xs text-muted-foreground">Updated in real-time</p>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-green-50 to-orange-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-medium text-green-800 mb-2">💡 Pro Tips</h4>
-                    <ul className="text-sm text-green-700 space-y-1">
-                      <li>• Save the barcode to your phone for quick access</li>
-                      <li>• Memorize your client ID: <strong>{clientData.clientCode}</strong></li>
-                      <li>• Staff can also enter your ID manually if needed</li>
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Area Breakdown</h4>
+                    <div className="space-y-2">
+                      {trafficData.map((area, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <span className="capitalize">{area.area.replace('_', ' ')}</span>
+                          <div className="flex items-center gap-2">
+                            <span>{area.current_occupancy}/{area.max_capacity}</span>
+                            <Progress 
+                              value={(area.current_occupancy / area.max_capacity) * 100} 
+                              className="w-16 h-2" 
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="drinks" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Drink Menu</CardTitle>
+                  <CardDescription>Fresh drinks available for order</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Drink Menu</h3>
+                      <Badge variant="outline">{drinks.filter(d => d.is_available).length} available</Badge>
+                    </div>
+                    
+                    <div className="grid gap-3">
+                      {drinks.filter(drink => drink.is_available).map((drink) => (
+                        <div key={drink.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{drink.name}</h4>
+                              <Badge variant="secondary" className="text-xs">{drink.category}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-1">{drink.description}</p>
+                            <p className="text-sm font-medium">${Number(drink.price).toFixed(2)}</p>
+                          </div>
+                          <Button 
+                            onClick={() => addToCart(drink)}
+                            size="sm"
+                            className="ml-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Order</CardTitle>
+                  <CardDescription>Review and place your drink order</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Your Cart ({cart.length} items)</h4>
+                    {cart.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No items in cart</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {cart.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                            <div className="flex-1">
+                              <span className="font-medium">{item.name}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="text-sm w-8 text-center">{item.quantity}</span>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="border-t pt-2">
+                          <div className="flex justify-between font-medium">
+                            <span>Total:</span>
+                            <span>${getCartTotal().toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <Button className="w-full">
+                          <Coffee className="mr-2 h-4 w-4" />
+                          Place Order
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="events" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Events</CardTitle>
+                <CardDescription>Register for workshops, networking events, and more</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Upcoming Events</h3>
+                    <Badge variant="outline">{events.length} events</Badge>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {events.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No upcoming events</p>
+                    ) : (
+                      events.map((event) => (
+                        <Card key={event.id} className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium">{event.title}</h4>
+                                <Badge variant="secondary">{event.category}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-2">{event.description}</p>
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{new Date(event.event_date).toLocaleDateString()} • {event.start_time} - {event.end_time}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4" />
+                                  <span>{event.registered_attendees}/{event.capacity} registered</span>
+                                </div>
+                                {event.location && (
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>{event.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium mb-2">
+                                {Number(event.price) === 0 ? 'Free' : `$${Number(event.price).toFixed(2)}`}
+                              </div>
+                              <Button size="sm" disabled={event.registered_attendees >= event.capacity}>
+                                {event.registered_attendees >= event.capacity ? 'Full' : 'Register'}
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="account" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Information</CardTitle>
+                  <CardDescription>Your profile and membership details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Full Name</label>
+                    <p className="text-sm">{clientData.full_name}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Phone</label>
+                    <p className="text-sm">{clientData.phone}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email</label>
+                    <p className="text-sm">{clientData.email}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Member ID</label>
+                    <p className="text-sm">{clientData.client_code}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Membership Status</CardTitle>
+                  <CardDescription>Current membership plan and benefits</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Current Plan</label>
+                    <Badge variant="secondary">Basic Member</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Member Since</label>
+                    <p className="text-sm">January 2024</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Benefits</label>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Unlimited day use</li>
+                      <li>• Free coffee (2 cups/day)</li>
+                      <li>• Meeting room discounts</li>
+                      <li>• Event priority booking</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -253,286 +552,7 @@ const ClientDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Live Traffic Tab */}
-          <TabsContent value="traffic" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Live Crowd Meter
-                  </CardTitle>
-                  <CardDescription>Current occupancy before you arrive</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center space-y-4">
-                    <div className="text-6xl font-bold text-primary">42</div>
-                    <p className="text-muted-foreground">People currently inside</p>
-                    <Progress value={70} className="h-4" />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Low</span>
-                      <span className="font-medium text-warning">Moderate</span>
-                      <span>High</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-warning/10 text-warning">
-                      Good time to visit
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Today's Traffic Pattern</CardTitle>
-                  <CardDescription>Peak hours and predictions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Morning (8-12)</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={85} className="w-20 h-2" />
-                        <span className="text-sm font-medium">High</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Afternoon (12-17)</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={60} className="w-20 h-2" />
-                        <span className="text-sm font-medium">Moderate</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Evening (17-22)</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={30} className="w-20 h-2" />
-                        <span className="text-sm font-medium">Low</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t pt-4">
-                    <p className="text-sm text-muted-foreground">
-                      💡 <strong>Best time to visit:</strong> After 3 PM for quieter environment
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Order Drinks Tab */}
-          <TabsContent value="drinks" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Drink Menu</CardTitle>
-                    <CardDescription>Order from your current location: {getCurrentLocation()}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {drinkMenu.map((drink) => (
-                        <Card key={drink.id} className={`transition-all duration-200 ${!drink.available ? 'opacity-50' : 'hover:shadow-card cursor-pointer'}`}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h3 className="font-semibold">{drink.name}</h3>
-                                <p className="text-sm text-muted-foreground">{drink.category}</p>
-                              </div>
-                              <Badge variant={drink.available ? "default" : "secondary"}>
-                                {drink.available ? "Available" : "Out of Stock"}
-                              </Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-lg font-bold">${drink.price.toFixed(2)}</span>
-                              <Button 
-                                size="sm" 
-                                variant="professional"
-                                disabled={!drink.available}
-                                onClick={() => addToCart(drink)}
-                              >
-                                Add to Cart
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Cart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Your Order
-                  </CardTitle>
-                  <CardDescription>Delivery to {getCurrentLocation()}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {cart.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">Your cart is empty</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {cart.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                          <div>
-                            <p className="font-medium text-sm">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                          </div>
-                          <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      <div className="border-t pt-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="font-bold">Total:</span>
-                          <span className="font-bold text-lg">${getCartTotal().toFixed(2)}</span>
-                        </div>
-                        <Button variant="professional" className="w-full" size="lg">
-                          Place Order
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Events Tab */}
-          <TabsContent value="events" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>Browse and register for SpotIN events</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcomingEvents.map((event) => (
-                    <Card key={event.id} className="hover:shadow-card transition-all duration-200">
-                      <CardContent className="p-6">
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <Badge variant="outline">{event.category}</Badge>
-                              <span className="text-lg font-bold text-primary">${event.price}</span>
-                            </div>
-                            <h3 className="font-bold text-lg">{event.title}</h3>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              {event.date}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {event.time}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              {event.registered}/{event.capacity} registered
-                            </div>
-                          </div>
-
-                          <Progress value={(event.registered / event.capacity) * 100} className="h-2" />
-                          
-                          <Button variant="professional" className="w-full">
-                            <QrCode className="h-4 w-4" />
-                            Register & Get Ticket
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Account Tab */}
-          <TabsContent value="account" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Information</CardTitle>
-                  <CardDescription>Manage your profile and preferences</CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-4">
-                   <div className="space-y-2">
-                     <label className="text-sm font-medium">Full Name</label>
-                     <p className="text-foreground">{clientData.fullName}</p>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-sm font-medium">Email</label>
-                     <p className="text-foreground">{clientData.email || 'Not provided'}</p>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-sm font-medium">Phone</label>
-                     <p className="text-foreground">{clientData.phone}</p>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-sm font-medium">Client ID</label>
-                     <p className="text-foreground font-mono">{clientData.clientCode}</p>
-                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Current Location</label>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <p className="text-foreground">{getCurrentLocation()}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    Edit Profile
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Membership Status</CardTitle>
-                  <CardDescription>Your current plan and benefits</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center">
-                    <Badge variant="default" className="bg-success text-success-foreground mb-2">
-                      Premium Member
-                    </Badge>
-                    <p className="text-sm text-muted-foreground">Valid until February 15, 2024</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Hot Desk Access</span>
-                      <span className="text-success">✓ Unlimited</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Meeting Room Hours</span>
-                      <span className="text-success">✓ 20h/month</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Event Discounts</span>
-                      <span className="text-success">✓ 15% off</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Drink Credits</span>
-                      <span className="text-success">✓ $50/month</span>
-                    </div>
-                  </div>
-
-                  <Button variant="professional" className="w-full">
-                    <CreditCard className="h-4 w-4" />
-                    Manage Subscription
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* My Receipts Tab */}
-          <TabsContent value="receipt" className="space-y-6">
+          <TabsContent value="receipts" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Transaction History</CardTitle>
@@ -540,107 +560,26 @@ const ClientDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Recent Receipt */}
-                  <Card className="border border-success/20 bg-success/5">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">Receipt #SPT-2024-001</CardTitle>
-                          <CardDescription>Today, 2:30 PM</CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-success">$12.50</p>
-                          <p className="text-sm text-success">Paid</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Cappuccino x2</span>
-                          <span>$9.00</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Croissant x1</span>
-                          <span>$3.50</span>
-                        </div>
-                        <div className="border-t pt-2 flex justify-between font-medium">
-                          <span>Total</span>
-                          <span>$12.50</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm text-muted-foreground">Payment Method: Card ending in ****1234</p>
-                        <p className="text-sm text-muted-foreground">Location: SpotIN Downtown</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Previous Receipts */}
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">Receipt #SPT-2024-002</p>
-                          <p className="text-sm text-muted-foreground">Yesterday, 10:15 AM</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">$7.50</p>
-                          <p className="text-sm text-success">Paid</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Latte x1, Muffin x1
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">Day Pass #DP-2024-045</p>
-                          <p className="text-sm text-muted-foreground">Dec 15, 2024</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">$25.00</p>
-                          <p className="text-sm text-success">Paid</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Hot Desk - Full Day Access
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">Membership #MEM-PRO-001</p>
-                          <p className="text-sm text-muted-foreground">Dec 1, 2024</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">$120.00</p>
-                          <p className="text-sm text-success">Paid</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Professional Monthly Membership
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="mt-6 flex gap-2">
-                  <Button variant="outline" className="flex-1">
-                    <FileText className="h-4 w-4" />
-                    Export All Receipts
-                  </Button>
-                  <Button variant="professional" className="flex-1">
-                    <DollarSign className="h-4 w-4" />
-                    Request Invoice
-                  </Button>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Recent Transactions</h3>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Request Invoice
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">No recent transactions found</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your purchase history will appear here after you place orders
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -649,6 +588,4 @@ const ClientDashboard = () => {
       </div>
     </div>
   );
-};
-
-export default ClientDashboard;
+}

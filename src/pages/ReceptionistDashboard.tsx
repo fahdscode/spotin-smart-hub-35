@@ -12,6 +12,7 @@ import BarcodeScanner from "@/components/BarcodeScanner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from '@/components/ui/badge';
 
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
@@ -56,58 +57,119 @@ const ReceptionistDashboard = () => {
 
   const fetchActiveSessions = async () => {
     try {
+      // Query check_ins with client_id instead of user_id
       const { data, error } = await supabase
         .from('check_ins')
         .select(`
-          *,
-          profiles (
-            full_name,
-            email
-          )
+          id,
+          client_id,
+          checked_in_at,
+          checked_out_at,
+          status,
+          created_at
         `)
         .eq('status', 'checked_in')
         .order('checked_in_at', { ascending: false });
 
-      if (error) throw error;
-      setActiveSessions(data || []);
+      if (error) {
+        console.error('Error fetching active check-ins:', error);
+        throw error;
+      }
+
+      // Now get client details for each check-in
+      const sessionsWithClientData = [];
+      
+      for (const session of data || []) {
+        try {
+          const { data: clientData, error: clientError } = await supabase
+            .from('clients')
+            .select('id, client_code, full_name, phone, email, barcode')
+            .eq('id', session.client_id)
+            .eq('is_active', true)
+            .single();
+
+          if (!clientError && clientData) {
+            sessionsWithClientData.push({
+              ...session,
+              client: clientData
+            });
+          }
+        } catch (clientError) {
+          console.error('Error fetching client data for session:', clientError);
+        }
+      }
+
+      console.log('Fetched sessions with client data:', sessionsWithClientData);
+      setActiveSessions(sessionsWithClientData);
     } catch (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Failed to fetch active sessions:', error);
       toast.error('Failed to load active sessions');
-      // Set mock data for demo purposes
+      
+      // Fallback to mock data
       setActiveSessions([
         {
-          id: '1',
-          user_id: 'user1',
+          id: 'mock-1',
+          client_id: 'demo-1',
           checked_in_at: new Date().toISOString(),
           status: 'checked_in',
-          profiles: { full_name: 'Demo User', email: 'demo@example.com' }
+          client: { 
+            id: 'demo-1',
+            client_code: 'C-2024-000001',
+            full_name: 'John Smith', 
+            email: 'john@example.com',
+            phone: '+1234567890',
+            barcode: 'C-2024-000001'
+          }
+        },
+        {
+          id: 'mock-2',
+          client_id: 'demo-2',
+          checked_in_at: new Date(Date.now() - 3600000).toISOString(),
+          status: 'checked_in',
+          client: { 
+            id: 'demo-2',
+            client_code: 'C-2024-000002',
+            full_name: 'Sarah Johnson', 
+            email: 'sarah@example.com',
+            phone: '+1234567891',
+            barcode: 'C-2024-000002'
+          }
         }
       ]);
     }
   };
 
-  const handleCheckOut = async (sessionId: string, userId: string) => {
+  const handleCheckOut = async (sessionId: string, clientData: any) => {
     try {
-      // Update check-in to checked out
       const { error } = await supabase
         .from('check_ins')
         .update({ 
-          status: 'checked_out', 
-          checked_out_at: new Date().toISOString() 
+          status: 'checked_out',
+          checked_out_at: new Date().toISOString()
         })
         .eq('id', sessionId);
 
       if (error) throw error;
 
-      // Show receipt (with mock data since Receipt component is now simplified)
+      // Also log the check-out in check_in_logs
+      await supabase
+        .from('check_in_logs')
+        .insert({
+          client_id: clientData.client_id,
+          scanned_barcode: clientData.client?.barcode || 'manual',
+          action: 'check_out',
+          timestamp: new Date().toISOString(),
+          notes: 'Manual check-out via receptionist dashboard'
+        });
+
       setShowReceipt(true);
       
-      // Refresh sessions
+      // Refresh the active sessions
       await fetchActiveSessions();
       
-      toast.success('Client checked out successfully');
+      toast.success(`${clientData.client?.full_name || 'Client'} checked out successfully`);
     } catch (error) {
-      console.error('Error checking out:', error);
+      console.error('Error checking out client:', error);
       toast.error('Failed to check out client');
     }
   };
@@ -234,16 +296,23 @@ const ReceptionistDashboard = () => {
                     activeSessions.map((session) => (
                       <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div>
-                          <p className="font-medium text-sm">{session.profiles?.full_name || 'Unknown User'}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{session.client?.full_name || 'Unknown Client'}</p>
+                            <Badge variant="secondary" className="text-xs">
+                              {session.client?.client_code || 'No ID'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {session.client?.email || 'No email'} • {session.client?.phone || 'No phone'}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             Checked in: {new Date(session.checked_in_at).toLocaleTimeString()}
                           </p>
-                          <p className="text-xs text-primary">Status: {session.status}</p>
                         </div>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleCheckOut(session.id, session.user_id)}
+                          onClick={() => handleCheckOut(session.id, session)}
                         >
                           Check Out
                         </Button>

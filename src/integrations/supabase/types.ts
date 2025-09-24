@@ -80,6 +80,7 @@ export type Database = {
         Row: {
           checked_in_at: string
           checked_out_at: string | null
+          client_id: string | null
           created_at: string
           id: string
           status: string
@@ -88,6 +89,7 @@ export type Database = {
         Insert: {
           checked_in_at?: string
           checked_out_at?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           status?: string
@@ -96,12 +98,21 @@ export type Database = {
         Update: {
           checked_in_at?: string
           checked_out_at?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -138,6 +149,99 @@ export type Database = {
           is_active?: boolean
           password_hash?: string
           phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      drinks: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          ingredients: string[] | null
+          is_available: boolean
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: string[] | null
+          is_available?: boolean
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: string[] | null
+          is_available?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          capacity: number
+          category: string
+          created_at: string
+          description: string | null
+          end_time: string
+          event_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          location: string | null
+          price: number
+          registered_attendees: number
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          event_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          location?: string | null
+          price?: number
+          registered_attendees?: number
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          location?: string | null
+          price?: number
+          registered_attendees?: number
+          start_time?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -390,6 +494,33 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_data: {
+        Row: {
+          area: string
+          current_occupancy: number
+          id: string
+          max_capacity: number
+          peak_hours: Json | null
+          timestamp: string
+        }
+        Insert: {
+          area?: string
+          current_occupancy?: number
+          id?: string
+          max_capacity?: number
+          peak_hours?: Json | null
+          timestamp?: string
+        }
+        Update: {
+          area?: string
+          current_occupancy?: number
+          id?: string
+          max_capacity?: number
+          peak_hours?: Json | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
       user_analytics: {
         Row: {
           check_ins: number
@@ -456,6 +587,10 @@ export type Database = {
       get_client_by_id: {
         Args: { client_id: string }
         Returns: Json
+      }
+      get_client_check_in_status: {
+        Args: { p_client_id: string }
+        Returns: string
       }
       get_client_status: {
         Args: { client_id: string }
