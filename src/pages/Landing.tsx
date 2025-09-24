@@ -20,6 +20,91 @@ const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'demo@spotin.com',
+        password: 'demo123',
+      });
+
+      if (error) {
+        // If demo user doesn't exist, create it
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: 'demo@spotin.com',
+          password: 'demo123',
+          options: {
+            data: {
+              full_name: 'Demo User',
+              phone: '+1-555-DEMO',
+            },
+            emailRedirectTo: `${window.location.origin}/client`
+          }
+        });
+
+        if (signUpError) throw signUpError;
+        
+        // Sign in after signup
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: 'demo@spotin.com',
+          password: 'demo123',
+        });
+
+        if (loginError) throw loginError;
+      }
+      
+      toast({
+        title: "Demo login successful!",
+        description: "Welcome to the SpotIN demo experience.",
+      });
+      navigate("/client");
+    } catch (error: any) {
+      toast({
+        title: "Demo login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickRegistration = async () => {
+    const quickEmail = `quick${Date.now()}@spotin.com`;
+    const quickPassword = 'quick123';
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: quickEmail,
+        password: quickPassword,
+        options: {
+          data: {
+            full_name: `User ${Date.now()}`,
+            phone: '',
+          },
+          emailRedirectTo: `${window.location.origin}/client`
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Quick account created!",
+        description: "Your account has been created and you're logged in.",
+      });
+      navigate("/client");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -79,6 +164,26 @@ const Landing = () => {
             <h1 className="text-3xl font-bold text-foreground">SpotIN</h1>
           </div>
           <p className="text-muted-foreground">Your digital check-in experience</p>
+        </div>
+
+        {/* Demo and Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Button 
+            onClick={handleDemoLogin} 
+            variant="outline" 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "Loading..." : "🎯 Try Demo"}
+          </Button>
+          <Button 
+            onClick={handleQuickRegistration} 
+            variant="outline" 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "Loading..." : "⚡ Quick Start"}
+          </Button>
         </div>
 
         {/* Auth Card */}

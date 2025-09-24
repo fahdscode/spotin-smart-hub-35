@@ -16,6 +16,7 @@ interface Profile {
   email: string;
   phone: string;
   barcode: string;
+  role: string;
   created_at: string;
 }
 
@@ -93,6 +94,45 @@ const AdminPanel = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const updateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ role: newRole })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Role Updated",
+        description: `User role has been updated to ${newRole}`,
+      });
+      
+      // Refresh the profiles list
+      fetchProfiles();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    const roleColors: Record<string, string> = {
+      'client': 'bg-blue-100 text-blue-800',
+      'receptionist': 'bg-green-100 text-green-800',
+      'barista': 'bg-orange-100 text-orange-800',
+      'community_manager': 'bg-purple-100 text-purple-800',
+      'operations_manager': 'bg-indigo-100 text-indigo-800',
+      'finance_manager': 'bg-yellow-100 text-yellow-800',
+      'ceo': 'bg-red-100 text-red-800',
+      'admin': 'bg-gray-100 text-gray-800'
+    };
+    return roleColors[role] || 'bg-gray-100 text-gray-800';
   };
 
   const formatDate = (dateString: string) => {
@@ -186,6 +226,7 @@ const AdminPanel = () => {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Barcode</TableHead>
                       <TableHead>Created</TableHead>
@@ -195,7 +236,7 @@ const AdminPanel = () => {
                   <TableBody>
                     {filteredProfiles.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                           {searchTerm ? "No users found matching your search" : "No users found"}
                         </TableCell>
                       </TableRow>
@@ -206,6 +247,11 @@ const AdminPanel = () => {
                             {profile.full_name || "No name"}
                           </TableCell>
                           <TableCell>{profile.email}</TableCell>
+                          <TableCell>
+                            <Badge className={getRoleColor(profile.role || 'client')}>
+                              {(profile.role || 'client').replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{profile.phone || "No phone"}</TableCell>
                           <TableCell>
                             <code className="text-xs bg-muted px-1 py-0.5 rounded">
@@ -213,7 +259,21 @@ const AdminPanel = () => {
                             </code>
                           </TableCell>
                           <TableCell>{formatDate(profile.created_at)}</TableCell>
-                          <TableCell>
+                          <TableCell className="space-x-2">
+                            <select
+                              value={profile.role || 'client'}
+                              onChange={(e) => updateUserRole(profile.user_id, e.target.value)}
+                              className="text-xs border rounded px-2 py-1 bg-background"
+                            >
+                              <option value="client">Client</option>
+                              <option value="receptionist">Receptionist</option>
+                              <option value="barista">Barista</option>
+                              <option value="community_manager">Community Manager</option>
+                              <option value="operations_manager">Operations Manager</option>
+                              <option value="finance_manager">Finance Manager</option>
+                              <option value="ceo">CEO</option>
+                              <option value="admin">Admin</option>
+                            </select>
                             <Button
                               onClick={() => resetUserPassword(profile.user_id, profile.email)}
                               variant="outline"
