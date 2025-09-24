@@ -116,6 +116,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          active: boolean
           barcode: string
           client_code: string
           created_at: string
@@ -128,6 +129,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           barcode: string
           client_code: string
           created_at?: string
@@ -140,6 +142,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           barcode?: string
           client_code?: string
           created_at?: string
