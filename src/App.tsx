@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,33 +21,35 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="spotin-ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/client" element={<ClientPortal />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/admin-panel" element={<AdminPanel />} />
-            <Route path="/account-settings" element={<AccountSettings />} />
-            <Route path="/receptionist" element={<ReceptionistDashboard />} />
-            <Route path="/ceo" element={<CeoDashboard />} />
-            <Route path="/old-client" element={<ClientDashboard />} />
-            <Route path="/operations" element={<OperationsDashboard />} />
-            <Route path="/barista" element={<BaristaDashboard />} />
-            <Route path="/community" element={<CommunityManagerDashboard />} />
-            <Route path="/crm" element={<CrmDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="spotin-ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/client" element={<ClientPortal />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin-panel" element={<AdminPanel />} />
+              <Route path="/account-settings" element={<AccountSettings />} />
+              <Route path="/receptionist" element={<ReceptionistDashboard />} />
+              <Route path="/ceo" element={<CeoDashboard />} />
+              <Route path="/old-client" element={<ClientDashboard />} />
+              <Route path="/operations" element={<OperationsDashboard />} />
+              <Route path="/barista" element={<BaristaDashboard />} />
+              <Route path="/community" element={<CommunityManagerDashboard />} />
+              <Route path="/crm" element={<CrmDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
