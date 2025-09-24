@@ -17,6 +17,21 @@ interface ScanResult {
   clientCode?: string;
 }
 
+interface ToggleResult {
+  success: boolean;
+  error?: string;
+  action?: string;
+  client?: {
+    id: string;
+    client_code: string;
+    full_name: string;
+    phone: string;
+    email: string;
+    barcode: string;
+    active: boolean;
+  };
+}
+
 export default function BarcodeScanner() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -35,8 +50,8 @@ export default function BarcodeScanner() {
   const handleBarcodeInput = (value: string) => {
     setBarcodeInput(value);
     
-    // Auto-process when barcode is complete (assuming client codes follow C-YYYY-XXXXXX pattern)
-    if (value.length >= 10 && value.startsWith('C-')) {
+    // Auto-process when barcode is complete (BC- format or C- format for compatibility)
+    if (value.length >= 10 && (value.startsWith('BC-') || value.startsWith('C-'))) {
       handleScanResult(value);
     }
   };
@@ -54,24 +69,54 @@ export default function BarcodeScanner() {
     setScanResult(null);
 
     try {
-      // Find the client by barcode or client_code
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('id, client_code, full_name, phone, email, barcode, is_active')
-        .or(`barcode.eq.${barcode},client_code.eq.${barcode}`)
-        .eq('is_active', true)
-        .single();
+      // Use the new toggle function that handles trimming and concurrency
+      const { data: result, error } = await supabase.rpc('toggle_client_checkin_status', {
+        p_barcode: barcode,
+        p_scanned_by_user_id: null // Could be current user ID if we track receptionist
+      });
 
-      if (clientError || !clientData) {
+      if (error) {
+        console.error('RPC Error:', error);
         toast({
-          title: "Client not found",
-          description: `No active client found with barcode: ${barcode}. Please check and try again.`,
+          title: "System Error",
+          description: "System error. Please try again.",
           variant: "destructive",
         });
-      } else {
-        // Process check-in/out for client
-        await processCheckInOut(clientData.id, clientData.full_name, barcode, clientData.client_code);
+        return;
       }
+
+      const toggleResult = result as unknown as ToggleResult;
+      
+      if (!toggleResult?.success) {
+        toast({
+          title: "Invalid Barcode",
+          description: toggleResult?.error || "Invalid barcode. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Success - update UI
+      const client = toggleResult.client!;
+      const action = toggleResult.action!;
+      
+      const scanResult: ScanResult = {
+        barcode,
+        userName: client.full_name,
+        action: action === 'checked_in' ? 'check-in' : 'check-out',
+        timestamp: new Date(),
+        clientId: client.id,
+        clientCode: client.client_code,
+      };
+
+      setScanResult(scanResult);
+      setRecentScans(prev => [scanResult, ...prev.slice(0, 4)]);
+
+      toast({
+        title: action === 'checked_in' ? "Check-in Successful" : "Check-out Successful",
+        description: `${client.full_name} has been ${action.replace('_', '-')} successfully.`,
+      });
+
     } catch (error) {
       console.error('Error processing barcode scan:', error);
       toast({

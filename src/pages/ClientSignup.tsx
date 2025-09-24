@@ -82,38 +82,35 @@ const ClientSignup = () => {
     setIsLoading(true);
 
     try {
-      // Generate unique client code and hash password
-      const { data: clientCodeData, error: codeError } = await supabase.rpc('generate_client_code');
-      
-      if (codeError) {
-        throw codeError;
-      }
-
-      const clientCode = clientCodeData;
-      const barcode = clientCode; // Use client code as barcode content
+      // Hash password
       const passwordHash = await bcrypt.hash(formData.password, 10);
 
-      // Insert new client
-      const { error: insertError } = await supabase
-        .from('clients')
-        .insert({
-          client_code: clientCode,
-          barcode: barcode,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          email: formData.email || null,
-          password_hash: passwordHash
-        });
+      // Use the new registration function with proper barcode generation
+      const { data: registrationData, error: registrationError } = await supabase.rpc('register_client_with_barcode', {
+        p_full_name: formData.fullName,
+        p_phone: formData.phone,
+        p_email: formData.email || null,
+        p_password_hash: passwordHash
+      });
 
-      if (insertError) {
-        if (insertError.message.includes('phone')) {
+      if (registrationError) {
+        throw registrationError;
+      }
+
+      const result = registrationData as any;
+      if (!result.success) {
+        if (result.error.includes('phone number') || result.error.includes('email')) {
           toast({
-            title: "Phone Number Taken",
-            description: "This phone number is already registered",
+            title: "Account Already Exists",
+            description: result.error,
             variant: "destructive",
           });
         } else {
-          throw insertError;
+          toast({
+            title: "Registration Failed",
+            description: result.error || "Could not create account. Please try again.",
+            variant: "destructive",
+          });
         }
         setIsLoading(false);
         return;
@@ -121,16 +118,17 @@ const ClientSignup = () => {
 
       toast({
         title: "Account Created Successfully!",
-        description: `Welcome ${formData.fullName}! Your client ID: ${clientCode}`,
+        description: `Welcome ${formData.fullName}! Your client ID: ${result.client_code}`,
       });
 
       // Store client info and redirect
       localStorage.setItem('spotinClientData', JSON.stringify({
-        clientCode,
+        id: result.client_id,
+        clientCode: result.client_code,
         fullName: formData.fullName,
         phone: formData.phone,
-        email: formData.email,
-        barcode: barcode
+        email: formData.email || '',
+        barcode: result.barcode
       }));
 
       setTimeout(() => {

@@ -622,6 +622,10 @@ export type Database = {
         }
         Returns: Json
       }
+      toggle_client_checkin_status: {
+        Args: { p_barcode: string; p_scanned_by_user_id?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
