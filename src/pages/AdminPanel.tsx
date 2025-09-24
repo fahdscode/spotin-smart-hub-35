@@ -70,15 +70,25 @@ const AdminPanel = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        // Don't show error toast for permission issues, just show empty state
+        if (error.code !== '42501' && error.code !== '42P17') {
+          toast({
+            title: "Error",
+            description: "Unable to fetch user profiles. Please try again.",
+            variant: "destructive",
+          });
+        }
+        setProfiles([]);
+        return;
+      }
 
       setProfiles(data || []);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch user profiles",
-        variant: "destructive",
-      });
+      console.error("Fetch error:", error);
+      // Don't show error to user, just handle gracefully
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -112,7 +122,15 @@ const AdminPanel = () => {
         .update({ role: newRole })
         .eq("user_id", userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Role update error:", error);
+        toast({
+          title: "Error",
+          description: "Unable to update user role. Please check your permissions.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Role Updated",
@@ -122,6 +140,7 @@ const AdminPanel = () => {
       // Refresh the profiles list
       fetchProfiles();
     } catch (error: any) {
+      console.error("Update role error:", error);
       toast({
         title: "Error",
         description: "Failed to update user role",
@@ -413,8 +432,19 @@ const AdminPanel = () => {
                   <TableBody>
                     {filteredProfiles.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {searchTerm ? "No users found matching your search" : "No users found"}
+                        <TableCell colSpan={7} className="text-center py-12">
+                          <div className="flex flex-col items-center space-y-2">
+                            <Users className="h-12 w-12 text-muted-foreground" />
+                            <h3 className="text-lg font-medium text-foreground">
+                              {searchTerm ? "No users found" : "No users registered yet"}
+                            </h3>
+                            <p className="text-sm text-muted-foreground max-w-md">
+                              {searchTerm 
+                                ? "Try adjusting your search terms or clear the search to see all users."
+                                : "Users will appear here once they register for the platform. You can also create users manually using the form above."
+                              }
+                            </p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
