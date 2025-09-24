@@ -8,12 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BarcodeCardProps {
   clientCode?: string;
+  barcode?: string; // Add the actual barcode field
   userName?: string;
   userEmail?: string;
 }
 
 const BarcodeCard = ({ 
   clientCode, 
+  barcode,
   userName,
   userEmail
 }: BarcodeCardProps) => {
@@ -22,10 +24,10 @@ const BarcodeCard = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (canvasRef.current && clientCode) {
+    if (canvasRef.current && (barcode || clientCode)) {
       generateBarcode();
     }
-  }, [clientCode]);
+  }, [barcode, clientCode]);
 
   // Don't render if required props are missing
   if (!clientCode || !userName) {
@@ -45,10 +47,9 @@ const BarcodeCard = ({
 
   const generateBarcode = () => {
     try {
-      if (canvasRef.current && clientCode) {
-        // For production-ready barcode scanning, use the actual barcode value
-        // This supports both old format (C-) and new format (BC-)
-        const barcodeValue = clientCode;
+      if (canvasRef.current && (barcode || clientCode)) {
+        // Use the actual barcode if available, otherwise fall back to client code
+        const barcodeValue = barcode || clientCode;
         
         JsBarcode(canvasRef.current, barcodeValue, {
           format: "CODE128",
@@ -77,7 +78,8 @@ const BarcodeCard = ({
 
   const copyClientCode = async () => {
     try {
-      await navigator.clipboard.writeText(clientCode);
+      const valueToCopy = barcode || clientCode;
+      await navigator.clipboard.writeText(valueToCopy);
       setCopied(true);
       toast({
         title: "Client ID Copied!",
@@ -95,8 +97,9 @@ const BarcodeCard = ({
 
   const downloadBarcode = () => {
     if (canvasRef.current) {
+      const barcodeValue = barcode || clientCode;
       const link = document.createElement('a');
-      link.download = `spotin-barcode-${clientCode}.png`;
+      link.download = `spotin-barcode-${barcodeValue}.png`;
       link.href = canvasRef.current.toDataURL();
       link.click();
       toast({
@@ -108,12 +111,13 @@ const BarcodeCard = ({
 
   const printBarcode = () => {
     if (canvasRef.current) {
+      const barcodeValue = barcode || clientCode;
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
           <html>
             <head>
-              <title>SpotIn Client Barcode - ${clientCode}</title>
+              <title>SpotIn Client Barcode - ${barcodeValue}</title>
               <style>
                 body { 
                   font-family: Arial, sans-serif; 
@@ -175,9 +179,9 @@ const BarcodeCard = ({
         {/* Client Info */}
         <div className="space-y-3 text-center">
           <div>
-            <p className="text-sm text-muted-foreground">Client ID</p>
+            <p className="text-sm text-muted-foreground">{barcode ? 'Barcode' : 'Client ID'}</p>
             <div className="flex items-center justify-center gap-2 bg-white/80 rounded-lg p-3 border border-green-200">
-              <code className="font-mono text-lg font-bold text-green-700">{clientCode}</code>
+              <code className="font-mono text-lg font-bold text-green-700">{barcode || clientCode}</code>
               <Button
                 variant="ghost"
                 size="sm"
@@ -245,7 +249,7 @@ const BarcodeCard = ({
           <h4 className="font-medium text-green-800 mb-2">How to use:</h4>
           <ul className="text-sm text-green-700 space-y-1">
             <li>• Show this barcode to reception for check-in</li>
-            <li>• Or share the client ID: <code>{clientCode}</code></li>
+            <li>• Or share the {barcode ? 'barcode' : 'client ID'}: <code>{barcode || clientCode}</code></li>
             <li>• Scan again when leaving to check-out</li>
             <li>• Keep this barcode safe and don't share with others</li>
           </ul>
