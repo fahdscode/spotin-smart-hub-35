@@ -241,29 +241,30 @@ export default function ClientDashboard() {
           <MetricCard
             title="Current Crowd"
             value={getTotalOccupancy().toString()}
-            subtitle={`out of ${getMaxCapacity()} capacity`}
+            change={`${Math.round((getTotalOccupancy() / getMaxCapacity()) * 100)}% occupied`}
             icon={Users}
-            trend={`${Math.round((getTotalOccupancy() / getMaxCapacity()) * 100)}% occupied`}
+            variant="info"
           />
           <MetricCard
             title="Check-in Status"
             value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'}
-            subtitle={checkInStatus === 'checked_in' ? 'Active session' : 'Ready to check in'}
+            change={getCurrentLocation()}
             icon={Clock}
-            trend={getCurrentLocation()}
+            variant={checkInStatus === 'checked_in' ? 'success' : 'default'}
           />
           <MetricCard
             title="Cart Total"
             value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'}
-            subtitle={`${cart.length} items in cart`}
+            change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'}
             icon={CreditCard}
-            trend={cart.length > 0 ? 'Ready to order' : 'Cart is empty'}
+            variant={cart.length > 0 ? 'success' : 'default'}
           />
           <MetricCard
             title="Current Location"
             value={getCurrentLocation()}
-            subtitle={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'}
+            change={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'}
             icon={MapPin}
+            variant={checkInStatus === 'checked_in' ? 'success' : 'warning'}
           />
         </div>
 
