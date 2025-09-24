@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      check_in_logs: {
+        Row: {
+          action: string
+          client_id: string
+          id: string
+          notes: string | null
+          scanned_barcode: string
+          scanned_by_user_id: string | null
+          timestamp: string
+        }
+        Insert: {
+          action: string
+          client_id: string
+          id?: string
+          notes?: string | null
+          scanned_barcode: string
+          scanned_by_user_id?: string | null
+          timestamp?: string
+        }
+        Update: {
+          action?: string
+          client_id?: string
+          id?: string
+          notes?: string | null
+          scanned_barcode?: string
+          scanned_by_user_id?: string | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       check_ins: {
         Row: {
           checked_in_at: string
@@ -38,6 +100,45 @@ export type Database = {
           id?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          barcode: string
+          client_code: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_active: boolean
+          password_hash: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          barcode: string
+          client_code: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean
+          password_hash: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string
+          client_code?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          password_hash?: string
+          phone?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -114,6 +215,8 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_admin: boolean | null
+          phone: string | null
           role: string
           updated_at: string
           user_id: string
@@ -124,6 +227,8 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          phone?: string | null
           role: string
           updated_at?: string
           user_id: string
@@ -134,6 +239,8 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          phone?: string | null
           role?: string
           updated_at?: string
           user_id?: string
@@ -333,6 +440,26 @@ export type Database = {
       generate_barcode: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_barcode_for_client: {
+        Args: { client_code: string }
+        Returns: string
+      }
+      generate_client_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_client_status: {
+        Args: { client_id: string }
+        Returns: string
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_admin_or_staff: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
     }
     Enums: {
