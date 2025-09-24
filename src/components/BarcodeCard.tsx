@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Download, Copy, Check } from "lucide-react";
-import JsBarcode from "jsbarcode";
+import QRCode from "qrcode";
 import { useToast } from "@/hooks/use-toast";
 
 interface BarcodeCardProps {
@@ -23,26 +23,24 @@ const BarcodeCard = ({
 
   useEffect(() => {
     if (canvasRef.current && userBarcode) {
-      generateBarcode();
+      generateQRCode();
     }
   }, [userBarcode]);
 
-  const generateBarcode = () => {
+  const generateQRCode = async () => {
     try {
       if (canvasRef.current) {
-        JsBarcode(canvasRef.current, userBarcode, {
-          format: "CODE128",
-          width: 2,
-          height: 80,
-          displayValue: true,
-          fontSize: 14,
-          margin: 10,
-          lineColor: "#059669", // Green color for the barcode
-          background: "#FFFFFF"
+        await QRCode.toCanvas(canvasRef.current, userBarcode, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#059669', // Green color for the QR code
+            light: '#FFFFFF'
+          }
         });
       }
     } catch (error) {
-      console.error('Error generating barcode:', error);
+      console.error('Error generating QR code:', error);
     }
   };
 
@@ -64,14 +62,14 @@ const BarcodeCard = ({
     }
   };
 
-  const downloadBarcode = () => {
+  const downloadQRCode = () => {
     if (canvasRef.current) {
       const link = document.createElement('a');
       link.download = `spotin-barcode-${userBarcode}.png`;
       link.href = canvasRef.current.toDataURL();
       link.click();
       toast({
-        title: "Barcode Downloaded!",
+        title: "QR Code Downloaded!",
         description: "Your barcode has been saved to your device",
       });
     }
@@ -90,7 +88,7 @@ const BarcodeCard = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Barcode Display */}
+        {/* QR Code Display */}
         <div className="flex justify-center">
           <div className="p-4 bg-white rounded-lg shadow-inner border-2 border-green-100">
             <canvas 
@@ -134,7 +132,7 @@ const BarcodeCard = ({
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button
-            onClick={downloadBarcode}
+            onClick={downloadQRCode}
             variant="outline"
             className="border-green-500 text-green-600 hover:bg-green-50"
           >
@@ -164,7 +162,7 @@ const BarcodeCard = ({
         <div className="bg-white/80 border border-green-200 rounded-lg p-4">
           <h4 className="font-medium text-green-800 mb-2">How to use:</h4>
           <ul className="text-sm text-green-700 space-y-1">
-            <li>• Show this barcode to reception</li>
+            <li>• Show this QR code to reception</li>
             <li>• Or share the barcode ID: <code>{userBarcode}</code></li>
             <li>• Scan again when leaving to check-out</li>
           </ul>
