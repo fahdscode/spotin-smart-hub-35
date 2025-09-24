@@ -9,6 +9,7 @@ import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
+import BarcodeDebugger from "@/components/BarcodeDebugger";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -318,6 +319,9 @@ const ReceptionistDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Barcode Debugger for Development */}
+            <BarcodeDebugger />
           </div>
         </div>
       </div>

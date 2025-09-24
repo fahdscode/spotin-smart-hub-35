@@ -21,6 +21,7 @@ interface ToggleResult {
   success: boolean;
   error?: string;
   action?: string;
+  debug?: any; // Add debug field
   client?: {
     id: string;
     client_code: string;
@@ -68,6 +69,13 @@ export default function BarcodeScanner() {
     setIsProcessing(true);
     setScanResult(null);
 
+    // Log what we're scanning for debugging
+    console.log('🔍 Scanning barcode:', { 
+      original: barcode, 
+      trimmed: barcode.trim(),
+      length: barcode.trim().length 
+    });
+
     try {
       // Use the new toggle function that handles trimming and concurrency
       const { data: result, error } = await supabase.rpc('toggle_client_checkin_status', {
@@ -76,7 +84,7 @@ export default function BarcodeScanner() {
       });
 
       if (error) {
-        console.error('RPC Error:', error);
+        console.error('❌ RPC Error:', error);
         toast({
           title: "System Error",
           description: "System error. Please try again.",
@@ -85,9 +93,17 @@ export default function BarcodeScanner() {
         return;
       }
 
+      console.log('📊 Toggle result:', result);
       const toggleResult = result as unknown as ToggleResult;
       
       if (!toggleResult?.success) {
+        console.error('❌ Scan failed:', {
+          error: toggleResult?.error,
+          debug: toggleResult?.debug,
+          inputBarcode: barcode,
+          trimmedBarcode: barcode.trim()
+        });
+
         toast({
           title: "Invalid Barcode",
           description: toggleResult?.error || "Invalid barcode. Please try again.",
@@ -100,8 +116,14 @@ export default function BarcodeScanner() {
       const client = toggleResult.client!;
       const action = toggleResult.action!;
       
+      console.log('✅ Scan successful:', {
+        client: client.full_name,
+        action,
+        debug: toggleResult.debug
+      });
+      
       const scanResult: ScanResult = {
-        barcode,
+        barcode: client.barcode, // Use the actual barcode from DB
         userName: client.full_name,
         action: action === 'checked_in' ? 'check-in' : 'check-out',
         timestamp: new Date(),
@@ -118,7 +140,7 @@ export default function BarcodeScanner() {
       });
 
     } catch (error) {
-      console.error('Error processing barcode scan:', error);
+      console.error('❌ Error processing barcode scan:', error);
       toast({
         title: "Scan Error",
         description: "Failed to process barcode scan. Please try again.",

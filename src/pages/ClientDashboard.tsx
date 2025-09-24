@@ -290,6 +290,7 @@ export default function ClientDashboard() {
               <CardContent>
                 <BarcodeCard 
                   clientCode={clientData.clientCode}
+                  barcode={clientData.barcode}
                   userName={clientData.fullName}
                   userEmail={clientData.email}
                 />
