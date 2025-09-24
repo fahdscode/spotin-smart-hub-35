@@ -3,47 +3,67 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Phone, LogIn, Check } from "lucide-react";
+import { Coffee, User, Phone, LogIn, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+// Form validation schema
+const loginSchema = z.object({
+  phone: z.string()
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be less than 15 digits")
+    .regex(/^\d+$/, "Phone number must contain only digits"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters")
+});
 
 const ClientLogin = () => {
-  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{phone?: string; password?: string}>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const validateForm = () => {
+    try {
+      loginSchema.parse({ phone, password });
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: {phone?: string; password?: string} = {};
+        error.errors.forEach((err) => {
+          if (err.path[0] === 'phone') newErrors.phone = err.message;
+          if (err.path[0] === 'password') newErrors.password = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form first
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors below",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Check for demo account
-      if (username === "1234567890" && password === "demo") {
-        toast({
-          title: "Demo Login Successful",
-          description: "Welcome to the demo client account!",
-        });
-        
-        localStorage.setItem('spotinClientData', JSON.stringify({
-          id: 'demo-client-id',
-          clientCode: 'C-DEMO-001',
-          fullName: 'Demo Client',
-          phone: '1234567890',
-          email: 'demo@spotin.com',
-          barcode: 'C-DEMO-001'
-        }));
-        
-        navigate("/client");
-        setIsLoading(false);
-        return;
-      }
-
       // Use secure authentication function
       const { data: authResult, error } = await supabase.rpc('authenticate_client', {
-        client_phone: username,
+        client_phone: phone,
         client_password: password
       });
 
@@ -97,13 +117,27 @@ const ClientLogin = () => {
     setIsLoading(false);
   };
 
-  const handleDemoLogin = () => {
-    setUsername("1234567890");
-    setPassword("demo");
-    toast({
-      title: "Demo Credentials Loaded",
-      description: "Click Login to access the demo account",
-    });
+  // Real-time validation
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    setPhone(value);
+    if (errors.phone) {
+      try {
+        loginSchema.shape.phone.parse(value);
+        setErrors(prev => ({ ...prev, phone: undefined }));
+      } catch {}
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    if (errors.password) {
+      try {
+        loginSchema.shape.password.parse(value);
+        setErrors(prev => ({ ...prev, password: undefined }));
+      } catch {}
+    }
   };
 
   return (
@@ -144,23 +178,43 @@ const ClientLogin = () => {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Input
-                  type="text"
-                  placeholder="Phone Number"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="h-12 rounded-xl border-2 border-gray-200 focus:border-green-500 transition-colors"
+                  type="tel"
+                  placeholder="Phone Number (e.g., 1234567890)"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className={`h-12 rounded-xl border-2 transition-colors ${
+                    errors.phone 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : 'border-gray-200 focus:border-green-500'
+                  }`}
                   required
                 />
+                {errors.phone && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.phone}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Input
                   type="password"
-                  placeholder="Password"
+                  placeholder="Password (min 8 characters)"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 rounded-xl border-2 border-gray-200 focus:border-green-500 transition-colors"
+                  onChange={handlePasswordChange}
+                  className={`h-12 rounded-xl border-2 transition-colors ${
+                    errors.password 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : 'border-gray-200 focus:border-green-500'
+                  }`}
                   required
                 />
+                {errors.password && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.password}
+                  </div>
+                )}
               </div>
               <Button
                 type="submit"
@@ -171,17 +225,6 @@ const ClientLogin = () => {
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
-            
-            <div className="mt-4 text-center">
-              <Button
-                onClick={handleDemoLogin}
-                variant="outline"
-                className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                Quick Demo Login
-              </Button>
-            </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200 text-center space-y-2">
               <a

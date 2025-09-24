@@ -13,9 +13,9 @@ interface BarcodeCardProps {
 }
 
 const BarcodeCard = ({ 
-  clientCode = "C-2025-DEMO01", 
-  userName = "Demo Client",
-  userEmail = "demo@spotin.com"
+  clientCode, 
+  userName,
+  userEmail
 }: BarcodeCardProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
@@ -26,6 +26,17 @@ const BarcodeCard = ({
       generateBarcode();
     }
   }, [clientCode]);
+
+  // Don't render if required props are missing
+  if (!clientCode || !userName) {
+    return (
+      <Card className="border-2 border-gray-200 bg-gray-50">
+        <CardContent className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Loading barcode...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const generateBarcode = () => {
     try {

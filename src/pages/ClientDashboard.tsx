@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Users, TrendingUp, Calendar, ShoppingCart, Plus, Minus, MapPin, Clock, DollarSign, CreditCard, User, Mail, Phone, Award, FileText, Coffee, QrCode } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, Calendar, ShoppingCart, Plus, Minus, MapPin, Clock, DollarSign, CreditCard, User, Mail, Phone, Award, FileText, Coffee, QrCode, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,23 +10,24 @@ import MetricCard from "@/components/MetricCard";
 import BarcodeCard from "@/components/BarcodeCard";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [cart, setCart] = useState<Array<{id: number, name: string, price: number, quantity: number}>>([]);
   const [clientData, setClientData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Get client data from localStorage
     const storedData = localStorage.getItem('spotinClientData');
     if (storedData) {
-      const clientData = JSON.parse(storedData);
-      setClientData(clientData);
+      const parsedData = JSON.parse(storedData);
+      setClientData(parsedData);
       
-      // For non-demo clients, verify the session is still valid
-      if (clientData.id !== "demo-client-id") {
-        verifyClientSession(clientData.id);
-      }
+      // Always verify the session is still valid for security
+      verifyClientSession(parsedData.id);
     } else {
       // Redirect to login if no client data found
       navigate('/client-login');
@@ -42,15 +43,25 @@ const ClientDashboard = () => {
       const authResult = result as any;
       if (error || !authResult.success) {
         // Session invalid, redirect to login
-        localStorage.removeItem('spotinClientData');
-        navigate('/client-login');
+        handleLogout();
+        return;
       }
+      
+      setIsLoading(false);
     } catch (error) {
       console.error('Session verification error:', error);
       // On error, redirect to login for security
-      localStorage.removeItem('spotinClientData');
-      navigate('/client-login');
+      handleLogout();
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('spotinClientData');
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out",
+    });
+    navigate('/client-login');
   };
 
   const drinkMenu = [
@@ -117,20 +128,41 @@ const ClientDashboard = () => {
     return "Desk A-12"; // This would come from check-in system
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clientData) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <SpotinHeader />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Client Portal</h2>
-            <p className="text-muted-foreground">Welcome back! Current location: {getCurrentLocation()}</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Client Portal</h2>
+              <p className="text-muted-foreground">Welcome back, {clientData.fullName}! Current location: {getCurrentLocation()}</p>
+            </div>
           </div>
+          <Button variant="outline" onClick={handleLogout} size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
         </div>
 
         {/* Quick Stats */}
@@ -155,9 +187,9 @@ const ClientDashboard = () => {
           <TabsContent value="barcode" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <BarcodeCard 
-                clientCode={clientData?.clientCode || clientData?.barcode || "C-2025-DEMO01"}
-                userName={clientData?.fullName || "Demo Client"}
-                userEmail={clientData?.email || "demo@spotin.com"}
+                clientCode={clientData.clientCode}
+                userName={clientData.fullName}
+                userEmail={clientData.email}
               />
               
               <Card>
@@ -212,7 +244,7 @@ const ClientDashboard = () => {
                     <h4 className="font-medium text-green-800 mb-2">💡 Pro Tips</h4>
                     <ul className="text-sm text-green-700 space-y-1">
                       <li>• Save the barcode to your phone for quick access</li>
-                      <li>• Memorize your client ID: <strong>{clientData?.clientCode || "C-2025-DEMO01"}</strong></li>
+                      <li>• Memorize your client ID: <strong>{clientData.clientCode}</strong></li>
                       <li>• Staff can also enter your ID manually if needed</li>
                     </ul>
                   </div>
@@ -428,19 +460,23 @@ const ClientDashboard = () => {
                   <CardTitle>Account Information</CardTitle>
                   <CardDescription>Manage your profile and preferences</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-foreground">John Smith</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
-                    <p className="text-foreground">john.smith@email.com</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Phone</label>
-                    <p className="text-foreground">+1 (555) 123-4567</p>
-                  </div>
+                 <CardContent className="space-y-4">
+                   <div className="space-y-2">
+                     <label className="text-sm font-medium">Full Name</label>
+                     <p className="text-foreground">{clientData.fullName}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-sm font-medium">Email</label>
+                     <p className="text-foreground">{clientData.email || 'Not provided'}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-sm font-medium">Phone</label>
+                     <p className="text-foreground">{clientData.phone}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-sm font-medium">Client ID</label>
+                     <p className="text-foreground font-mono">{clientData.clientCode}</p>
+                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Current Location</label>
                     <div className="flex items-center gap-2">
