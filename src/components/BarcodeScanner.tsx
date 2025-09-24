@@ -54,7 +54,7 @@ export default function BarcodeScanner() {
     setScanResult(null);
 
     try {
-      // First, try to find the client by barcode or client_code
+      // Find the client by barcode or client_code
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('id, client_code, full_name, phone, email, barcode, is_active')
@@ -63,19 +63,13 @@ export default function BarcodeScanner() {
         .single();
 
       if (clientError || !clientData) {
-        // If not found in real data, check demo codes
-        const demoData = getDemoClientData(barcode);
-        if (demoData) {
-          await processCheckInOut(demoData.clientId, demoData.userName, barcode, demoData.clientCode);
-        } else {
-          toast({
-            title: "Client not found",
-            description: "No active client found with this barcode. Please check and try again.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Client not found",
+          description: `No active client found with barcode: ${barcode}. Please check and try again.`,
+          variant: "destructive",
+        });
       } else {
-        // Process check-in/out for real client
+        // Process check-in/out for client
         await processCheckInOut(clientData.id, clientData.full_name, barcode, clientData.client_code);
       }
     } catch (error) {
@@ -98,17 +92,6 @@ export default function BarcodeScanner() {
     }
   };
 
-  const getDemoClientData = (barcode: string) => {
-    const demoClients = [
-      { barcode: 'C-2024-000001', clientId: 'demo-1', userName: 'John Smith', clientCode: 'C-2024-000001' },
-      { barcode: 'C-2024-000002', clientId: 'demo-2', userName: 'Sarah Johnson', clientCode: 'C-2024-000002' },
-      { barcode: 'C-2024-000003', clientId: 'demo-3', userName: 'Mike Wilson', clientCode: 'C-2024-000003' },
-    ];
-
-    return demoClients.find(client => 
-      client.barcode === barcode || client.clientCode === barcode
-    );
-  };
 
   const processCheckInOut = async (clientId: string, userName: string, barcode: string, clientCode: string) => {
     try {
@@ -263,24 +246,6 @@ export default function BarcodeScanner() {
             </div>
           </div>
           
-          <Separator />
-          
-          <div className="space-y-2">
-            <h4 className="font-medium">Demo Barcodes (for testing)</h4>
-            <div className="flex flex-wrap gap-2">
-              {['C-2024-000001', 'C-2024-000002', 'C-2024-000003'].map((code) => (
-                <Button
-                  key={code}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBarcodeInput(code)}
-                  disabled={isProcessing}
-                >
-                  {code}
-                </Button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
 

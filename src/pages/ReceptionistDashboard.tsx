@@ -104,38 +104,7 @@ const ReceptionistDashboard = () => {
     } catch (error) {
       console.error('Failed to fetch active sessions:', error);
       toast.error('Failed to load active sessions');
-      
-      // Fallback to mock data
-      setActiveSessions([
-        {
-          id: 'mock-1',
-          client_id: 'demo-1',
-          checked_in_at: new Date().toISOString(),
-          status: 'checked_in',
-          client: { 
-            id: 'demo-1',
-            client_code: 'C-2024-000001',
-            full_name: 'John Smith', 
-            email: 'john@example.com',
-            phone: '+1234567890',
-            barcode: 'C-2024-000001'
-          }
-        },
-        {
-          id: 'mock-2',
-          client_id: 'demo-2',
-          checked_in_at: new Date(Date.now() - 3600000).toISOString(),
-          status: 'checked_in',
-          client: { 
-            id: 'demo-2',
-            client_code: 'C-2024-000002',
-            full_name: 'Sarah Johnson', 
-            email: 'sarah@example.com',
-            phone: '+1234567891',
-            barcode: 'C-2024-000002'
-          }
-        }
-      ]);
+      setActiveSessions([]);
     }
   };
 
@@ -192,10 +161,10 @@ const ReceptionistDashboard = () => {
 
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <MetricCard title="Active Sessions" value="24" change="+3" icon={Users} variant="success" />
+          <MetricCard title="Active Sessions" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={Users} variant="success" />
           <MetricCard title="Available Desks" value="12" change="-2" icon={CheckCircle} variant="info" />
           <MetricCard title="Room Bookings" value="8" change="+1" icon={Calendar} variant="default" />
-          <MetricCard title="New Check-ins" value="15" change="+5" icon={QrCode} variant="success" />
+          <MetricCard title="New Check-ins" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={QrCode} variant="success" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
