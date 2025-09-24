@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +7,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
+import Receipt from "@/components/Receipt";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<{ sessionId: string; clientId: string } | null>(null);
 
   const quickActions = [
     { 
@@ -44,11 +50,59 @@ const ReceptionistDashboard = () => {
     },
   ];
 
-  const currentSessions = [
-    { id: 1, client: "John Smith", seat: "A-12", checkIn: "09:30", type: "Hot Desk" },
-    { id: 2, client: "Tech Corp", room: "Meeting Room 1", checkIn: "10:00", type: "Conference" },
-    { id: 3, client: "Sarah Johnson", seat: "B-05", checkIn: "08:45", type: "Private Desk" },
-  ];
+  useEffect(() => {
+    fetchActiveSessions();
+  }, []);
+
+  const fetchActiveSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          clients (
+            name,
+            has_membership,
+            membership_type
+          )
+        `)
+        .eq('status', 'active')
+        .order('check_in_time', { ascending: false });
+
+      if (error) throw error;
+      setActiveSessions(data || []);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      toast.error('Failed to load active sessions');
+    }
+  };
+
+  const handleCheckOut = async (sessionId: string, clientId: string) => {
+    try {
+      // Update session to completed
+      const { error } = await supabase
+        .from('sessions')
+        .update({ 
+          status: 'completed', 
+          check_out_time: new Date().toISOString() 
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      // Show receipt
+      setReceiptData({ sessionId, clientId });
+      setShowReceipt(true);
+      
+      // Refresh sessions
+      await fetchActiveSessions();
+      
+      toast.success('Client checked out successfully');
+    } catch (error) {
+      console.error('Error checking out:', error);
+      toast.error('Failed to check out client');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -152,25 +206,52 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {currentSessions.map((session) => (
-                    <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-sm">{session.client}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {session.seat || session.room} • {session.checkIn}
-                        </p>
+                  {activeSessions.length > 0 ? (
+                    activeSessions.map((session) => (
+                      <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{session.clients?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.seat_number || session.room_number} • {new Date(session.check_in_time).toLocaleTimeString()}
+                          </p>
+                          {session.clients?.has_membership && (
+                            <p className="text-xs text-primary">Member: {session.clients.membership_type}</p>
+                          )}
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCheckOut(session.id, session.client_id)}
+                        >
+                          Check Out
+                        </Button>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Check Out
-                      </Button>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground">No active sessions</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Receipt Dialog */}
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Receipt</DialogTitle>
+          </DialogHeader>
+          {receiptData && (
+            <Receipt 
+              sessionId={receiptData.sessionId}
+              clientId={receiptData.clientId}
+              onClose={() => setShowReceipt(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

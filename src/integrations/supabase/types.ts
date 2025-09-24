@@ -14,7 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          barcode: string | null
+          created_at: string
+          email: string | null
+          has_membership: boolean | null
+          id: string
+          membership_expires_at: string | null
+          membership_type: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          created_at?: string
+          email?: string | null
+          has_membership?: boolean | null
+          id?: string
+          membership_expires_at?: string | null
+          membership_type?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          created_at?: string
+          email?: string | null
+          has_membership?: boolean | null
+          id?: string
+          membership_expires_at?: string | null
+          membership_type?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      day_use_ticket_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      receipts: {
+        Row: {
+          client_id: string
+          created_at: string
+          day_use_ticket_added: boolean | null
+          day_use_ticket_price: number | null
+          id: string
+          issued_at: string
+          items: Json
+          session_id: string
+          total_amount: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          day_use_ticket_added?: boolean | null
+          day_use_ticket_price?: number | null
+          id?: string
+          issued_at?: string
+          items?: Json
+          session_id: string
+          total_amount?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          day_use_ticket_added?: boolean | null
+          day_use_ticket_price?: number | null
+          id?: string
+          issued_at?: string
+          items?: Json
+          session_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          check_in_time: string
+          check_out_time: string | null
+          client_id: string
+          created_at: string
+          id: string
+          room_number: string | null
+          seat_number: string | null
+          session_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          check_in_time?: string
+          check_out_time?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          room_number?: string | null
+          seat_number?: string | null
+          session_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          check_in_time?: string
+          check_out_time?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          room_number?: string | null
+          seat_number?: string | null
+          session_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

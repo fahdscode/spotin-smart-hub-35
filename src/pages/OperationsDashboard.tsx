@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
+import DayUseTicketControls from "@/components/DayUseTicketControls";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -338,6 +339,17 @@ const OperationsDashboard = () => {
                     <DollarSign className="h-4 w-4" />
                     Add Bill to Operation Manager
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* Day Use Ticket Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Day Use Ticket Control</CardTitle>
+                  <CardDescription>Manage complimentary tickets for members</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <DayUseTicketControls />
                 </CardContent>
               </Card>
 
