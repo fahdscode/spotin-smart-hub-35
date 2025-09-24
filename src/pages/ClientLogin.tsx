@@ -21,48 +21,48 @@ const ClientLogin = () => {
 
     try {
       // Check for demo account
-      if (username === "demo123" && password === "1234") {
+      if (username === "1234567890" && password === "demo") {
         toast({
           title: "Demo Login Successful",
           description: "Welcome to the demo client account!",
         });
         
         localStorage.setItem('spotinClientData', JSON.stringify({
-          clientCode: 'C-2025-DEMO01',
+          id: 'demo-client-id',
+          clientCode: 'C-DEMO-001',
           fullName: 'Demo Client',
-          phone: 'demo123',
-          email: 'demo@spotin.com'
+          phone: '1234567890',
+          email: 'demo@spotin.com',
+          barcode: 'C-DEMO-001'
         }));
         
         navigate("/client");
+        setIsLoading(false);
         return;
       }
 
-      // Query the clients table
-      const { data: client, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('phone', username)
-        .eq('is_active', true)
-        .single();
+      // Use secure authentication function
+      const { data: authResult, error } = await supabase.rpc('authenticate_client', {
+        client_phone: username,
+        client_password: password
+      });
 
-      if (error || !client) {
+      if (error) {
+        console.error('Authentication error:', error);
         toast({
           title: "Login Failed",
-          description: "Invalid phone number or password",
+          description: "An error occurred. Please try again.",
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      // Verify password
-      const passwordMatch = await bcrypt.compare(password, client.password_hash);
-      
-      if (!passwordMatch) {
+      const result = authResult as any;
+      if (!result.success) {
         toast({
           title: "Login Failed",
-          description: "Invalid phone number or password",
+          description: result.error || "Invalid credentials",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -71,17 +71,17 @@ const ClientLogin = () => {
 
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${client.full_name}!`,
+        description: `Welcome back, ${result.client.full_name}!`,
       });
 
       // Store client data
       localStorage.setItem('spotinClientData', JSON.stringify({
-        clientId: client.id,
-        clientCode: client.client_code,
-        fullName: client.full_name,
-        phone: client.phone,
-        email: client.email,
-        barcode: client.barcode
+        id: result.client.id,
+        clientCode: result.client.client_code,
+        fullName: result.client.full_name,
+        phone: result.client.phone,
+        email: result.client.email,
+        barcode: result.client.barcode
       }));
 
       navigate("/client");
@@ -98,8 +98,8 @@ const ClientLogin = () => {
   };
 
   const handleDemoLogin = () => {
-    setUsername("demo123");
-    setPassword("1234");
+    setUsername("1234567890");
+    setPassword("demo");
     toast({
       title: "Demo Credentials Loaded",
       description: "Click Login to access the demo account",

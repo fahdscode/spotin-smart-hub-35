@@ -9,6 +9,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import BarcodeCard from "@/components/BarcodeCard";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -19,12 +20,38 @@ const ClientDashboard = () => {
     // Get client data from localStorage
     const storedData = localStorage.getItem('spotinClientData');
     if (storedData) {
-      setClientData(JSON.parse(storedData));
+      const clientData = JSON.parse(storedData);
+      setClientData(clientData);
+      
+      // For non-demo clients, verify the session is still valid
+      if (clientData.id !== "demo-client-id") {
+        verifyClientSession(clientData.id);
+      }
     } else {
       // Redirect to login if no client data found
       navigate('/client-login');
     }
   }, [navigate]);
+
+  const verifyClientSession = async (clientId: string) => {
+    try {
+      const { data: result, error } = await supabase.rpc('get_client_by_id', {
+        client_id: clientId
+      });
+
+      const authResult = result as any;
+      if (error || !authResult.success) {
+        // Session invalid, redirect to login
+        localStorage.removeItem('spotinClientData');
+        navigate('/client-login');
+      }
+    } catch (error) {
+      console.error('Session verification error:', error);
+      // On error, redirect to login for security
+      localStorage.removeItem('spotinClientData');
+      navigate('/client-login');
+    }
+  };
 
   const drinkMenu = [
     { id: 1, name: "Espresso", price: 2.50, category: "Coffee", available: true },

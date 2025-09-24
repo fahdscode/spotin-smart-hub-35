@@ -437,6 +437,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_client: {
+        Args: { client_password: string; client_phone: string }
+        Returns: Json
+      }
       generate_barcode: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -448,6 +452,10 @@ export type Database = {
       generate_client_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_client_by_id: {
+        Args: { client_id: string }
+        Returns: Json
       }
       get_client_status: {
         Args: { client_id: string }
