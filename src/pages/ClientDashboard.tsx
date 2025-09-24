@@ -14,8 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ClientData {
   id: string;
-  client_code: string;
-  full_name: string;
+  clientCode: string;
+  fullName: string;
   phone: string;
   email: string;
   barcode: string;
@@ -229,8 +229,8 @@ export default function ClientDashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Welcome back, {clientData.full_name}!</h1>
-            <p className="text-muted-foreground">Member ID: {clientData.client_code}</p>
+            <h1 className="text-3xl font-bold">Welcome back, {clientData.fullName}!</h1>
+            <p className="text-muted-foreground">Member ID: {clientData.clientCode}</p>
           </div>
           <Button variant="outline" onClick={handleLogout}>
             Sign Out
@@ -288,8 +288,8 @@ export default function ClientDashboard() {
               </CardHeader>
               <CardContent>
                 <BarcodeCard 
-                  clientCode={clientData.client_code}
-                  userName={clientData.full_name}
+                  clientCode={clientData.clientCode}
+                  userName={clientData.fullName}
                   userEmail={clientData.email}
                 />
               </CardContent>
@@ -508,7 +508,7 @@ export default function ClientDashboard() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-sm">{clientData.full_name}</p>
+                    <p className="text-sm">{clientData.fullName}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Phone</label>
@@ -520,7 +520,7 @@ export default function ClientDashboard() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Member ID</label>
-                    <p className="text-sm">{clientData.client_code}</p>
+                    <p className="text-sm">{clientData.clientCode}</p>
                   </div>
                 </CardContent>
               </Card>
