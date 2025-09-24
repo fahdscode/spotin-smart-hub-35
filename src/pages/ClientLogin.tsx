@@ -96,7 +96,7 @@ const ClientLogin = () => {
       if (!isPasswordValid) {
         toast({
           title: "Login Failed",
-          description: "Invalid phone number or password",
+          description: "Invalid username or password.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -109,7 +109,7 @@ const ClientLogin = () => {
       });
 
       // Store client data (exclude password hash)
-      localStorage.setItem('spotinClientData', JSON.stringify({
+      localStorage.setItem('clientData', JSON.stringify({
         id: result.client.id,
         clientCode: result.client.client_code,
         fullName: result.client.full_name,
@@ -118,7 +118,7 @@ const ClientLogin = () => {
         barcode: result.client.barcode
       }));
 
-      navigate("/client");
+      navigate("/client-dashboard");
     } catch (error: any) {
       console.error('Login error:', error);
       toast({

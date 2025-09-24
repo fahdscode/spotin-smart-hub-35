@@ -69,10 +69,11 @@ export default function ClientDashboard() {
   const [checkInStatus, setCheckInStatus] = useState<string>('checked_out');
 
   useEffect(() => {
-    const storedClientData = localStorage.getItem('spotinClientData');
+    const storedClientData = localStorage.getItem('clientData');
     if (storedClientData) {
       try {
         const parsedData = JSON.parse(storedClientData);
+        console.log('Client data loaded:', parsedData); // Debug log
         setClientData(parsedData);
         verifyClientSession(parsedData.id);
         fetchRealData();

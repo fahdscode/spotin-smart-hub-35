@@ -85,8 +85,8 @@ const ClientSignup = () => {
       // Hash password
       const passwordHash = await bcrypt.hash(formData.password, 10);
 
-      // Use the new registration function with proper barcode generation
-      const { data: registrationData, error: registrationError } = await supabase.rpc('register_client_with_barcode', {
+      // Use the test_client_registration function with proper barcode generation
+      const { data: registrationData, error: registrationError } = await supabase.rpc('test_client_registration', {
         p_full_name: formData.fullName,
         p_phone: formData.phone,
         p_email: formData.email || null,
@@ -122,7 +122,7 @@ const ClientSignup = () => {
       });
 
       // Store client info and redirect
-      localStorage.setItem('spotinClientData', JSON.stringify({
+      localStorage.setItem('clientData', JSON.stringify({
         id: result.client_id,
         clientCode: result.client_code,
         fullName: formData.fullName,
@@ -132,7 +132,7 @@ const ClientSignup = () => {
       }));
 
       setTimeout(() => {
-        navigate("/client");
+        navigate("/client-dashboard");
       }, 1500);
       
     } catch (error: any) {

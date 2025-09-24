@@ -32,7 +32,12 @@ const BarcodeCard = ({
     return (
       <Card className="border-2 border-gray-200 bg-gray-50">
         <CardContent className="flex items-center justify-center h-64">
-          <p className="text-gray-500">Loading barcode...</p>
+          <div className="text-center">
+            <p className="text-gray-500">Loading barcode...</p>
+            <div className="text-xs text-muted-foreground mt-2">
+              Missing: {!clientCode && 'Client Code'} {!userName && 'User Name'}
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -40,20 +45,33 @@ const BarcodeCard = ({
 
   const generateBarcode = () => {
     try {
-      if (canvasRef.current) {
-        JsBarcode(canvasRef.current, clientCode, {
+      if (canvasRef.current && clientCode) {
+        // For production-ready barcode scanning, use the actual barcode value
+        // This supports both old format (C-) and new format (BC-)
+        const barcodeValue = clientCode;
+        
+        JsBarcode(canvasRef.current, barcodeValue, {
           format: "CODE128",
           width: 2,
           height: 100,
           displayValue: true,
-          fontSize: 14,
-          margin: 10,
+          text: barcodeValue,
+          textAlign: "center",
+          textPosition: "bottom",
+          fontSize: 12,
+          textMargin: 8,
           background: "#ffffff",
-          lineColor: "#059669"
+          lineColor: "#059669",
+          margin: 10,
         });
       }
     } catch (error) {
       console.error('Error generating barcode:', error);
+      toast({
+        title: "Barcode Error",
+        description: "Failed to generate barcode. Please refresh the page.",
+        variant: "destructive",
+      });
     }
   };
 
