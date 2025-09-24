@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       check_ins: {
         Row: {
           checked_in_at: string
@@ -114,6 +138,8 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_admin: boolean | null
+          phone: string | null
           role: string
           updated_at: string
           user_id: string
@@ -124,6 +150,8 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          phone?: string | null
           role: string
           updated_at?: string
           user_id: string
@@ -134,6 +162,8 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
+          phone?: string | null
           role?: string
           updated_at?: string
           user_id?: string

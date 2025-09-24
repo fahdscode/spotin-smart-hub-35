@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
-import DayUseTicketControls from "@/components/DayUseTicketControls";
+// import DayUseTicketControls from "@/components/DayUseTicketControls";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -349,7 +349,9 @@ const OperationsDashboard = () => {
                   <CardDescription>Manage complimentary tickets for members</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <DayUseTicketControls />
+          <div className="p-4 border rounded-lg">
+            <p>Day Use Ticket Controls - Coming Soon</p>
+          </div>
                 </CardContent>
               </Card>
 

@@ -4,7 +4,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import Index from "./pages/Index";
+import Landing from "./pages/Landing";
+import ClientPortal from "./pages/ClientPortal";
+import AdminLogin from "./pages/AdminLogin";
+import AdminPanel from "./pages/AdminPanel";
+import AccountSettings from "./pages/AccountSettings";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
 import CeoDashboard from "./pages/CeoDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -24,10 +28,14 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/client" element={<ClientPortal />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
+            <Route path="/account-settings" element={<AccountSettings />} />
             <Route path="/receptionist" element={<ReceptionistDashboard />} />
             <Route path="/ceo" element={<CeoDashboard />} />
-            <Route path="/client" element={<ClientDashboard />} />
+            <Route path="/old-client" element={<ClientDashboard />} />
             <Route path="/operations" element={<OperationsDashboard />} />
             <Route path="/barista" element={<BaristaDashboard />} />
             <Route path="/community" element={<CommunityManagerDashboard />} />
