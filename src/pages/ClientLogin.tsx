@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import spotinLogo from "@/assets/spotin-logo.png";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -163,8 +164,12 @@ const ClientLogin = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
-            <Coffee className="h-8 w-8 text-white" />
+          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+            <img 
+              src={spotinLogo} 
+              alt="SpotIn Logo" 
+              className="h-12 w-12 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome to SpotIn</h1>
           <p className="text-gray-600 mt-2">Access your coworking portal</p>
