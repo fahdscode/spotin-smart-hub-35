@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Coffee, User, Phone, Lock, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -11,10 +12,14 @@ import { z } from "zod";
 
 // Form validation schema
 const signupSchema = z.object({
-  fullName: z.string()
-    .min(2, "Full name must be at least 2 characters")
-    .max(100, "Full name must be less than 100 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Full name can only contain letters and spaces"),
+  firstName: z.string()
+    .min(2, "First name must be at least 2 characters")
+    .max(50, "First name must be less than 50 characters")
+    .regex(/^[a-zA-Z\s]+$/, "First name can only contain letters and spaces"),
+  lastName: z.string()
+    .min(2, "Last name must be at least 2 characters")
+    .max(50, "Last name must be less than 50 characters")
+    .regex(/^[a-zA-Z\s]+$/, "Last name can only contain letters and spaces"),
   phone: z.string()
     .min(10, "Phone number must be at least 10 digits")
     .max(15, "Phone number must be less than 15 digits")
@@ -28,19 +33,39 @@ const signupSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .max(100, "Password must be less than 100 characters")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
-  confirmPassword: z.string()
+  confirmPassword: z.string(),
+  jobTitle: z.string()
+    .min(2, "Job title must be at least 2 characters")
+    .max(100, "Job title must be less than 100 characters"),
+  howDidYouFindUs: z.string()
+    .min(2, "Please tell us how you found us")
+    .max(200, "Response must be less than 200 characters")
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
+interface FormData {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  jobTitle: string;
+  howDidYouFindUs: string;
+}
+
 const ClientSignup = () => {
-  const [formData, setFormData] = useState({
-    fullName: "",
+  const [formData, setFormData] = useState<FormData>({
+    firstName: "",
+    lastName: "",
     phone: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    jobTitle: "",
+    howDidYouFindUs: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -85,12 +110,15 @@ const ClientSignup = () => {
       // Hash password
       const passwordHash = await bcrypt.hash(formData.password, 10);
 
-      // Use the test_client_registration function with proper barcode generation
+      // Use the updated registration function with new fields
       const { data: registrationData, error: registrationError } = await supabase.rpc('test_client_registration', {
-        p_full_name: formData.fullName,
+        p_first_name: formData.firstName,
+        p_last_name: formData.lastName,
         p_phone: formData.phone,
         p_email: formData.email || null,
-        p_password_hash: passwordHash
+        p_password_hash: passwordHash,
+        p_job_title: formData.jobTitle,
+        p_how_did_you_find_us: formData.howDidYouFindUs
       });
 
       if (registrationError) {
@@ -118,17 +146,21 @@ const ClientSignup = () => {
 
       toast({
         title: "Account Created Successfully!",
-        description: `Welcome ${formData.fullName}! Your client ID: ${result.client_code}`,
+        description: `Welcome ${result.full_name}! Your client ID: ${result.client_code}`,
       });
 
       // Store client info and redirect
       localStorage.setItem('clientData', JSON.stringify({
         id: result.client_id,
         clientCode: result.client_code,
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        fullName: result.full_name,
         phone: formData.phone,
         email: formData.email || '',
-        barcode: result.barcode
+        barcode: result.barcode,
+        jobTitle: formData.jobTitle,
+        howDidYouFindUs: formData.howDidYouFindUs
       }));
 
       setTimeout(() => {
@@ -157,21 +189,22 @@ const ClientSignup = () => {
   };
 
   // Real-time validation handlers
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value
     }));
 
     // Clear errors for this field on change
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-2xl space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
@@ -205,109 +238,140 @@ const ClientSignup = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-               <div className="space-y-2">
-                 <Input
-                   type="text"
-                   placeholder="Full Name *"
-                   value={formData.fullName}
-                   onChange={(e) => handleInputChange('fullName', e.target.value)}
-                   className={`h-12 rounded-xl border-2 transition-colors ${
-                     errors.fullName 
-                       ? 'border-red-500 focus:border-red-500' 
-                       : 'border-gray-200 focus:border-green-500'
-                   }`}
-                   required
-                 />
-                 {errors.fullName && (
-                   <div className="flex items-center gap-2 text-red-600 text-sm">
-                     <AlertCircle className="h-4 w-4" />
-                     {errors.fullName}
-                   </div>
-                 )}
-               </div>
-               
-               <div className="space-y-2">
-                 <Input
-                   type="tel"
-                   placeholder="Phone Number * (e.g., 1234567890)"
-                   value={formData.phone}
-                   onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, ''))}
-                   className={`h-12 rounded-xl border-2 transition-colors ${
-                     errors.phone 
-                       ? 'border-red-500 focus:border-red-500' 
-                       : 'border-gray-200 focus:border-green-500'
-                   }`}
-                   required
-                 />
-                 {errors.phone && (
-                   <div className="flex items-center gap-2 text-red-600 text-sm">
-                     <AlertCircle className="h-4 w-4" />
-                     {errors.phone}
-                   </div>
-                 )}
-               </div>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      placeholder="Enter your first name"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      className={errors.firstName ? "border-destructive" : ""}
+                    />
+                    {errors.firstName && (
+                      <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      placeholder="Enter your last name"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      className={errors.lastName ? "border-destructive" : ""}
+                    />
+                    {errors.lastName && (
+                      <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="e.g., 1234567890"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      const cleanedValue = e.target.value.replace(/\D/g, '');
+                      handleInputChange({ target: { name: 'phone', value: cleanedValue } } as any);
+                    }}
+                    className={errors.phone ? "border-destructive" : ""}
+                  />
+                  {errors.phone && (
+                    <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                  )}
+                </div>
 
-               <div className="space-y-2">
-                 <Input
-                   type="email"
-                   placeholder="Email (optional)"
-                   value={formData.email}
-                   onChange={(e) => handleInputChange('email', e.target.value)}
-                   className={`h-12 rounded-xl border-2 transition-colors ${
-                     errors.email 
-                       ? 'border-red-500 focus:border-red-500' 
-                       : 'border-gray-200 focus:border-green-500'
-                   }`}
-                 />
-                 {errors.email && (
-                   <div className="flex items-center gap-2 text-red-600 text-sm">
-                     <AlertCircle className="h-4 w-4" />
-                     {errors.email}
-                   </div>
-                 )}
-               </div>
+                <div>
+                  <Label htmlFor="email">Email (optional)</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  )}
+                </div>
 
-               <div className="space-y-2">
-                 <Input
-                   type="password"
-                   placeholder="Password * (min 8 chars, uppercase, lowercase, number)"
-                   value={formData.password}
-                   onChange={(e) => handleInputChange('password', e.target.value)}
-                   className={`h-12 rounded-xl border-2 transition-colors ${
-                     errors.password 
-                       ? 'border-red-500 focus:border-red-500' 
-                       : 'border-gray-200 focus:border-green-500'
-                   }`}
-                   required
-                 />
-                 {errors.password && (
-                   <div className="flex items-center gap-2 text-red-600 text-sm">
-                     <AlertCircle className="h-4 w-4" />
-                     {errors.password}
-                   </div>
-                 )}
-               </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Min 8 chars, uppercase, lowercase, number"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={errors.password ? "border-destructive" : ""}
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                  )}
+                </div>
 
-               <div className="space-y-2">
-                 <Input
-                   type="password"
-                   placeholder="Confirm Password *"
-                   value={formData.confirmPassword}
-                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                   className={`h-12 rounded-xl border-2 transition-colors ${
-                     errors.confirmPassword 
-                       ? 'border-red-500 focus:border-red-500' 
-                       : 'border-gray-200 focus:border-green-500'
-                   }`}
-                   required
-                 />
-                 {errors.confirmPassword && (
-                   <div className="flex items-center gap-2 text-red-600 text-sm">
-                     <AlertCircle className="h-4 w-4" />
-                     {errors.confirmPassword}
-                   </div>
-                 )}
-               </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className={errors.confirmPassword ? "border-destructive" : ""}
+                  />
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="jobTitle">Job Title / Student Status</Label>
+                  <Input
+                    id="jobTitle"
+                    name="jobTitle"
+                    type="text"
+                    placeholder="e.g., Software Engineer, Student, Freelancer"
+                    value={formData.jobTitle}
+                    onChange={handleInputChange}
+                    className={errors.jobTitle ? "border-destructive" : ""}
+                  />
+                  {errors.jobTitle && (
+                    <p className="text-sm text-destructive mt-1">{errors.jobTitle}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="howDidYouFindUs">How did you find us?</Label>
+                  <Input
+                    id="howDidYouFindUs"
+                    name="howDidYouFindUs"
+                    type="text"
+                    placeholder="e.g., Social media, Friend referral, Google search"
+                    value={formData.howDidYouFindUs}
+                    onChange={handleInputChange}
+                    className={errors.howDidYouFindUs ? "border-destructive" : ""}
+                  />
+                  {errors.howDidYouFindUs && (
+                    <p className="text-sm text-destructive mt-1">{errors.howDidYouFindUs}</p>
+                  )}
+                </div>
+              </div>
 
               <Button
                 type="submit"

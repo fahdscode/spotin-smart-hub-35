@@ -15,10 +15,14 @@ import { supabase } from '@/integrations/supabase/client';
 interface ClientData {
   id: string;
   clientCode: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   phone: string;
   email: string;
   barcode: string;
+  jobTitle: string;
+  howDidYouFindUs: string;
 }
 
 interface CartItem {
@@ -232,6 +236,7 @@ export default function ClientDashboard() {
           <div>
             <h1 className="text-3xl font-bold">Welcome back, {clientData.fullName}!</h1>
             <p className="text-muted-foreground">Member ID: {clientData.clientCode}</p>
+            <p className="text-sm text-muted-foreground">{clientData.jobTitle}</p>
           </div>
           <Button variant="outline" onClick={handleLogout}>
             Sign Out

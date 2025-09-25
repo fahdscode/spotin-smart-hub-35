@@ -112,10 +112,14 @@ const ClientLogin = () => {
       localStorage.setItem('clientData', JSON.stringify({
         id: result.client.id,
         clientCode: result.client.client_code,
+        firstName: result.client.first_name,
+        lastName: result.client.last_name,
         fullName: result.client.full_name,
         phone: result.client.phone,
         email: result.client.email,
-        barcode: result.client.barcode
+        barcode: result.client.barcode,
+        jobTitle: result.client.job_title,
+        howDidYouFindUs: result.client.how_did_you_find_us
       }));
 
       navigate("/client");

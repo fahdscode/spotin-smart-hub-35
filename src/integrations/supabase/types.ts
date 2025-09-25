@@ -121,9 +121,13 @@ export type Database = {
           client_code: string
           created_at: string
           email: string | null
+          first_name: string
           full_name: string
+          how_did_you_find_us: string
           id: string
           is_active: boolean
+          job_title: string
+          last_name: string
           password_hash: string
           phone: string
           updated_at: string
@@ -134,9 +138,13 @@ export type Database = {
           client_code: string
           created_at?: string
           email?: string | null
+          first_name: string
           full_name: string
+          how_did_you_find_us: string
           id?: string
           is_active?: boolean
+          job_title: string
+          last_name: string
           password_hash: string
           phone: string
           updated_at?: string
@@ -147,9 +155,13 @@ export type Database = {
           client_code?: string
           created_at?: string
           email?: string | null
+          first_name?: string
           full_name?: string
+          how_did_you_find_us?: string
           id?: string
           is_active?: boolean
+          job_title?: string
+          last_name?: string
           password_hash?: string
           phone?: string
           updated_at?: string
@@ -622,6 +634,15 @@ export type Database = {
               p_client_code: string
               p_email: string
               p_full_name: string
+              p_password_hash: string
+              p_phone: string
+            }
+          | {
+              p_email: string
+              p_first_name: string
+              p_how_did_you_find_us: string
+              p_job_title: string
+              p_last_name: string
               p_password_hash: string
               p_phone: string
             }
