@@ -17,6 +17,7 @@ import MembershipPlansManagement from "@/components/MembershipPlansManagement";
 import ProductPricing from "@/components/ProductPricing";
 import ProductCategories from "@/components/ProductCategories";
 import StockManagement from "@/components/StockManagement";
+import IngredientUsageReport from "@/components/IngredientUsageReport";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -108,9 +109,10 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
+            <TabsTrigger value="usage">Usage Report</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
@@ -222,6 +224,11 @@ const OperationsDashboard = () => {
           {/* Stock Management Tab */}
           <TabsContent value="stock-mgmt" className="space-y-6">
             <StockManagement />
+          </TabsContent>
+
+          {/* Ingredient Usage Report Tab */}
+          <TabsContent value="usage" className="space-y-6">
+            <IngredientUsageReport />
           </TabsContent>
 
           {/* Product Pricing Tab */}

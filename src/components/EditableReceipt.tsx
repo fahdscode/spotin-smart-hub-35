@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt as ReceiptIcon, Plus, Minus, Trash2, Search } from "lucide-react";
+import { Receipt as ReceiptIcon, Plus, Minus, Trash2, Search, AlertTriangle, PackageX } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import { useProductAvailability } from "@/hooks/useProductAvailability";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReceiptItem {
   id: string;
@@ -47,27 +49,62 @@ const EditableReceipt = ({
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   
-  const availableItems = [
-    { name: "Coffee - Small", price: 30.00, category: 'product' as const }, // ~$1.50 
-    { name: "Coffee - Large", price: 45.00, category: 'product' as const }, // ~$2.25
-    { name: "Tea", price: 25.00, category: 'product' as const }, // ~$1.25
-    { name: "Sandwich", price: 85.00, category: 'product' as const }, // ~$4.25
-    { name: "Pastry", price: 50.00, category: 'product' as const }, // ~$2.50
-    { name: "Meeting Room - 1hr", price: 300.00, category: 'room' as const }, // ~$15
-    { name: "Phone Booth - 30min", price: 160.00, category: 'room' as const }, // ~$8
-    { name: "Event Ticket", price: 400.00, category: 'ticket' as const }, // ~$20
+  const { products, loading: productsLoading, checkIngredientAvailability } = useProductAvailability();
+  const { toast } = useToast();
+  
+  // Static items for rooms and other services
+  const staticItems = [
+    { id: "room-1hr", name: "Meeting Room - 1hr", price: 300.00, category: 'room' as const, can_make: true },
+    { id: "booth-30min", name: "Phone Booth - 30min", price: 160.00, category: 'room' as const, can_make: true },
+    { id: "event-ticket", name: "Event Ticket", price: 400.00, category: 'ticket' as const, can_make: true }
   ];
 
-  const addItem = (itemName: string) => {
+  // Combine database products with static items
+  const availableItems = [
+    ...products.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      category: 'product' as const,
+      can_make: p.can_make,
+      missing_ingredients: p.missing_ingredients,
+      description: p.description
+    })),
+    ...staticItems
+  ];
+
+  const addItem = async (itemName: string) => {
     const availableItem = availableItems.find(item => item.name === itemName);
     if (!availableItem) return;
 
+    // Check if it's a product and if ingredients are available
+    if (availableItem.category === 'product' && availableItem.id && !availableItem.can_make) {
+      toast({
+        title: "Item Unavailable",
+        description: `${itemName} cannot be made due to insufficient ingredients: ${availableItem.missing_ingredients?.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const existingItem = items.find(item => item.name === itemName);
     if (existingItem) {
+      // Check ingredient availability for the new quantity
+      if (availableItem.category === 'product' && availableItem.id) {
+        const canMake = await checkIngredientAvailability(availableItem.id, existingItem.quantity + 1);
+        if (!canMake) {
+          toast({
+            title: "Insufficient Ingredients",
+            description: `Cannot add more ${itemName} due to insufficient ingredients`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       updateQuantity(existingItem.id, existingItem.quantity + 1);
     } else {
       const newItem: ReceiptItem = {
-        id: Date.now().toString(),
+        id: availableItem.id || Date.now().toString(),
         name: availableItem.name,
         quantity: 1,
         price: availableItem.price,
@@ -158,15 +195,33 @@ const EditableReceipt = ({
               <SelectTrigger className="bg-popover border-input">
                 <SelectValue placeholder="Select item to add" />
               </SelectTrigger>
-              <SelectContent className="bg-popover border-input z-50">
+               <SelectContent className="bg-popover border-input z-50">
                 {availableItems
                   .filter(item => 
                     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     item.category.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((item) => (
-                    <SelectItem key={item.name} value={item.name} className="hover:bg-accent">
-                      {item.name} - {formatPrice(item.price)}
+                    <SelectItem 
+                      key={item.name} 
+                      value={item.name} 
+                      className="hover:bg-accent"
+                      disabled={item.category === 'product' && !item.can_make}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <span>{item.name}</span>
+                          {item.category === 'product' && !item.can_make && (
+                            <div className="flex items-center gap-1">
+                              <PackageX className="h-3 w-3 text-destructive" />
+                              <Badge variant="outline" className="text-xs text-destructive border-destructive">
+                                Out of Stock
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground">{formatPrice(item.price)}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 {availableItems.filter(item => 
@@ -175,6 +230,11 @@ const EditableReceipt = ({
                 ).length === 0 && searchTerm && (
                   <div className="px-3 py-2 text-sm text-muted-foreground">
                     No items found matching "{searchTerm}"
+                  </div>
+                )}
+                {productsLoading && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    Loading products...
                   </div>
                 )}
               </SelectContent>
