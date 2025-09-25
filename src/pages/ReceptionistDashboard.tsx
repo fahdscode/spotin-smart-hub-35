@@ -19,10 +19,12 @@ import { Badge } from '@/components/ui/badge';
 
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
+  
+  // State declarations
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [newRegistrationsCount, setNewRegistrationsCount] = useState(0);
+  const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(0);
 
   const quickActions = [
     { 
@@ -105,15 +107,21 @@ const ReceptionistDashboard = () => {
 
   const fetchNewRegistrationsCount = async () => {
     try {
+      console.log('Fetching new registrations count...');
       const { count, error } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      console.log('New registrations count:', count);
       setNewRegistrationsCount(count || 0);
     } catch (error) {
       console.error('Error fetching new registrations count:', error);
+      setNewRegistrationsCount(0); // Set to 0 as fallback
     }
   };
 
@@ -219,7 +227,7 @@ const ReceptionistDashboard = () => {
           <MetricCard title="Active Sessions" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={Users} variant="success" />
           <MetricCard title="Available Desks" value="12" change="-2" icon={CheckCircle} variant="info" />
           <MetricCard title="Room Bookings" value="8" change="+1" icon={Calendar} variant="default" />
-          <MetricCard title="New Registrations" value={newRegistrationsCount.toString()} change={newRegistrationsCount > 0 ? '+' + newRegistrationsCount : '0'} icon={UserPlus} variant="success" />
+          <MetricCard title="New Registrations" value={(newRegistrationsCount || 0).toString()} change={(newRegistrationsCount || 0) > 0 ? '+' + (newRegistrationsCount || 0) : '0'} icon={UserPlus} variant="success" />
         </div>
 
         {/* Tabbed Interface for Mobile/Desktop */}
