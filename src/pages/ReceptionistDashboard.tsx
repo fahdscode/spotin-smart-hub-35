@@ -8,6 +8,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
+import EditableReceipt from "@/components/EditableReceipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
@@ -62,6 +63,9 @@ const ReceptionistDashboard = () => {
     }
   ]);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [finalReceiptData, setFinalReceiptData] = useState<any>(null);
   const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(3);
 
   const quickActions = [
@@ -101,15 +105,47 @@ const ReceptionistDashboard = () => {
   }, []);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {
+    setSelectedSession({ sessionId, clientData });
+    setShowCheckoutConfirmation(true);
+  };
+
+  const calculateSessionDuration = (checkedInAt: string) => {
+    const checkedInTime = new Date(checkedInAt);
+    const currentTime = new Date();
+    const durationInHours = Math.ceil((currentTime.getTime() - checkedInTime.getTime()) / (1000 * 60 * 60));
+    return Math.max(1, durationInHours); // Minimum 1 hour
+  };
+
+  const calculateSessionCost = (duration: number) => {
+    return duration * 15; // $15 per hour
+  };
+
+  const confirmCheckout = (items: any[], total: number, paymentMethod: string) => {
     // Remove session from active sessions
-    setActiveSessions(prev => prev.filter(session => session.id !== sessionId));
+    setActiveSessions(prev => prev.filter(session => session.id !== selectedSession.sessionId));
     
+    // Store receipt data
+    setFinalReceiptData({
+      customerName: selectedSession.clientData.client?.full_name || 'Client',
+      receiptNumber: `RCP-${Date.now()}`,
+      items: items,
+      total: total,
+      paymentMethod: paymentMethod,
+      date: new Date().toLocaleDateString()
+    });
+    
+    setShowCheckoutConfirmation(false);
     setShowReceipt(true);
     
     toast({
-      title: "Success",
-      description: `${clientData.client?.full_name || 'Client'} checked out successfully`,
+      title: "Payment Successful",
+      description: `${selectedSession.clientData.client?.full_name || 'Client'} checked out successfully`,
     });
+  };
+
+  const cancelCheckout = () => {
+    setShowCheckoutConfirmation(false);
+    setSelectedSession(null);
   };
 
 
@@ -302,16 +338,49 @@ const ReceptionistDashboard = () => {
         </div>
       </div>
 
-      {/* Receipt Dialog */}
+      {/* Checkout Confirmation Dialog */}
+      <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Checkout Confirmation</DialogTitle>
+            <DialogDescription>
+              Review and edit the receipt before processing payment
+            </DialogDescription>
+          </DialogHeader>
+          {selectedSession && (
+            <EditableReceipt
+              receiptNumber={`RCP-${Date.now()}`}
+              customerName={selectedSession.clientData.client?.full_name || 'Client'}
+              sessionDuration={calculateSessionDuration(selectedSession.clientData.checked_in_at)}
+              sessionCost={calculateSessionCost(calculateSessionDuration(selectedSession.clientData.checked_in_at))}
+              onConfirm={confirmCheckout}
+              onCancel={cancelCheckout}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Final Receipt Dialog */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Receipt</DialogTitle>
+            <DialogTitle>Payment Receipt</DialogTitle>
           </DialogHeader>
-          <Receipt 
-            customerName="Demo Customer"
-            receiptNumber={`RCP-${Date.now()}`}
-          />
+          {finalReceiptData ? (
+            <Receipt 
+              customerName={finalReceiptData.customerName}
+              receiptNumber={finalReceiptData.receiptNumber}
+              items={finalReceiptData.items}
+              total={finalReceiptData.total}
+              paymentMethod={finalReceiptData.paymentMethod}
+              date={finalReceiptData.date}
+            />
+          ) : (
+            <Receipt 
+              customerName="Demo Customer"
+              receiptNumber={`RCP-${Date.now()}`}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
