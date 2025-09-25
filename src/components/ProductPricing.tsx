@@ -733,64 +733,93 @@ const ProductPricing = () => {
                                 rows={2}
                               />
                             </div>
-                            <div>
-                              <Label>Ingredients</Label>
-                              <Select
-                                value=""
-                                onValueChange={(value) => {
-                                  const currentIngredients = product.ingredients || [];
-                                  if (!currentIngredients.includes(value)) {
-                                    const newIngredients = [...currentIngredients, value];
-                                    setProducts(products.map(p => 
-                                      p.id === product.id ? { ...p, ingredients: newIngredients } : p
-                                    ));
-                                  }
-                                }}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Add ingredient" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="coffee-beans">Coffee Beans</SelectItem>
-                                  <SelectItem value="milk">Milk</SelectItem>
-                                  <SelectItem value="sugar">Sugar</SelectItem>
-                                  <SelectItem value="flour">Flour</SelectItem>
-                                  <SelectItem value="butter">Butter</SelectItem>
-                                  <SelectItem value="eggs">Eggs</SelectItem>
-                                  <SelectItem value="chocolate">Chocolate</SelectItem>
-                                  <SelectItem value="vanilla">Vanilla</SelectItem>
-                                  <SelectItem value="cinnamon">Cinnamon</SelectItem>
-                                  <SelectItem value="honey">Honey</SelectItem>
-                                  <SelectItem value="tea-leaves">Tea Leaves</SelectItem>
-                                  <SelectItem value="cream">Cream</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              
-                              {/* Display selected ingredients */}
-                              {product.ingredients && product.ingredients.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {product.ingredients.map((ingredient, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
-                                      {ingredient.replace("-", " ")}
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-auto p-0 ml-1"
-                                        onClick={() => {
-                                          const newIngredients = product.ingredients?.filter((_, i) => i !== index) || [];
-                                          setProducts(products.map(p => 
-                                            p.id === product.id ? { ...p, ingredients: newIngredients } : p
-                                          ));
-                                        }}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                             <div>
+                               <Label>Ingredients</Label>
+                               <Select
+                                 value=""
+                                 onValueChange={(value) => {
+                                   // Ask for amount when ingredient is selected
+                                   const amount = prompt(`How much ${value.replace("-", " ")} is needed for this product? (include unit, e.g., "250ml", "2 cups", "50g")`);
+                                   if (amount && amount.trim()) {
+                                     const currentIngredients = product.ingredients || [];
+                                     const ingredientWithAmount = `${value}:${amount.trim()}`;
+                                     
+                                     // Check if this ingredient type already exists
+                                     const existingIndex = currentIngredients.findIndex(ing => ing.startsWith(value + ":"));
+                                     if (existingIndex >= 0) {
+                                       // Update existing ingredient
+                                       const newIngredients = [...currentIngredients];
+                                       newIngredients[existingIndex] = ingredientWithAmount;
+                                       setProducts(products.map(p => 
+                                         p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                       ));
+                                     } else {
+                                       // Add new ingredient
+                                       const newIngredients = [...currentIngredients, ingredientWithAmount];
+                                       setProducts(products.map(p => 
+                                         p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                       ));
+                                     }
+                                   }
+                                 }}
+                               >
+                                 <SelectTrigger>
+                                   <SelectValue placeholder="Add ingredient" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="coffee-beans">Coffee Beans</SelectItem>
+                                   <SelectItem value="milk">Milk</SelectItem>
+                                   <SelectItem value="sugar">Sugar</SelectItem>
+                                   <SelectItem value="flour">Flour</SelectItem>
+                                   <SelectItem value="butter">Butter</SelectItem>
+                                   <SelectItem value="eggs">Eggs</SelectItem>
+                                   <SelectItem value="chocolate">Chocolate</SelectItem>
+                                   <SelectItem value="vanilla">Vanilla</SelectItem>
+                                   <SelectItem value="cinnamon">Cinnamon</SelectItem>
+                                   <SelectItem value="honey">Honey</SelectItem>
+                                   <SelectItem value="tea-leaves">Tea Leaves</SelectItem>
+                                   <SelectItem value="cream">Cream</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                               
+                               {/* Display selected ingredients with amounts */}
+                               {product.ingredients && product.ingredients.length > 0 && (
+                                 <div className="space-y-2 mt-3">
+                                   <Label className="text-sm font-medium">Recipe:</Label>
+                                   <div className="space-y-1">
+                                     {product.ingredients.map((ingredient, index) => {
+                                       const [name, amount] = ingredient.includes(':') ? ingredient.split(':') : [ingredient, ''];
+                                       return (
+                                         <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                                           <span className="text-sm font-medium">
+                                             {name.replace("-", " ")}
+                                           </span>
+                                           <div className="flex items-center gap-2">
+                                             <Badge variant="outline" className="text-xs">
+                                               {amount || 'No amount specified'}
+                                             </Badge>
+                                             <Button
+                                               type="button"
+                                               variant="ghost"
+                                               size="sm"
+                                               className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                               onClick={() => {
+                                                 const newIngredients = product.ingredients?.filter((_, i) => i !== index) || [];
+                                                 setProducts(products.map(p => 
+                                                   p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                                 ));
+                                               }}
+                                             >
+                                               <X className="h-3 w-3" />
+                                             </Button>
+                                           </div>
+                                         </div>
+                                       );
+                                     })}
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
                             <div>
                               <Label>Product Image</Label>
                               <div className="space-y-2">
