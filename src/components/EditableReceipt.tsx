@@ -229,8 +229,6 @@ const EditableReceipt = ({
               <SelectContent>
                 <SelectItem value="cash">Cash</SelectItem>
                 <SelectItem value="visa">Visa Card</SelectItem>
-                <SelectItem value="mastercard">Mastercard</SelectItem>
-                <SelectItem value="amex">American Express</SelectItem>
               </SelectContent>
             </Select>
           </div>

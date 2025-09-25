@@ -310,8 +310,6 @@ const ClientSignup = () => {
                       <SelectContent className="bg-background border z-50">
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.gender && (
@@ -320,7 +318,7 @@ const ClientSignup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="birthday">Birthday</Label>
+                    <Label htmlFor="birthday">Birth Date</Label>
                     <Input
                       id="birthday"
                       name="birthday"
