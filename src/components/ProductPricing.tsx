@@ -479,44 +479,75 @@ const ProductPricing = () => {
                       Add Ingredient
                     </Button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {newProduct.ingredients.map((ingredient, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <Select
-                          value={ingredient.stock_id}
-                          onValueChange={(value) => updateIngredient(index, 'stock_id', value)}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select ingredient" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {stockItems.map((stock) => (
-                              <SelectItem key={stock.id} value={stock.id}>
-                                {stock.name} ({stock.current_quantity} {stock.unit})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Qty"
-                          value={ingredient.quantity_needed}
-                          onChange={(e) => updateIngredient(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
-                          className="w-20"
-                        />
-                        <Button 
-                          type="button" 
-                          onClick={() => removeIngredient(index)} 
-                          variant="outline" 
-                          size="sm"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
+                      <div key={index} className="p-3 border rounded-lg bg-muted/30">
+                        <div className="flex gap-2 items-start">
+                          <div className="flex-1">
+                            <Label className="text-xs text-muted-foreground">Ingredient</Label>
+                            <Select
+                              value={ingredient.stock_id}
+                              onValueChange={(value) => updateIngredient(index, 'stock_id', value)}
+                            >
+                              <SelectTrigger className="bg-background border-input mt-1">
+                                <SelectValue placeholder="Select ingredient" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-input z-50 max-h-48">
+                                {stockItems.length === 0 ? (
+                                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                                    No stock items available. Add items in Stock Management.
+                                  </div>
+                                ) : (
+                                  stockItems.map((stock) => (
+                                    <SelectItem key={stock.id} value={stock.id} className="hover:bg-accent">
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{stock.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          Available: {stock.current_quantity} {stock.unit}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="w-24">
+                            <Label className="text-xs text-muted-foreground">Quantity</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={ingredient.quantity_needed}
+                              onChange={(e) => updateIngredient(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button 
+                              type="button" 
+                              onClick={() => removeIngredient(index)} 
+                              variant="outline" 
+                              size="sm"
+                              className="mt-6"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        {ingredient.stock_id && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {stockItems.find(s => s.id === ingredient.stock_id)?.unit} needed per product
+                          </div>
+                        )}
                       </div>
                     ))}
                     {newProduct.ingredients.length === 0 && (
-                      <p className="text-sm text-muted-foreground">No ingredients added</p>
+                      <div className="text-center py-4 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                        <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No ingredients added</p>
+                        <p className="text-xs">Click "Add Ingredient" to start building your recipe</p>
+                      </div>
                     )}
                   </div>
                 </div>

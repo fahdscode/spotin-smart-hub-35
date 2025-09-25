@@ -1,0 +1,22 @@
+-- Add mock data to stock table since it's currently empty
+INSERT INTO public.stock (name, unit, current_quantity, min_quantity, cost_per_unit, supplier, category) VALUES
+('Coffee Beans - Arabica', 'kg', 25.0, 5.0, 45.00, 'Premium Coffee Co', 'ingredient'),
+('Coffee Beans - Robusta', 'kg', 15.0, 3.0, 35.00, 'Premium Coffee Co', 'ingredient'),
+('Whole Milk', 'liter', 20.0, 5.0, 8.50, 'Local Dairy', 'ingredient'),
+('Oat Milk', 'liter', 12.0, 3.0, 15.00, 'Plant Based Co', 'ingredient'),
+('Sugar - White', 'kg', 10.0, 2.0, 12.00, 'Sweet Supply', 'ingredient'),
+('Sugar - Brown', 'kg', 8.0, 2.0, 14.00, 'Sweet Supply', 'ingredient'),
+('Cocoa Powder', 'kg', 5.0, 1.0, 35.00, 'Chocolate Masters', 'ingredient'),
+('Vanilla Extract', 'ml', 500.0, 100.0, 0.25, 'Flavor House', 'ingredient'),
+('Cinnamon Powder', 'kg', 2.0, 0.5, 28.00, 'Spice World', 'ingredient'),
+('Whipped Cream', 'can', 15.0, 3.0, 12.00, 'Dairy Plus', 'ingredient'),
+('Honey', 'kg', 3.0, 1.0, 22.00, 'Bee Farm', 'ingredient'),
+('Earl Grey Tea Leaves', 'kg', 4.0, 1.0, 40.00, 'Tea Masters', 'ingredient'),
+('Green Tea Leaves', 'kg', 3.5, 1.0, 35.00, 'Tea Masters', 'ingredient'),
+('Fresh Orange', 'piece', 50.0, 10.0, 2.50, 'Fruit Market', 'ingredient'),
+('Sparkling Water', 'liter', 30.0, 10.0, 3.00, 'Water Co', 'ingredient'),
+('Ice Cubes', 'kg', 20.0, 5.0, 1.50, 'Ice Factory', 'ingredient'),
+('Lemon', 'piece', 25.0, 5.0, 1.80, 'Fruit Market', 'ingredient'),
+('Chocolate Syrup', 'ml', 1000.0, 200.0, 0.08, 'Chocolate Masters', 'ingredient'),
+('Caramel Syrup', 'ml', 800.0, 200.0, 0.10, 'Flavor House', 'ingredient'),
+('Mint Leaves', 'kg', 1.0, 0.2, 25.00, 'Herb Garden', 'ingredient');
