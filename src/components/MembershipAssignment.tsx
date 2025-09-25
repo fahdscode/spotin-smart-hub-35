@@ -55,20 +55,27 @@ const MembershipAssignment = () => {
   ];
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchClients();
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchClients = async () => {
+    if (!searchQuery.trim()) {
+      setClients([]);
+      return;
+    }
+    
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, client_code, full_name, phone, email, active')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(20);
+      const { data, error } = await supabase.rpc('search_clients_for_membership', {
+        search_term: searchQuery.trim()
+      });
 
       if (error) throw error;
-      setClients(data || []);
+      setClients(data as unknown as Client[] || []);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -76,6 +83,8 @@ const MembershipAssignment = () => {
         description: "Failed to fetch clients",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,29 +128,30 @@ const MembershipAssignment = () => {
     try {
       const selectedPlanData = membershipPlans.find(p => p.id === selectedPlan);
       
-      const { data, error } = await supabase
-        .from('memberships')
-        .insert([
-          {
-            user_id: selectedClient.id,
-            plan_name: selectedPlanData?.plan_name || '',
-            discount_percentage: selectedPlanData?.discount_percentage || 0,
-            perks: selectedPlanData?.perks || [],
-            total_savings: 0,
-            is_active: true
-          }
-        ]);
+      const { data, error } = await supabase.rpc('assign_client_membership', {
+        p_client_id: selectedClient.id,
+        p_plan_name: selectedPlanData?.plan_name || '',
+        p_discount_percentage: selectedPlanData?.discount_percentage || 0,
+        p_perks: selectedPlanData?.perks || []
+      });
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: `${selectedPlanData?.plan_name} assigned to ${selectedClient.full_name}`,
-        variant: "default",
-      });
+      const result = data as any;
+      if (result?.success) {
+        toast({
+          title: "Success!",
+          description: result.message,
+        });
 
-      setSelectedClient(null);
-      setSelectedPlan('');
+        // Reset form
+        setSelectedClient(null);
+        setSelectedPlan('');
+        setSearchQuery("");
+        setClients([]);
+      } else {
+        throw new Error(result?.error || 'Failed to assign membership');
+      }
     } catch (error) {
       console.error('Error assigning membership:', error);
       toast({

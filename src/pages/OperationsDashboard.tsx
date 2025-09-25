@@ -11,6 +11,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
 import DayUseTicketControls from "@/components/DayUseTicketControls";
+import MembershipManagement from "@/components/MembershipManagement";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -442,9 +443,13 @@ const OperationsDashboard = () => {
           </TabsContent>
 
           {/* Vouchers Tab */}
-          <TabsContent value="vouchers" className="space-y-6">
-            <VouchersManagement />
-          </TabsContent>
+            <TabsContent value="vouchers" className="space-y-6">
+              <VouchersManagement />
+            </TabsContent>
+
+            <TabsContent value="memberships" className="space-y-6">
+              <MembershipManagement />
+            </TabsContent>
         </Tabs>
       </div>
     </div>

@@ -107,74 +107,27 @@ const ReceptionistDashboard = () => {
 
   const fetchNewRegistrationsCount = async () => {
     try {
-      console.log('Fetching new registrations count...');
-      const { count, error } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
+      const { data, error } = await supabase.rpc('get_receptionist_daily_registrations');
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      console.log('New registrations count:', count);
-      setNewRegistrationsCount(count || 0);
+      if (error) throw error;
+
+      setNewRegistrationsCount(data || 0);
     } catch (error) {
       console.error('Error fetching new registrations count:', error);
-      setNewRegistrationsCount(0); // Set to 0 as fallback
+      setNewRegistrationsCount(0);
     }
   };
 
   const fetchActiveSessions = async () => {
     try {
-      // Query check_ins with client_id instead of user_id
-      const { data, error } = await supabase
-        .from('check_ins')
-        .select(`
-          id,
-          client_id,
-          checked_in_at,
-          checked_out_at,
-          status,
-          created_at
-        `)
-        .eq('status', 'checked_in')
-        .order('checked_in_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_receptionist_active_sessions');
 
-      if (error) {
-        console.error('Error fetching active check-ins:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Now get client details for each check-in
-      const sessionsWithClientData = [];
-      
-      for (const session of data || []) {
-        try {
-          const { data: clientData, error: clientError } = await supabase
-            .from('clients')
-            .select('id, client_code, full_name, phone, email, barcode')
-            .eq('id', session.client_id)
-            .eq('is_active', true)
-            .single();
-
-          if (!clientError && clientData) {
-            sessionsWithClientData.push({
-              ...session,
-              client: clientData
-            });
-          }
-        } catch (clientError) {
-          console.error('Error fetching client data for session:', clientError);
-        }
-      }
-
-      console.log('Fetched sessions with client data:', sessionsWithClientData);
-      setActiveSessions(sessionsWithClientData);
+      const sessions = data as any[] || [];
+      setActiveSessions(sessions);
     } catch (error) {
-      console.error('Failed to fetch active sessions:', error);
-      toast.error('Failed to load active sessions');
-      setActiveSessions([]);
+      console.error('Error fetching active sessions:', error);
     }
   };
 

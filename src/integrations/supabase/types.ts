@@ -114,6 +114,56 @@ export type Database = {
           },
         ]
       }
+      client_memberships: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          discount_percentage: number
+          end_date: string | null
+          id: string
+          is_active: boolean
+          perks: string[] | null
+          plan_name: string
+          start_date: string
+          total_savings: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          discount_percentage?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name: string
+          start_date?: string
+          total_savings?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          discount_percentage?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name?: string
+          start_date?: string
+          total_savings?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_memberships_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           active: boolean
@@ -583,6 +633,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_client_membership: {
+        Args: {
+          p_client_id: string
+          p_discount_percentage: number
+          p_perks: string[]
+          p_plan_name: string
+        }
+        Returns: Json
+      }
       authenticate_client: {
         Args: { client_password: string; client_phone: string }
         Returns: Json
@@ -615,9 +674,21 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: string
       }
+      get_client_memberships: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_client_status: {
         Args: { client_id: string }
         Returns: string
+      }
+      get_receptionist_active_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_receptionist_daily_registrations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       is_admin: {
         Args: Record<PropertyKey, never>
@@ -626,6 +697,10 @@ export type Database = {
       is_admin_or_staff: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      search_clients_for_membership: {
+        Args: { search_term: string }
+        Returns: Json
       }
       test_client_registration: {
         Args:
