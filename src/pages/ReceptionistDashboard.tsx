@@ -14,11 +14,12 @@ import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // State declarations
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,6 +129,11 @@ const ReceptionistDashboard = () => {
       setActiveSessions(sessions);
     } catch (error) {
       console.error('Error fetching active sessions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch active sessions",
+        variant: "destructive",
+      });
     }
   };
 
@@ -152,10 +158,17 @@ const ReceptionistDashboard = () => {
       // Refresh the active sessions
       await fetchActiveSessions();
       
-      toast.success(`${clientData.client?.full_name || 'Client'} checked out successfully`);
+      toast({
+        title: "Success",
+        description: `${clientData.client?.full_name || 'Client'} checked out successfully`,
+      });
     } catch (error: any) {
       console.error('Error checking out client:', error);
-      toast.error(error.message || 'Failed to check out client');
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to check out client',
+        variant: "destructive",
+      });
     }
   };
 
