@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import spotinLogo from "@/assets/spotin-logo.png";
 const SpotinHeader = () => {
   return <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
-      <div className="container mx-auto flex items-center justify-between">
+      <div className="container flex items-center justify-between mx-0 px-0">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-lg">
             <img src={spotinLogo} alt="SpotIN Logo" className="h-10 w-10 object-contain" />
