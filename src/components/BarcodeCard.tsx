@@ -208,11 +208,12 @@ const BarcodeCard = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button
             onClick={downloadBarcode}
             variant="outline"
-            className="border-green-500 text-green-600 hover:bg-green-50"
+            size="default"
+            className="w-full h-12 text-sm font-medium"
           >
             <Download className="h-4 w-4 mr-2" />
             Download
@@ -220,7 +221,8 @@ const BarcodeCard = ({
           <Button
             onClick={printBarcode}
             variant="outline"
-            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            size="default"
+            className="w-full h-12 text-sm font-medium"
           >
             <QrCode className="h-4 w-4 mr-2" />
             Print
@@ -228,7 +230,8 @@ const BarcodeCard = ({
           <Button
             onClick={copyClientCode}
             variant="outline"
-            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+            size="default"
+            className="w-full h-12 text-sm font-medium"
           >
             {copied ? (
               <>
