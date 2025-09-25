@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus } from "lucide-react";
+import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ interface Client {
   phone: string;
   email?: string;
   active: boolean;
+  barcode?: string;
 }
 
 interface Order {
@@ -391,10 +392,22 @@ const BaristaDashboard = () => {
                 </Dialog>
 
                 {selectedClient && (
-                  <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
-                    <strong>Selected:</strong> {selectedClient.full_name}
-                    <br />
-                    <strong>Code:</strong> {selectedClient.client_code}
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                      <strong>Selected:</strong> {selectedClient.full_name}
+                      <br />
+                      <strong>Code:</strong> {selectedClient.client_code}
+                      <br />
+                      <strong>Barcode:</strong> {selectedClient.barcode}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      disabled={!selectedClient}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Client Products
+                    </Button>
                   </div>
                 )}
               </CardContent>

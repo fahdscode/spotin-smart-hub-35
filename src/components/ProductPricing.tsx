@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Save, X, DollarSign, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +21,7 @@ interface Product {
   description?: string;
   is_available: boolean;
   ingredients?: string[];
+  image_url?: string;
 }
 
 const ProductPricing = () => {
@@ -29,7 +32,8 @@ const ProductPricing = () => {
     price: 0,
     category: "beverage",
     description: "",
-    is_available: true
+    is_available: true,
+    image_url: ""
   });
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,7 +88,8 @@ const ProductPricing = () => {
           price: newProduct.price,
           category: newProduct.category,
           description: newProduct.description || null,
-          is_available: newProduct.is_available
+          is_available: newProduct.is_available,
+          image_url: newProduct.image_url || null
         }])
         .select();
 
@@ -96,7 +101,8 @@ const ProductPricing = () => {
         price: 0,
         category: "beverage",
         description: "",
-        is_available: true
+        is_available: true,
+        image_url: ""
       });
       setIsAddingProduct(false);
 
@@ -141,6 +147,30 @@ const ProductPricing = () => {
 
   const handleToggleAvailability = async (productId: string, isAvailable: boolean) => {
     await handleUpdateProduct(productId, { is_available: isAvailable });
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { error } = await supabase
+        .from('drinks')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(products.filter(p => p.id !== productId));
+
+      toast({
+        title: "Product Deleted",
+        description: "Product has been deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting product",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const groupedProducts = products.reduce((acc, product) => {
@@ -239,13 +269,40 @@ const ProductPricing = () => {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="productDescription">Description (optional)</Label>
-                  <Input
+                  <Label htmlFor="productDescription">Description</Label>
+                  <Textarea
                     id="productDescription"
                     value={newProduct.description}
                     onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Product description..."
+                    rows={3}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="productImage">Image URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="productImage"
+                      value={newProduct.image_url}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    <Button variant="outline" size="sm">
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {newProduct.image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={newProduct.image_url}
+                        alt="Product preview"
+                        className="w-20 h-20 object-cover rounded border"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleAddProduct} variant="professional">
@@ -272,43 +329,117 @@ const ProductPricing = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categoryProducts.map((product) => (
-                  <Card key={product.id} className={`${!product.is_available ? 'opacity-60' : ''}`}>
+                  <Card key={product.id} className={`${!product.is_available ? 'opacity-60' : ''} relative group`}>
+                    {product.image_url && (
+                      <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.parentElement!.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">{product.name}</CardTitle>
-                        <Switch
-                          checked={product.is_available}
-                          onCheckedChange={(checked) => handleToggleAvailability(product.id, checked)}
-                        />
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={product.is_available}
+                            onCheckedChange={(checked) => handleToggleAvailability(product.id, checked)}
+                          />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                       {product.description && (
-                        <CardDescription>{product.description}</CardDescription>
+                        <CardDescription className="line-clamp-2">{product.description}</CardDescription>
                       )}
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
                         {editingProduct === product.id ? (
-                          <div className="space-y-2">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={product.price}
-                              onChange={(e) => {
-                                const newPrice = parseFloat(e.target.value) || 0;
-                                setProducts(products.map(p => 
-                                  p.id === product.id ? { ...p, price: newPrice } : p
-                                ));
-                              }}
-                            />
+                          <div className="space-y-3">
+                            <div>
+                              <Label>Price (EGP)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={product.price}
+                                onChange={(e) => {
+                                  const newPrice = parseFloat(e.target.value) || 0;
+                                  setProducts(products.map(p => 
+                                    p.id === product.id ? { ...p, price: newPrice } : p
+                                  ));
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label>Description</Label>
+                              <Textarea
+                                value={product.description || ""}
+                                onChange={(e) => {
+                                  setProducts(products.map(p => 
+                                    p.id === product.id ? { ...p, description: e.target.value } : p
+                                  ));
+                                }}
+                                rows={2}
+                              />
+                            </div>
+                            <div>
+                              <Label>Image URL</Label>
+                              <Input
+                                value={product.image_url || ""}
+                                onChange={(e) => {
+                                  setProducts(products.map(p => 
+                                    p.id === product.id ? { ...p, image_url: e.target.value } : p
+                                  ));
+                                }}
+                                placeholder="https://example.com/image.jpg"
+                              />
+                            </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => {
-                                  handleUpdateProduct(product.id, { price: product.price });
+                                  handleUpdateProduct(product.id, { 
+                                    price: product.price,
+                                    description: product.description,
+                                    image_url: product.image_url
+                                  });
                                   setEditingProduct(null);
                                 }}
                               >
-                                <Save className="h-3 w-3" />
+                                <Save className="h-3 w-3 mr-1" />
+                                Save
                               </Button>
                               <Button
                                 size="sm"
@@ -318,28 +449,32 @@ const ProductPricing = () => {
                                   fetchProducts(); // Reset changes
                                 }}
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-3 w-3 mr-1" />
+                                Cancel
                               </Button>
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="text-xl font-bold text-primary">
-                              {formatPrice(product.price)}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="text-xl font-bold text-primary">
+                                {formatPrice(product.price)}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingProduct(product.id)}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setEditingProduct(product.id)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
+                            
+                            <Badge variant={product.is_available ? "default" : "secondary"}>
+                              {product.is_available ? "Available" : "Unavailable"}
+                            </Badge>
                           </div>
                         )}
-                        
-                        <Badge variant={product.is_available ? "default" : "secondary"}>
-                          {product.is_available ? "Available" : "Unavailable"}
-                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
