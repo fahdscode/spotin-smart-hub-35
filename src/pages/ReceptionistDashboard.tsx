@@ -3,7 +3,7 @@ import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCir
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
@@ -11,6 +11,7 @@ import Receipt from "@/components/Receipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
+import MembershipAssignment from '@/components/MembershipAssignment';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ const ReceptionistDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [newRegistrationsCount, setNewRegistrationsCount] = useState(0);
 
   const quickActions = [
     { 
@@ -45,16 +47,17 @@ const ReceptionistDashboard = () => {
       variant: "info" as const
     },
     { 
-      title: "Create Account", 
-      description: "Register new client/company", 
+      title: "Assign Membership", 
+      description: "Assign membership plans", 
       icon: UserPlus, 
-      action: "create",
+      action: "membership",
       variant: "default" as const
     },
   ];
 
   useEffect(() => {
     fetchActiveSessions();
+    fetchNewRegistrationsCount();
     
     // Set up real-time subscription for active sessions
     const channel = supabase
@@ -68,6 +71,17 @@ const ReceptionistDashboard = () => {
         },
         () => {
           fetchActiveSessions();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'clients'
+        },
+        () => {
+          fetchNewRegistrationsCount();
         }
       )
       .on(
@@ -88,6 +102,20 @@ const ReceptionistDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchNewRegistrationsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date().toISOString().split('T')[0] + 'T00:00:00.000Z');
+
+      if (error) throw error;
+      setNewRegistrationsCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching new registrations count:', error);
+    }
+  };
 
   const fetchActiveSessions = async () => {
     try {
@@ -191,7 +219,7 @@ const ReceptionistDashboard = () => {
           <MetricCard title="Active Sessions" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={Users} variant="success" />
           <MetricCard title="Available Desks" value="12" change="-2" icon={CheckCircle} variant="info" />
           <MetricCard title="Room Bookings" value="8" change="+1" icon={Calendar} variant="default" />
-          <MetricCard title="New Check-ins" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={QrCode} variant="success" />
+          <MetricCard title="New Registrations" value={newRegistrationsCount.toString()} change={newRegistrationsCount > 0 ? '+' + newRegistrationsCount : '0'} icon={UserPlus} variant="success" />
         </div>
 
         {/* Tabbed Interface for Mobile/Desktop */}
@@ -248,6 +276,17 @@ const ReceptionistDashboard = () => {
                           <DialogTitle>Room Booking System</DialogTitle>
                         </DialogHeader>
                         <RoomBooking />
+                      </DialogContent>
+                    )}
+                    {action.action === "membership" && (
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Assign Membership</DialogTitle>
+                          <DialogDescription>
+                            Search for clients and assign membership plans
+                          </DialogDescription>
+                        </DialogHeader>
+                        <MembershipAssignment />
                       </DialogContent>
                     )}
                   </Dialog>
