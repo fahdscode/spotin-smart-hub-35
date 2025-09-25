@@ -62,8 +62,6 @@ const ReceptionistDashboard = () => {
     }
   ]);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
-  const [selectedSessionForCheckout, setSelectedSessionForCheckout] = useState<any>(null);
   const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(3);
 
   const quickActions = [
@@ -103,39 +101,15 @@ const ReceptionistDashboard = () => {
   }, []);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {
-    setSelectedSessionForCheckout({ sessionId, clientData });
-    setShowCheckoutConfirmation(true);
-  };
-
-  const confirmCheckout = () => {
-    if (!selectedSessionForCheckout) return;
-    
-    const { sessionId, clientData } = selectedSessionForCheckout;
-    
     // Remove session from active sessions
     setActiveSessions(prev => prev.filter(session => session.id !== sessionId));
     
-    // Close confirmation dialog
-    setShowCheckoutConfirmation(false);
-    
-    // Show receipt
     setShowReceipt(true);
     
     toast({
-      title: "Payment Processed",
+      title: "Success",
       description: `${clientData.client?.full_name || 'Client'} checked out successfully`,
     });
-    
-    // Reset selection
-    setSelectedSessionForCheckout(null);
-  };
-
-  const calculateSessionCost = (checkedInTime: string) => {
-    const now = new Date();
-    const checkedIn = new Date(checkedInTime);
-    const hoursSpent = Math.ceil((now.getTime() - checkedIn.getTime()) / (1000 * 60 * 60));
-    const hourlyRate = 25; // $25 per hour
-    return hoursSpent * hourlyRate;
   };
 
 
@@ -328,78 +302,14 @@ const ReceptionistDashboard = () => {
         </div>
       </div>
 
-      {/* Checkout Confirmation Dialog */}
-      <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Checkout & Payment</DialogTitle>
-            <DialogDescription>
-              Review session details and process payment
-            </DialogDescription>
-          </DialogHeader>
-          {selectedSessionForCheckout && (
-            <div className="space-y-4">
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-semibold text-lg mb-2">
-                  {selectedSessionForCheckout.clientData.client?.full_name}
-                </h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>Client ID: {selectedSessionForCheckout.clientData.client?.client_code}</p>
-                  <p>Check-in Time: {new Date(selectedSessionForCheckout.clientData.checked_in_at).toLocaleTimeString()}</p>
-                  <p>Session Duration: {Math.ceil((new Date().getTime() - new Date(selectedSessionForCheckout.clientData.checked_in_at).getTime()) / (1000 * 60 * 60))} hours</p>
-                </div>
-              </div>
-              
-              <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Session Cost:</span>
-                  <span className="text-lg font-bold text-primary">
-                    ${calculateSessionCost(selectedSessionForCheckout.clientData.checked_in_at)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Hourly rate: $25/hour
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Payment Method</p>
-                <div className="flex items-center gap-2 p-3 border rounded-lg bg-background">
-                  <div className="w-8 h-5 bg-gradient-to-r from-blue-600 to-blue-400 rounded text-white text-xs flex items-center justify-center font-bold">
-                    VISA
-                  </div>
-                  <span className="text-sm">•••• •••• •••• 4242</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowCheckoutConfirmation(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1 bg-success hover:bg-success/90"
-                  onClick={confirmCheckout}
-                >
-                  Process Payment & Checkout
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Receipt Dialog */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Payment Receipt</DialogTitle>
+            <DialogTitle>Receipt</DialogTitle>
           </DialogHeader>
           <Receipt 
-            customerName={selectedSessionForCheckout?.clientData.client?.full_name || "Demo Customer"}
+            customerName="Demo Customer"
             receiptNumber={`RCP-${Date.now()}`}
           />
         </DialogContent>
