@@ -18,6 +18,8 @@ import ProductPricing from "@/components/ProductPricing";
 import ProductCategories from "@/components/ProductCategories";
 import StockManagement from "@/components/StockManagement";
 import IngredientUsageReport from "@/components/IngredientUsageReport";
+import VendorManagement from "@/components/VendorManagement";
+import BillManagement from "@/components/BillManagement";
 import { useNavigate } from "react-router-dom";
 const OperationsDashboard = () => {
   const navigate = useNavigate();
@@ -219,12 +221,12 @@ const OperationsDashboard = () => {
           <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
+            <TabsTrigger value="vendors">Vendors</TabsTrigger>
+            <TabsTrigger value="bills">Bills</TabsTrigger>
             <TabsTrigger value="usage">Usage Report</TabsTrigger>
             <TabsTrigger value="pricing">Products</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
-            <TabsTrigger value="plans">Plans</TabsTrigger>
-            <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
           </TabsList>
 
           {/* Stock Management Tab */}
@@ -320,6 +322,16 @@ const OperationsDashboard = () => {
             <StockManagement />
           </TabsContent>
 
+          {/* Vendor Management Tab */}
+          <TabsContent value="vendors" className="space-y-6">
+            <VendorManagement />
+          </TabsContent>
+
+          {/* Bill Management Tab */}
+          <TabsContent value="bills" className="space-y-6">
+            <BillManagement />
+          </TabsContent>
+
           {/* Ingredient Usage Report Tab */}
           <TabsContent value="usage" className="space-y-6">
             <IngredientUsageReport />
@@ -338,20 +350,6 @@ const OperationsDashboard = () => {
           {/* Rooms Tab */}
           <TabsContent value="rooms" className="space-y-6">
             <RoomsManagement />
-          </TabsContent>
-
-          {/* Plans Tab */}
-          <TabsContent value="plans" className="space-y-6">
-            <MembershipPlansManagement />
-          </TabsContent>
-
-          {/* Vouchers Tab */}
-          <TabsContent value="vouchers" className="space-y-6">
-            <VouchersManagement />
-          </TabsContent>
-
-          <TabsContent value="memberships" className="space-y-6">
-            <MembershipManagement />
           </TabsContent>
         </Tabs>
       </div>
