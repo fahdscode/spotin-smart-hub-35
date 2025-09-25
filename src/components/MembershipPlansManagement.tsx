@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 interface MembershipPlan {
@@ -17,7 +18,8 @@ interface MembershipPlan {
   discount_percentage: number;
   perks: string[];
   is_active: boolean;
-  monthly_fee?: number;
+  duration_type: 'weekly' | 'monthly' | '6months' | 'annual';
+  price: number;
   created_at: string;
 }
 
@@ -26,32 +28,46 @@ const MembershipPlansManagement = () => {
   const [plans, setPlans] = useState<MembershipPlan[]>([
     {
       id: "1",
-      plan_name: "Basic",
-      description: "Essential workspace access with basic amenities",
+      plan_name: "Basic Weekly",
+      description: "Essential workspace access for a week",
       discount_percentage: 5,
       perks: ["5% discount on drinks", "Basic Wi-Fi", "Access to common areas"],
       is_active: true,
-      monthly_fee: 99,
+      duration_type: 'weekly',
+      price: 25,
       created_at: new Date().toISOString()
     },
     {
       id: "2", 
-      plan_name: "Premium",
-      description: "Enhanced workspace experience with premium benefits",
+      plan_name: "Premium Monthly",
+      description: "Enhanced workspace experience for a month",
       discount_percentage: 15,
       perks: ["15% discount on all services", "Priority booking", "Free coffee daily", "Meeting room credits"],
       is_active: true,
-      monthly_fee: 199,
+      duration_type: 'monthly',
+      price: 199,
       created_at: new Date().toISOString()
     },
     {
       id: "3",
-      plan_name: "Enterprise",
-      description: "Complete workspace solution for teams and businesses",
+      plan_name: "Enterprise Semi-Annual",
+      description: "Complete 6-month workspace solution for teams",
       discount_percentage: 25,
       perks: ["25% discount on all services", "Dedicated desk space", "Unlimited meeting rooms", "24/7 access", "Personal assistant"],
       is_active: true,
-      monthly_fee: 399,
+      duration_type: '6months',
+      price: 999,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: "4",
+      plan_name: "Annual VIP",
+      description: "Ultimate annual membership with maximum benefits",
+      discount_percentage: 35,
+      perks: ["35% discount on all services", "Private office access", "Unlimited everything", "Concierge service", "Event hosting privileges"],
+      is_active: true,
+      duration_type: 'annual',
+      price: 1899,
       created_at: new Date().toISOString()
     }
   ]);
@@ -67,7 +83,8 @@ const MembershipPlansManagement = () => {
     discount_percentage: 0,
     perks: "",
     is_active: true,
-    monthly_fee: 0
+    duration_type: 'monthly' as 'weekly' | 'monthly' | '6months' | 'annual',
+    price: 0
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +101,8 @@ const MembershipPlansManagement = () => {
         discount_percentage: formData.discount_percentage,
         perks: perksArray,
         is_active: formData.is_active,
-        monthly_fee: formData.monthly_fee,
+        duration_type: formData.duration_type,
+        price: formData.price,
         created_at: editingPlan?.created_at || new Date().toISOString()
       };
 
@@ -127,7 +145,8 @@ const MembershipPlansManagement = () => {
       discount_percentage: plan.discount_percentage,
       perks: plan.perks.join(', '),
       is_active: plan.is_active,
-      monthly_fee: plan.monthly_fee || 0
+      duration_type: plan.duration_type,
+      price: plan.price
     });
     setIsDialogOpen(true);
   };
@@ -158,7 +177,8 @@ const MembershipPlansManagement = () => {
       discount_percentage: 0,
       perks: "",
       is_active: true,
-      monthly_fee: 0
+      duration_type: 'monthly',
+      price: 0
     });
     setEditingPlan(null);
   };
@@ -186,6 +206,16 @@ const MembershipPlansManagement = () => {
         return 'bg-purple-50 border-purple-200';
       default:
         return 'bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getDurationLabel = (durationType: string) => {
+    switch (durationType) {
+      case 'weekly': return 'Weekly';
+      case 'monthly': return 'Monthly';
+      case '6months': return '6 Months';
+      case 'annual': return 'Annual';
+      default: return 'Monthly';
     }
   };
 
@@ -254,17 +284,36 @@ const MembershipPlansManagement = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="monthly_fee">Monthly Fee ($)</Label>
-                      <Input
-                        id="monthly_fee"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.monthly_fee}
-                        onChange={(e) => setFormData(prev => ({ ...prev, monthly_fee: parseFloat(e.target.value) || 0 }))}
-                        required
-                      />
+                      <Label htmlFor="duration_type">Duration</Label>
+                      <Select
+                        value={formData.duration_type}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, duration_type: value as any }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select duration" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-input z-50">
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="6months">6 Months</SelectItem>
+                          <SelectItem value="annual">Annual</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                      placeholder={`Price for ${getDurationLabel(formData.duration_type).toLowerCase()} plan`}
+                      required
+                    />
                   </div>
 
                   <div>
@@ -337,8 +386,11 @@ const MembershipPlansManagement = () => {
                         <p className="text-muted-foreground mb-3">{plan.description}</p>
                         
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <span className="font-medium">${plan.monthly_fee}/month</span>
+                          <span className="font-medium">${plan.price}/{getDurationLabel(plan.duration_type).toLowerCase()}</span>
                           <span>{plan.discount_percentage}% discount on services</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {getDurationLabel(plan.duration_type)}
+                          </Badge>
                         </div>
                         
                         <div className="space-y-2">
