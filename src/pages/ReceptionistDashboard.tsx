@@ -10,6 +10,7 @@ import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
+import ClientList from "@/components/ClientList";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -193,111 +194,121 @@ const ReceptionistDashboard = () => {
           <MetricCard title="New Check-ins" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={QrCode} variant="success" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Frequently used receptionist functions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {quickActions.map((action) => (
-                    <Dialog key={action.action}>
-                      <DialogTrigger asChild>
-                        <Card className="hover:shadow-card transition-all duration-200 cursor-pointer group">
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                              <div className={`p-3 rounded-lg ${
-                                action.variant === "success" ? "bg-success/10 text-success" :
-                                action.variant === "warning" ? "bg-warning/10 text-warning" :
-                                action.variant === "info" ? "bg-info/10 text-info" :
-                                "bg-primary/10 text-primary"
-                              }`}>
-                                <action.icon className="h-6 w-6" />
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-foreground">{action.title}</h3>
-                                <p className="text-sm text-muted-foreground">{action.description}</p>
-                              </div>
+        {/* Tabbed Interface for Mobile/Desktop */}
+        <div className="space-y-6">
+          {/* Quick Actions - Mobile First Grid */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Frequently used receptionist functions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {quickActions.map((action) => (
+                  <Dialog key={action.action}>
+                    <DialogTrigger asChild>
+                      <Card className="hover:shadow-card transition-all duration-200 cursor-pointer group">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col items-center text-center gap-3">
+                            <div className={`p-3 rounded-lg ${
+                              action.variant === "success" ? "bg-success/10 text-success" :
+                              action.variant === "warning" ? "bg-warning/10 text-warning" :
+                              action.variant === "info" ? "bg-info/10 text-info" :
+                              "bg-primary/10 text-primary"
+                            }`}>
+                              <action.icon className="h-6 w-6" />
                             </div>
-                          </CardContent>
-                        </Card>
-                      </DialogTrigger>
-                      {action.action === "checkin" && (
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Check-In Scanner</DialogTitle>
-                          </DialogHeader>
-                          <BarcodeScanner />
-                        </DialogContent>
-                      )}
-                      {action.action === "checkout" && (
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Check-Out Scanner</DialogTitle>
-                          </DialogHeader>
-                          <BarcodeScanner />
-                        </DialogContent>
-                      )}
-                      {action.action === "booking" && (
-                        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Room Booking System</DialogTitle>
-                          </DialogHeader>
-                          <RoomBooking />
-                        </DialogContent>
-                      )}
-                    </Dialog>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                            <div>
+                              <h3 className="font-semibold text-sm">{action.title}</h3>
+                              <p className="text-xs text-muted-foreground mt-1">{action.description}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </DialogTrigger>
+                    {action.action === "checkin" && (
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Check-In Scanner</DialogTitle>
+                        </DialogHeader>
+                        <BarcodeScanner />
+                      </DialogContent>
+                    )}
+                    {action.action === "checkout" && (
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Check-Out Scanner</DialogTitle>
+                        </DialogHeader>
+                        <BarcodeScanner />
+                      </DialogContent>
+                    )}
+                    {action.action === "booking" && (
+                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Room Booking System</DialogTitle>
+                        </DialogHeader>
+                        <RoomBooking />
+                      </DialogContent>
+                    )}
+                  </Dialog>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Search & Quick Check-in */}
-          <div className="space-y-6">
-            <Card>
+          {/* Quick Scanner */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Quick Search</CardTitle>
-                <CardDescription>Find client or booking</CardDescription>
+                <CardTitle>Quick Scanner</CardTitle>
+                <CardDescription>Fast check-in/out</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search by name, email, or booking ID"
+                    placeholder="Search by name, email, or client code"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
-                <Button variant="professional" className="w-full">
-                  <QrCode className="h-4 w-4" />
-                  Scan QR Code
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="professional" className="w-full">
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Scan QR Code
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                    <DialogHeader>
+                      <DialogTitle>QR Code Scanner</DialogTitle>
+                    </DialogHeader>
+                    <BarcodeScanner />
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Active Sessions Summary */}
+            <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Active Sessions</CardTitle>
+                <CardTitle>Active Sessions Summary</CardTitle>
                 <CardDescription>Currently checked-in clients</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
                   {activeSessions.length > 0 ? (
-                    activeSessions.map((session) => (
+                    activeSessions.slice(0, 5).map((session) => (
                       <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">{session.client?.full_name || 'Unknown Client'}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm truncate">{session.client?.full_name || 'Unknown Client'}</p>
                             <Badge variant="secondary" className="text-xs">
                               {session.client?.client_code || 'No ID'}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground truncate">
                             {session.client?.email || 'No email'} • {session.client?.phone || 'No phone'}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -308,19 +319,30 @@ const ReceptionistDashboard = () => {
                           variant="outline" 
                           size="sm"
                           onClick={() => handleCheckOut(session.id, session)}
+                          className="ml-2 shrink-0"
                         >
                           Check Out
                         </Button>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-muted-foreground">No active sessions</p>
+                    <p className="text-center text-muted-foreground py-8">No active sessions</p>
+                  )}
+                  {activeSessions.length > 5 && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      +{activeSessions.length - 5} more sessions
+                    </p>
                   )}
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Barcode Debugger for Development */}
+          {/* Client List Component */}
+          <ClientList />
+
+          {/* Barcode Debugger for Development */}
+          <div className="lg:hidden">
             <BarcodeDebugger />
           </div>
         </div>
