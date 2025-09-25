@@ -1,9 +1,11 @@
-import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
+import KPIManagement from "@/components/KPIManagement";
 import { useNavigate } from "react-router-dom";
 
 const CeoDashboard = () => {
@@ -38,6 +40,17 @@ const CeoDashboard = () => {
             <p className="text-muted-foreground">Advanced insights and business intelligence</p>
           </div>
         </div>
+
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="kpis">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              KPIs Management
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -163,6 +176,12 @@ const CeoDashboard = () => {
             </CardContent>
           </Card>
         </div>
+          </TabsContent>
+
+          <TabsContent value="kpis" className="space-y-6">
+            <KPIManagement />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
