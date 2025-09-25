@@ -23,9 +23,46 @@ const ReceptionistDashboard = () => {
   
   // State declarations
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<any[]>([
+    {
+      id: "session_1",
+      client_id: "1",
+      checked_in_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      client: {
+        id: "1",
+        full_name: "Ahmed Hassan",
+        client_code: "CL001",
+        email: "ahmed.hassan@example.com",
+        phone: "+20 100 123 4567"
+      }
+    },
+    {
+      id: "session_2", 
+      client_id: "2",
+      checked_in_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
+      client: {
+        id: "2",
+        full_name: "Fatima Ibrahim",
+        client_code: "CL004",
+        email: "fatima.ibrahim@example.com",
+        phone: "+20 103 456 7890"
+      }
+    },
+    {
+      id: "session_3",
+      client_id: "3", 
+      checked_in_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+      client: {
+        id: "3",
+        full_name: "Omar Ali",
+        client_code: "CL003",
+        email: "omar.ali@example.com",
+        phone: "+20 102 345 6789"
+      }
+    }
+  ]);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(0);
+  const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(3);
 
   const quickActions = [
     { 
@@ -59,118 +96,22 @@ const ReceptionistDashboard = () => {
   ];
 
   useEffect(() => {
-    fetchActiveSessions();
-    fetchNewRegistrationsCount();
-    
-    // Set up real-time subscription for active sessions
-    const channel = supabase
-      .channel('active-sessions-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'check_ins'
-        },
-        () => {
-          fetchActiveSessions();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'clients'
-        },
-        () => {
-          fetchNewRegistrationsCount();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'clients',
-          filter: 'active=eq.true'
-        },
-        () => {
-          fetchActiveSessions();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Mock data is already set in state, no backend calls needed
+    console.log('Dashboard loaded with mock data');
   }, []);
 
-  const fetchNewRegistrationsCount = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_receptionist_daily_registrations');
-
-      if (error) throw error;
-
-      setNewRegistrationsCount(data || 0);
-    } catch (error) {
-      console.error('Error fetching new registrations count:', error);
-      setNewRegistrationsCount(0);
-    }
+  const handleCheckOut = (sessionId: string, clientData: any) => {
+    // Remove session from active sessions
+    setActiveSessions(prev => prev.filter(session => session.id !== sessionId));
+    
+    setShowReceipt(true);
+    
+    toast({
+      title: "Success",
+      description: `${clientData.client?.full_name || 'Client'} checked out successfully`,
+    });
   };
 
-  const fetchActiveSessions = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_receptionist_active_sessions');
-
-      if (error) throw error;
-
-      const sessions = data as any[] || [];
-      setActiveSessions(sessions);
-    } catch (error) {
-      console.error('Error fetching active sessions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch active sessions",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCheckOut = async (sessionId: string, clientData: any) => {
-    try {
-      // Use the unified checkout function
-      const { data, error } = await supabase.rpc('checkout_client', {
-        p_client_id: clientData.client_id,
-        p_checkout_by_user_id: null // Could be set to staff user ID if available
-      });
-
-      if (error) throw error;
-
-      const result = data as { success: boolean; error?: string; message?: string };
-      
-      if (!result?.success) {
-        throw new Error(result?.error || 'Failed to check out client');
-      }
-
-      setShowReceipt(true);
-      
-      // Refresh the active sessions
-      await fetchActiveSessions();
-      
-      toast({
-        title: "Success",
-        description: `${clientData.client?.full_name || 'Client'} checked out successfully`,
-      });
-    } catch (error: any) {
-      console.error('Error checking out client:', error);
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to check out client',
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
