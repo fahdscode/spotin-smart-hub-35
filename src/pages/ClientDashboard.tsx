@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import MetricCard from '@/components/MetricCard';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import { Progress } from '@/components/ui/progress';
-import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus, Star, Award, Camera, Save, Edit3 } from 'lucide-react';
+import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus, Star, Award, Camera, Save, Edit3, Search, Filter, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 interface ClientData {
@@ -81,6 +82,9 @@ export default function ClientDashboard() {
     jobTitle: '',
     profileImage: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [favoriteDrinks, setFavoriteDrinks] = useState<Drink[]>([]);
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
     if (storedClientData) {
@@ -101,6 +105,7 @@ export default function ClientDashboard() {
         fetchCheckInsLast30Days(parsedData.id);
         fetchMembershipStatus(parsedData.id);
         fetchEventsThisYear(parsedData.id);
+        fetchFavoriteDrinks(parsedData.id);
       } catch (error) {
         console.error('Error parsing client data:', error);
         navigate('/client-login');
@@ -275,6 +280,66 @@ export default function ClientDashboard() {
       reader.readAsDataURL(file);
     }
   };
+
+  const fetchFavoriteDrinks = async (clientId: string) => {
+    try {
+      // Get most ordered drinks from session_line_items
+      const { data, error } = await supabase
+        .from('session_line_items')
+        .select('item_name, quantity')
+        .eq('user_id', clientId)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+
+      // Count drink orders
+      const drinkCounts: { [key: string]: number } = {};
+      data?.forEach(item => {
+        drinkCounts[item.item_name] = (drinkCounts[item.item_name] || 0) + item.quantity;
+      });
+
+      // Get top 3 most ordered drinks
+      const topDrinks = Object.entries(drinkCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([name]) => name);
+
+      // Get drink details for favorite drinks
+      if (topDrinks.length > 0) {
+        const { data: drinkDetails, error: drinkError } = await supabase
+          .from('drinks')
+          .select('*')
+          .in('name', topDrinks)
+          .eq('is_available', true);
+
+        if (!drinkError && drinkDetails) {
+          setFavoriteDrinks(drinkDetails);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching favorite drinks:', error);
+    }
+  };
+
+  // Filter drinks based on search and category
+  const filteredDrinks = drinks.filter(drink => {
+    const matchesSearch = drink.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         drink.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || drink.category === selectedCategory;
+    return drink.is_available && matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories
+  const categories = ['all', ...Array.from(new Set(drinks.map(drink => drink.category)))];
+
+  const addFavoriteToCart = (drink: Drink) => {
+    addToCart(drink);
+    toast({
+      title: "Favorite Added!",
+      description: `${drink.name} added from your favorites`,
+      variant: "default",
+    });
+  };
   const handleLogout = () => {
     localStorage.removeItem('spotinClientData');
     navigate('/client-login');
@@ -382,6 +447,38 @@ export default function ClientDashboard() {
           <MetricCard title="Membership Status" value={membershipStatus} change={`Events this year: ${eventsThisYear}`} icon={Award} variant={membershipStatus !== 'No active membership' ? 'success' : 'default'} />
         </div>
 
+        {/* Favorite Drinks Section - Show only if no items in cart and have favorites */}
+        {cart.length === 0 && favoriteDrinks.length > 0 && (
+          <Card className="mb-6 sm:mb-8">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-red-500" />
+                <CardTitle className="text-lg sm:text-xl">Your Favorite Drinks</CardTitle>
+              </div>
+              <CardDescription className="text-sm">Quick order from your most ordered drinks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {favoriteDrinks.map(drink => (
+                  <div key={drink.id} className="flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r from-red-50 to-pink-50 border-red-200">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-sm truncate">{drink.name}</h4>
+                        <Heart className="h-4 w-4 text-red-500 fill-current" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-1 line-clamp-1">{drink.description}</p>
+                      <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
+                    </div>
+                    <Button onClick={() => addFavoriteToCart(drink)} size="sm" className="shrink-0 ml-2">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tabs - Mobile Optimized Navigation */}
         <Tabs defaultValue="barcode" className="space-y-4 sm:space-y-6">
           <div className="overflow-x-auto pb-2">
@@ -429,29 +526,96 @@ export default function ClientDashboard() {
                   <CardTitle className="text-lg sm:text-xl">Drink Menu</CardTitle>
                   <CardDescription className="text-sm">Fresh drinks available for order</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <h3 className="text-base sm:text-lg font-semibold">Available Drinks</h3>
-                    <Badge variant="outline" className="self-start">
-                      {drinks.filter(d => d.is_available).length} available
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid gap-3 max-h-[400px] overflow-y-auto">
-                    {drinks.filter(drink => drink.is_available).map(drink => <div key={drink.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                            <h4 className="font-medium text-sm truncate">{drink.name}</h4>
-                            <Badge variant="secondary" className="text-xs self-start">{drink.category}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{drink.description}</p>
-                          <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
-                        </div>
-                        <Button onClick={() => addToCart(drink)} size="sm" className="shrink-0 ml-2">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>)}
-                  </div>
+                 <CardContent className="space-y-4">
+                   {/* Search and Filter Controls */}
+                   <div className="space-y-3">
+                     <div className="flex flex-col sm:flex-row gap-3">
+                       <div className="relative flex-1">
+                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                         <Input
+                           placeholder="Search drinks..."
+                           value={searchQuery}
+                           onChange={(e) => setSearchQuery(e.target.value)}
+                           className="pl-10"
+                         />
+                       </div>
+                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                         <SelectTrigger className="w-full sm:w-[180px]">
+                           <Filter className="h-4 w-4 mr-2" />
+                           <SelectValue placeholder="Category" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {categories.map(category => (
+                             <SelectItem key={category} value={category}>
+                               {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     
+                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                       <h3 className="text-base sm:text-lg font-semibold">Available Drinks</h3>
+                       <div className="flex gap-2">
+                         {favoriteDrinks.length > 0 && (
+                           <Badge variant="outline" className="self-start text-red-600 border-red-200">
+                             <Heart className="h-3 w-3 mr-1 fill-current" />
+                             {favoriteDrinks.length} favorites
+                           </Badge>
+                         )}
+                         <Badge variant="outline" className="self-start">
+                           {filteredDrinks.length} available
+                         </Badge>
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <div className="grid gap-3 max-h-[400px] overflow-y-auto">
+                     {filteredDrinks.length === 0 ? (
+                       <div className="text-center py-8">
+                         <Coffee className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                         <p className="text-sm text-muted-foreground">No drinks found</p>
+                         <p className="text-xs text-muted-foreground mt-1">
+                           {searchQuery ? 'Try adjusting your search or filter' : 'No drinks available in this category'}
+                         </p>
+                         {(searchQuery || selectedCategory !== 'all') && (
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="mt-3"
+                             onClick={() => {
+                               setSearchQuery('');
+                               setSelectedCategory('all');
+                             }}
+                           >
+                             Clear filters
+                           </Button>
+                         )}
+                       </div>
+                     ) : (
+                       filteredDrinks.map(drink => {
+                         const isFavorite = favoriteDrinks.some(fav => fav.id === drink.id);
+                         return (
+                           <div key={drink.id} className={`flex items-center justify-between p-3 border rounded-lg ${isFavorite ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200' : 'bg-card'}`}>
+                             <div className="flex-1 min-w-0 pr-2">
+                               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                                 <div className="flex items-center gap-1">
+                                   <h4 className="font-medium text-sm truncate">{drink.name}</h4>
+                                   {isFavorite && <Heart className="h-3 w-3 text-red-500 fill-current" />}
+                                 </div>
+                                 <Badge variant="secondary" className="text-xs self-start">{drink.category}</Badge>
+                               </div>
+                               <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{drink.description}</p>
+                               <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
+                             </div>
+                             <Button onClick={() => addToCart(drink)} size="sm" className="shrink-0 ml-2">
+                               <Plus className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         );
+                       })
+                     )}
+                   </div>
                 </CardContent>
               </Card>
 
