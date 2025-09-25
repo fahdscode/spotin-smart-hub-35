@@ -255,7 +255,7 @@ export default function ClientDashboard() {
               <TabsTrigger value="events" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 Events
               </TabsTrigger>
-              <TabsTrigger value="account" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4 mx-0 py-[25px]">
+              <TabsTrigger value="account" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 My Account
               </TabsTrigger>
               <TabsTrigger value="receipts" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
