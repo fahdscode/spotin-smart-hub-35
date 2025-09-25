@@ -8,10 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image, Minus } from "lucide-react";
+import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image, Minus, Camera, FolderOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface Product {
   id: string;
@@ -136,6 +137,58 @@ const ProductPricing = () => {
       return null;
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const takePhotoWithCamera = async () => {
+    try {
+      const image = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+      });
+
+      if (image.dataUrl) {
+        setImagePreview(image.dataUrl);
+        // Convert dataUrl to blob for upload
+        const response = await fetch(image.dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        setImageFile(file);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error taking photo",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const selectPhotoFromGallery = async () => {
+    try {
+      const image = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos,
+      });
+
+      if (image.dataUrl) {
+        setImagePreview(image.dataUrl);
+        // Convert dataUrl to blob for upload
+        const response = await fetch(image.dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+        setImageFile(file);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error selecting photo",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -470,20 +523,50 @@ const ProductPricing = () => {
 
                 {/* Image Upload */}
                 <div>
-                  <Label htmlFor="productImage">Product Image</Label>
-                  <div className="space-y-2">
-                    <Input
-                      id="productImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFileChange}
-                    />
+                  <Label>Product Image</Label>
+                  <div className="space-y-3">
+                    {/* Desktop/Web Upload */}
+                    <div>
+                      <Label htmlFor="productImage" className="text-sm text-muted-foreground">Upload from Computer</Label>
+                      <Input
+                        id="productImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    {/* Mobile Camera Options */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={takePhotoWithCamera}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={selectPhotoFromGallery}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        Select from Gallery
+                      </Button>
+                    </div>
+                    
                     {imagePreview && (
                       <div className="mt-2">
                         <img
                           src={imagePreview}
                           alt="Product preview"
-                          className="w-20 h-20 object-cover rounded border"
+                          className="w-32 h-32 object-cover rounded border"
                         />
                       </div>
                     )}
