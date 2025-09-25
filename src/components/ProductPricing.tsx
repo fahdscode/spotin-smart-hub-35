@@ -738,11 +738,57 @@ const ProductPricing = () => {
                                <Select
                                  value=""
                                  onValueChange={(value) => {
-                                   // Ask for amount when ingredient is selected
-                                   const amount = prompt(`How much ${value.replace("-", " ")} is needed for this product? (include unit, e.g., "250ml", "2 cups", "50g")`);
+                                   // Check if ingredient exists in stock
+                                   const stockIngredient = stockItems.find(item => 
+                                     item.name.toLowerCase() === value.replace("-", " ").toLowerCase()
+                                   );
+                                   
+                                   let unit = "ml"; // default unit
+                                   if (stockIngredient) {
+                                     unit = stockIngredient.unit;
+                                   } else {
+                                     // Define default units for common ingredients
+                                     const ingredientUnits: Record<string, string> = {
+                                       "coffee-beans": "kg",
+                                       "milk": "liter", 
+                                       "sugar": "kg",
+                                       "flour": "kg",
+                                       "butter": "kg",
+                                       "eggs": "piece",
+                                       "chocolate": "kg",
+                                       "vanilla": "ml",
+                                       "cinnamon": "kg",
+                                       "honey": "kg",
+                                       "tea-leaves": "kg",
+                                       "cream": "liter"
+                                     };
+                                     unit = ingredientUnits[value] || "ml";
+                                     
+                                     // Auto-add to stock items array (frontend only)
+                                     const newStockItem = {
+                                       id: `temp-${Date.now()}`,
+                                       name: value.replace("-", " "),
+                                       unit: unit,
+                                       current_quantity: 0,
+                                       min_quantity: 0,
+                                       cost_per_unit: 0,
+                                       supplier: "",
+                                       category: "ingredient",
+                                       is_active: true
+                                     };
+                                     setStockItems(prev => [...prev, newStockItem]);
+                                     
+                                     toast({
+                                       title: "Ingredient Added to Stock",
+                                       description: `${value.replace("-", " ")} has been added to stock management`,
+                                     });
+                                   }
+                                   
+                                   // Ask for amount with the correct unit
+                                   const amount = prompt(`How much ${value.replace("-", " ")} is needed for this product? (in ${unit})`);
                                    if (amount && amount.trim()) {
                                      const currentIngredients = product.ingredients || [];
-                                     const ingredientWithAmount = `${value}:${amount.trim()}`;
+                                     const ingredientWithAmount = `${value}:${amount.trim()} ${unit}`;
                                      
                                      // Check if this ingredient type already exists
                                      const existingIndex = currentIngredients.findIndex(ing => ing.startsWith(value + ":"));
