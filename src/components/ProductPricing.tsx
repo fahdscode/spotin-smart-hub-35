@@ -734,53 +734,158 @@ const ProductPricing = () => {
                               />
                             </div>
                             <div>
-                              <Label>Ingredients (comma-separated)</Label>
-                              <Textarea
-                                value={product.ingredients?.join(", ") || ""}
-                                onChange={(e) => {
-                                  const ingredients = e.target.value.split(",").map(ing => ing.trim()).filter(Boolean);
-                                  setProducts(products.map(p => 
-                                    p.id === product.id ? { ...p, ingredients } : p
-                                  ));
+                              <Label>Ingredients</Label>
+                              <Select
+                                value=""
+                                onValueChange={(value) => {
+                                  const currentIngredients = product.ingredients || [];
+                                  if (!currentIngredients.includes(value)) {
+                                    const newIngredients = [...currentIngredients, value];
+                                    setProducts(products.map(p => 
+                                      p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                    ));
+                                  }
                                 }}
-                                rows={2}
-                                placeholder="e.g., Coffee beans, Milk, Sugar"
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Add ingredient" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="coffee-beans">Coffee Beans</SelectItem>
+                                  <SelectItem value="milk">Milk</SelectItem>
+                                  <SelectItem value="sugar">Sugar</SelectItem>
+                                  <SelectItem value="flour">Flour</SelectItem>
+                                  <SelectItem value="butter">Butter</SelectItem>
+                                  <SelectItem value="eggs">Eggs</SelectItem>
+                                  <SelectItem value="chocolate">Chocolate</SelectItem>
+                                  <SelectItem value="vanilla">Vanilla</SelectItem>
+                                  <SelectItem value="cinnamon">Cinnamon</SelectItem>
+                                  <SelectItem value="honey">Honey</SelectItem>
+                                  <SelectItem value="tea-leaves">Tea Leaves</SelectItem>
+                                  <SelectItem value="cream">Cream</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              {/* Display selected ingredients */}
+                              {product.ingredients && product.ingredients.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {product.ingredients.map((ingredient, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      {ingredient.replace("-", " ")}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-auto p-0 ml-1"
+                                        onClick={() => {
+                                          const newIngredients = product.ingredients?.filter((_, i) => i !== index) || [];
+                                          setProducts(products.map(p => 
+                                            p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                          ));
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div>
-                              <Label>Image URL</Label>
-                              <Input
-                                value={product.image_url || ""}
-                                onChange={(e) => {
-                                  setProducts(products.map(p => 
-                                    p.id === product.id ? { ...p, image_url: e.target.value } : p
-                                  ));
-                                }}
-                                placeholder="https://example.com/image.jpg"
-                              />
+                              <Label>Product Image</Label>
+                              <div className="space-y-2">
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      setImageFile(file);
+                                      const reader = new FileReader();
+                                      reader.onload = (event) => {
+                                        setImagePreview(event.target?.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                                
+                                {/* Mobile Camera Options */}
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    onClick={takePhotoWithCamera}
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                  >
+                                    <Camera className="h-4 w-4 mr-2" />
+                                    Take Photo
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={selectPhotoFromGallery}
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                  >
+                                    <FolderOpen className="h-4 w-4 mr-2" />
+                                    Gallery
+                                  </Button>
+                                </div>
+                                
+                                {(imagePreview || product.image_url) && (
+                                  <div className="mt-2">
+                                    <img
+                                      src={imagePreview || product.image_url}
+                                      alt="Product preview"
+                                      className="w-32 h-32 object-cover rounded border"
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => {
-                                  handleUpdateProduct(product.id, { 
-                                    price: product.price,
-                                    description: product.description,
-                                    image_url: product.image_url,
-                                    prep_time: product.prep_time,
-                                    ingredients: product.ingredients
-                                  });
-                                  setEditingProduct(null);
+                                onClick={async () => {
+                                  try {
+                                    let updatedProduct = { 
+                                      price: product.price,
+                                      description: product.description,
+                                      image_url: product.image_url,
+                                      prep_time: product.prep_time,
+                                      ingredients: product.ingredients
+                                    };
+                                    
+                                    // Handle image upload if a new file was selected
+                                    if (imageFile) {
+                                      const imageUrl = await uploadProductImage(imageFile);
+                                      if (imageUrl) {
+                                        updatedProduct.image_url = imageUrl;
+                                      }
+                                    }
+                                    
+                                    await handleUpdateProduct(product.id, updatedProduct);
+                                    setEditingProduct(null);
+                                    setImageFile(null);
+                                    setImagePreview("");
+                                  } catch (error) {
+                                    console.error('Error updating product:', error);
+                                  }
                                 }}
+                                disabled={uploadingImage}
                               >
                                 <Save className="h-3 w-3 mr-1" />
-                                Save
+                                {uploadingImage ? "Uploading..." : "Save"}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
                                   setEditingProduct(null);
+                                  setImageFile(null);
+                                  setImagePreview("");
                                   fetchProducts(); // Reset changes
                                 }}
                               >
