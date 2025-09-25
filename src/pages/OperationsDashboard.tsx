@@ -12,6 +12,8 @@ import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
 import DayUseTicketControls from "@/components/DayUseTicketControls";
 import MembershipManagement from "@/components/MembershipManagement";
+import RoomsManagement from "@/components/RoomsManagement";
+import MembershipPlansManagement from "@/components/MembershipPlansManagement";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -103,10 +105,12 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="stock">Stock Management</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="control">Control Panel</TabsTrigger>
+            <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            <TabsTrigger value="plans">Plans</TabsTrigger>
             <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
           </TabsList>
 
@@ -361,13 +365,27 @@ const OperationsDashboard = () => {
                   <CardDescription>Room and membership operations</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button variant="professional" className="w-full">
+                  <Button 
+                    variant="professional" 
+                    className="w-full"
+                    onClick={() => {
+                      const roomsTab = document.querySelector('[value="rooms"]');
+                      if (roomsTab) (roomsTab as HTMLElement).click();
+                    }}
+                  >
                     <Building className="h-4 w-4" />
-                    Add Room
+                    Manage Rooms
                   </Button>
-                  <Button variant="professional" className="w-full">
+                  <Button 
+                    variant="professional" 
+                    className="w-full"
+                    onClick={() => {
+                      const plansTab = document.querySelector('[value="plans"]');
+                      if (plansTab) (plansTab as HTMLElement).click();
+                    }}
+                  >
                     <Users className="h-4 w-4" />
-                    Add Membership
+                    Manage Plans
                   </Button>
                   <Button variant="outline" className="w-full">
                     <Calendar className="h-4 w-4" />
@@ -442,14 +460,24 @@ const OperationsDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Vouchers Tab */}
-            <TabsContent value="vouchers" className="space-y-6">
-              <VouchersManagement />
-            </TabsContent>
+          {/* Rooms Tab */}
+          <TabsContent value="rooms" className="space-y-6">
+            <RoomsManagement />
+          </TabsContent>
 
-            <TabsContent value="memberships" className="space-y-6">
-              <MembershipManagement />
-            </TabsContent>
+          {/* Plans Tab */}
+          <TabsContent value="plans" className="space-y-6">
+            <MembershipPlansManagement />
+          </TabsContent>
+
+          {/* Vouchers Tab */}
+          <TabsContent value="vouchers" className="space-y-6">
+            <VouchersManagement />
+          </TabsContent>
+
+          <TabsContent value="memberships" className="space-y-6">
+            <MembershipManagement />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
