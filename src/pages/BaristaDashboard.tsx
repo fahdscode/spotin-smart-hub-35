@@ -2,11 +2,12 @@ import { useState } from "react";
 import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
+import ClientProductEditor from "@/components/ClientProductEditor";
+import QuickItemSelector from "@/components/QuickItemSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,6 +37,7 @@ const BaristaDashboard = () => {
   const { toast } = useToast();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isEditProductsOpen, setIsEditProductsOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "ORD-001",
@@ -348,48 +350,15 @@ const BaristaDashboard = () => {
                   selectedClientId={selectedClient?.id}
                 />
                 
-                <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="professional" 
-                      className="w-full"
-                      disabled={!selectedClient}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Quick Item
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Quick Add Item</DialogTitle>
-                      <DialogDescription>
-                        {selectedClient 
-                          ? `Adding item for ${selectedClient.full_name} (${selectedClient.client_code})`
-                          : "Please select a client first"
-                        }
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      {quickItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Button
-                            key={item.name}
-                            variant="outline"
-                            className="h-20 flex-col gap-2"
-                            onClick={() => addQuickItem(item.name)}
-                          >
-                            <Icon className="h-6 w-6" />
-                            <div className="text-center">
-                              <div className="font-medium text-sm">{item.name}</div>
-                              <div className="text-xs text-muted-foreground">~{item.time}</div>
-                            </div>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button 
+                  variant="professional" 
+                  className="w-full"
+                  disabled={!selectedClient}
+                  onClick={() => setIsQuickAddOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Quick Item
+                </Button>
 
                 {selectedClient && (
                   <div className="space-y-3">
@@ -404,6 +373,7 @@ const BaristaDashboard = () => {
                       variant="outline" 
                       className="w-full"
                       disabled={!selectedClient}
+                      onClick={() => setIsEditProductsOpen(true)}
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Client Products
@@ -414,6 +384,21 @@ const BaristaDashboard = () => {
             </Card>
           </div>
         </div>
+
+        {/* Quick Item Selector Dialog */}
+        <QuickItemSelector
+          isOpen={isQuickAddOpen}
+          onClose={() => setIsQuickAddOpen(false)}
+          selectedClient={selectedClient}
+          onItemSelect={addQuickItem}
+        />
+
+        {/* Client Product Editor Dialog */}
+        <ClientProductEditor
+          isOpen={isEditProductsOpen}
+          onClose={() => setIsEditProductsOpen(false)}
+          selectedClient={selectedClient}
+        />
       </div>
     </div>
   );
