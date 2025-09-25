@@ -377,6 +377,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity_needed: number
+          stock_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity_needed?: number
+          stock_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity_needed?: number
+          stock_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "drinks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           barcode: string | null
@@ -556,6 +598,48 @@ export type Database = {
           quantity?: number
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      stock: {
+        Row: {
+          category: string
+          cost_per_unit: number
+          created_at: string
+          current_quantity: number
+          id: string
+          is_active: boolean
+          min_quantity: number
+          name: string
+          supplier: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          cost_per_unit?: number
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          is_active?: boolean
+          min_quantity?: number
+          name: string
+          supplier?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cost_per_unit?: number
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          is_active?: boolean
+          min_quantity?: number
+          name?: string
+          supplier?: string | null
+          unit?: string
+          updated_at?: string
         }
         Relationships: []
       }

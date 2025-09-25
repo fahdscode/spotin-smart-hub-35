@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image } from "lucide-react";
+import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,8 +25,23 @@ interface Product {
   prep_time?: string;
 }
 
+interface StockItem {
+  id: string;
+  name: string;
+  unit: string;
+  current_quantity: number;
+}
+
+interface ProductIngredient {
+  id?: string;
+  stock_id: string;
+  quantity_needed: number;
+  stock_item?: StockItem;
+}
+
 const ProductPricing = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -34,12 +49,14 @@ const ProductPricing = () => {
     category: "beverage",
     description: "",
     is_available: true,
-    image_url: "",
     prep_time: "",
-    ingredients: [] as string[]
+    ingredients: [] as ProductIngredient[]
   });
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const { toast } = useToast();
 
   const categories = [
@@ -51,6 +68,7 @@ const ProductPricing = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchStockItems();
   }, []);
 
   const fetchProducts = async () => {
@@ -73,6 +91,54 @@ const ProductPricing = () => {
     }
   };
 
+  const fetchStockItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stock')
+        .select('id, name, unit, current_quantity')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setStockItems(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching stock items",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const uploadProductImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `products/${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Error uploading image",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleAddProduct = async () => {
     if (!newProduct.name || newProduct.price <= 0) {
       toast({
@@ -84,6 +150,12 @@ const ProductPricing = () => {
     }
 
     try {
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadProductImage(imageFile);
+        if (!imageUrl) return;
+      }
+
       const { data, error } = await supabase
         .from('drinks')
         .insert([{
@@ -92,12 +164,27 @@ const ProductPricing = () => {
           category: newProduct.category,
           description: newProduct.description || null,
           is_available: newProduct.is_available,
-          image_url: newProduct.image_url || null,
-          ingredients: newProduct.ingredients.length > 0 ? newProduct.ingredients : null
+          image_url: imageUrl,
+          prep_time: newProduct.prep_time || null
         }])
         .select();
 
       if (error) throw error;
+
+      // Save product ingredients
+      if (newProduct.ingredients.length > 0) {
+        const ingredientsToInsert = newProduct.ingredients.map(ing => ({
+          product_id: data[0].id,
+          stock_id: ing.stock_id,
+          quantity_needed: ing.quantity_needed
+        }));
+
+        const { error: ingredientsError } = await supabase
+          .from('product_ingredients')
+          .insert(ingredientsToInsert);
+
+        if (ingredientsError) throw ingredientsError;
+      }
 
       setProducts([...products, data[0]]);
       setNewProduct({
@@ -106,10 +193,11 @@ const ProductPricing = () => {
         category: "beverage",
         description: "",
         is_available: true,
-        image_url: "",
         prep_time: "",
         ingredients: []
       });
+      setImageFile(null);
+      setImagePreview("");
       setIsAddingProduct(false);
 
       toast({
@@ -177,6 +265,41 @@ const ProductPricing = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addIngredient = () => {
+    setNewProduct(prev => ({
+      ...prev,
+      ingredients: [...prev.ingredients, { stock_id: "", quantity_needed: 0 }]
+    }));
+  };
+
+  const removeIngredient = (index: number) => {
+    setNewProduct(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateIngredient = (index: number, field: string, value: any) => {
+    setNewProduct(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.map((ing, i) => 
+        i === index ? { ...ing, [field]: value } : ing
+      )
+    }));
   };
 
   const groupedProducts = products.reduce((acc, product) => {
@@ -293,51 +416,93 @@ const ProductPricing = () => {
                     rows={2}
                   />
                 </div>
+                
+                {/* Ingredients from Stock */}
                 <div>
-                  <Label htmlFor="productIngredients">Ingredients (comma-separated)</Label>
-                  <Textarea
-                    id="productIngredients"
-                    value={newProduct.ingredients.join(", ")}
-                    onChange={(e) => setNewProduct(prev => ({ 
-                      ...prev, 
-                      ingredients: e.target.value.split(",").map(ing => ing.trim()).filter(Boolean)
-                    }))}
-                    placeholder="e.g., Coffee beans, Milk, Sugar"
-                    rows={2}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="productImage">Image URL</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="productImage"
-                      value={newProduct.image_url}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                    <Button variant="outline" size="sm">
-                      <Upload className="h-4 w-4" />
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Product Ingredients</Label>
+                    <Button type="button" onClick={addIngredient} variant="outline" size="sm">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Ingredient
                     </Button>
                   </div>
-                  {newProduct.image_url && (
-                    <div className="mt-2">
-                      <img
-                        src={newProduct.image_url}
-                        alt="Product preview"
-                        className="w-20 h-20 object-cover rounded border"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {newProduct.ingredients.map((ingredient, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <Select
+                          value={ingredient.stock_id}
+                          onValueChange={(value) => updateIngredient(index, 'stock_id', value)}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select ingredient" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {stockItems.map((stock) => (
+                              <SelectItem key={stock.id} value={stock.id}>
+                                {stock.name} ({stock.current_quantity} {stock.unit})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Qty"
+                          value={ingredient.quantity_needed}
+                          onChange={(e) => updateIngredient(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
+                          className="w-20"
+                        />
+                        <Button 
+                          type="button" 
+                          onClick={() => removeIngredient(index)} 
+                          variant="outline" 
+                          size="sm"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    {newProduct.ingredients.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No ingredients added</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <Label htmlFor="productImage">Product Image</Label>
+                  <div className="space-y-2">
+                    <Input
+                      id="productImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                    />
+                    {imagePreview && (
+                      <div className="mt-2">
+                        <img
+                          src={imagePreview}
+                          alt="Product preview"
+                          className="w-20 h-20 object-cover rounded border"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleAddProduct} variant="professional">
+                  <Button 
+                    onClick={handleAddProduct} 
+                    variant="professional"
+                    disabled={uploadingImage}
+                  >
                     <Save className="h-4 w-4 mr-2" />
-                    Save Product
+                    {uploadingImage ? "Uploading..." : "Save Product"}
                   </Button>
-                  <Button onClick={() => setIsAddingProduct(false)} variant="outline">
+                  <Button onClick={() => {
+                    setIsAddingProduct(false);
+                    setImageFile(null);
+                    setImagePreview("");
+                  }} variant="outline">
                     <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
