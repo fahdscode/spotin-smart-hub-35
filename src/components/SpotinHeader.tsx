@@ -1,27 +1,15 @@
 import { Clock, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import spotinLogo from "@/assets/spotin-logo.png";
-
 const SpotinHeader = () => {
-  return (
-    <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
+  return <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-lg">
-            <img 
-              src={spotinLogo} 
-              alt="SpotIN Logo" 
-              className="h-10 w-10 object-contain"
-            />
+            <img src={spotinLogo} alt="SpotIN Logo" className="h-10 w-10 object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">SpotIN</h1>
@@ -30,10 +18,7 @@ const SpotinHeader = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm bg-white/10 px-4 py-2 rounded-lg">
-            <Clock className="h-4 w-4" />
-            <span>{new Date().toLocaleTimeString()}</span>
-          </div>
+          
           
           <ThemeToggle />
           
@@ -65,8 +50,6 @@ const SpotinHeader = () => {
           </DropdownMenu>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default SpotinHeader;
