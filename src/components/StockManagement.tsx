@@ -44,6 +44,22 @@ const StockManagement = () => {
     { value: "can", label: "Cans" }
   ];
 
+  // Default ingredients matching ProductPricing
+  const defaultIngredients = [
+    { name: "Coffee Beans", unit: "kg" },
+    { name: "Milk", unit: "liter" },
+    { name: "Sugar", unit: "kg" },
+    { name: "Flour", unit: "kg" },
+    { name: "Butter", unit: "kg" },
+    { name: "Eggs", unit: "piece" },
+    { name: "Chocolate", unit: "kg" },
+    { name: "Vanilla", unit: "ml" },
+    { name: "Cinnamon", unit: "kg" },
+    { name: "Honey", unit: "kg" },
+    { name: "Tea Leaves", unit: "kg" },
+    { name: "Cream", unit: "liter" }
+  ];
+
   useEffect(() => {
     fetchStockItems();
   }, []);
@@ -57,7 +73,24 @@ const StockManagement = () => {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setStockItems(data || []);
+      
+      // If no stock items exist, create default ingredients
+      if (!data || data.length === 0) {
+        const defaultStockItems = defaultIngredients.map((ingredient, index) => ({
+          id: `default-${index}`,
+          name: ingredient.name,
+          unit: ingredient.unit,
+          current_quantity: 0,
+          min_quantity: 5,
+          cost_per_unit: 0,
+          supplier: "",
+          category: "ingredient",
+          is_active: true
+        }));
+        setStockItems(defaultStockItems);
+      } else {
+        setStockItems(data || []);
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching stock",
