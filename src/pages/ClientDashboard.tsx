@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import MetricCard from '@/components/MetricCard';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import { Progress } from '@/components/ui/progress';
-import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus } from 'lucide-react';
+import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus, Star, Award, Camera, Save, Edit3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 interface ClientData {
@@ -67,6 +70,17 @@ export default function ClientDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [trafficData, setTrafficData] = useState<TrafficData[]>([]);
   const [checkInStatus, setCheckInStatus] = useState<string>('checked_out');
+  const [checkInsLast30Days, setCheckInsLast30Days] = useState<number>(0);
+  const [membershipStatus, setMembershipStatus] = useState<string>('No active membership');
+  const [eventsThisYear, setEventsThisYear] = useState<number>(0);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
+    profileImage: ''
+  });
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
     if (storedClientData) {
@@ -74,9 +88,19 @@ export default function ClientDashboard() {
         const parsedData = JSON.parse(storedClientData);
         console.log('Client data loaded:', parsedData); // Debug log
         setClientData(parsedData);
+        setProfileData({
+          fullName: parsedData.fullName || '',
+          email: parsedData.email || '',
+          phone: parsedData.phone || '',
+          jobTitle: parsedData.jobTitle || '',
+          profileImage: ''
+        });
         verifyClientSession(parsedData.id);
         fetchRealData();
         fetchCheckInStatus(parsedData.id);
+        fetchCheckInsLast30Days(parsedData.id);
+        fetchMembershipStatus(parsedData.id);
+        fetchEventsThisYear(parsedData.id);
       } catch (error) {
         console.error('Error parsing client data:', error);
         navigate('/client-login');
@@ -155,6 +179,100 @@ export default function ClientDashboard() {
       setCheckInStatus(data || 'checked_out');
     } catch (error) {
       console.error('Error fetching check-in status:', error);
+    }
+  };
+
+  const fetchCheckInsLast30Days = async (clientId: string) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data, error } = await supabase
+        .from('check_in_logs')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('action', 'checked_in')
+        .gte('timestamp', thirtyDaysAgo.toISOString());
+      
+      if (error) throw error;
+      setCheckInsLast30Days(data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching check-ins:', error);
+    }
+  };
+
+  const fetchMembershipStatus = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_memberships')
+        .select('plan_name, is_active')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .single();
+      
+      if (error) {
+        setMembershipStatus('No active membership');
+        return;
+      }
+      
+      setMembershipStatus(data?.plan_name || 'No active membership');
+    } catch (error) {
+      console.error('Error fetching membership:', error);
+      setMembershipStatus('No active membership');
+    }
+  };
+
+  const fetchEventsThisYear = async (clientId: string) => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const yearStart = `${currentYear}-01-01`;
+      const yearEnd = `${currentYear}-12-31`;
+      
+      // This would need a proper event_attendees table or join
+      // For now, setting to 0 as a placeholder
+      setEventsThisYear(0);
+    } catch (error) {
+      console.error('Error fetching events this year:', error);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    try {
+      // Update localStorage
+      const updatedClientData = {
+        ...clientData,
+        fullName: profileData.fullName,
+        email: profileData.email,
+        phone: profileData.phone,
+        jobTitle: profileData.jobTitle
+      };
+      
+      localStorage.setItem('clientData', JSON.stringify(updatedClientData));
+      setClientData(updatedClientData as ClientData);
+      setIsEditingProfile(false);
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData({ ...profileData, profileImage: reader.result as string });
+      };
+      reader.readAsDataURL(file);
     }
   };
   const handleLogout = () => {
@@ -258,21 +376,18 @@ export default function ClientDashboard() {
 
         {/* Metrics Grid - Mobile Responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <MetricCard title="Current Crowd" value={getTotalOccupancy().toString()} change={`${Math.round(getTotalOccupancy() / getMaxCapacity() * 100)}% occupied`} icon={Users} variant="info" />
-          <MetricCard title="Check-in Status" value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'} change={getCurrentLocation()} icon={Clock} variant={checkInStatus === 'checked_in' ? 'success' : 'default'} />
+          <MetricCard title="Check-ins (30 days)" value={checkInsLast30Days.toString()} change="Total visits this month" icon={Users} variant="info" />
+          <MetricCard title="Check-in Status" value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'} change={checkInStatus === 'checked_in' ? 'Active session' : 'Not in space'} icon={Clock} variant={checkInStatus === 'checked_in' ? 'success' : 'default'} />
           <MetricCard title="Cart Total" value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'} change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'} icon={CreditCard} variant={cart.length > 0 ? 'success' : 'default'} />
-          <MetricCard title="Current Location" value={getCurrentLocation()} change={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'} icon={MapPin} variant={checkInStatus === 'checked_in' ? 'success' : 'warning'} />
+          <MetricCard title="Membership Status" value={membershipStatus} change={`Events this year: ${eventsThisYear}`} icon={Award} variant={membershipStatus !== 'No active membership' ? 'success' : 'default'} />
         </div>
 
         {/* Tabs - Mobile Optimized Navigation */}
         <Tabs defaultValue="barcode" className="space-y-4 sm:space-y-6">
           <div className="overflow-x-auto pb-2">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 min-w-max sm:min-w-0 my-[40px]">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 min-w-max sm:min-w-0 my-[40px]">
               <TabsTrigger value="barcode" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
-                My Barcode
-              </TabsTrigger>
-              <TabsTrigger value="traffic" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
-                Live Traffic
+                My QR Code
               </TabsTrigger>
               <TabsTrigger value="drinks" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 Order Drinks
@@ -289,13 +404,13 @@ export default function ClientDashboard() {
             </TabsList>
           </div>
 
-          {/* Barcode Tab - Mobile Optimized */}
+          {/* QR Code Tab - Mobile Optimized */}
           <TabsContent value="barcode" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg sm:text-xl">Your Check-in Barcode</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Your Check-in QR Code</CardTitle>
                 <CardDescription className="text-sm">
-                  Show this barcode to reception staff for quick check-in and check-out
+                  Show this QR code to reception staff for quick check-in and check-out
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
@@ -304,50 +419,6 @@ export default function ClientDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Traffic Tab - Mobile Optimized */}
-          <TabsContent value="traffic" className="space-y-4 sm:space-y-6">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg sm:text-xl">Live Space Traffic</CardTitle>
-                <CardDescription className="text-sm">
-                  Real-time occupancy and crowd information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <h3 className="text-base sm:text-lg font-semibold">Live Crowd Meter</h3>
-                    <Badge variant="secondary" className="self-start">Real-time</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Total Occupancy</span>
-                      <span className="font-medium">{getTotalOccupancy()}/{getMaxCapacity()}</span>
-                    </div>
-                    <Progress value={getTotalOccupancy() / getMaxCapacity() * 100} className="w-full h-3" />
-                    <p className="text-xs text-muted-foreground">Updated in real-time</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-sm sm:text-base">Area Breakdown</h4>
-                    <div className="space-y-3">
-                      {trafficData.map((area, index) => <div key={index} className="space-y-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="capitalize font-medium text-sm">
-                              {area.area.replace('_', ' ')}
-                            </span>
-                            <span className="text-sm font-medium">
-                              {area.current_occupancy}/{area.max_capacity}
-                            </span>
-                          </div>
-                          <Progress value={area.current_occupancy / area.max_capacity * 100} className="w-full h-2" />
-                        </div>)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Drinks Tab - Mobile Optimized */}
           <TabsContent value="drinks" className="space-y-4 sm:space-y-6">
@@ -505,72 +576,195 @@ export default function ClientDashboard() {
           {/* Account Tab - Mobile Optimized */}
           <TabsContent value="account" className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {/* Account Information Card */}
+              {/* Profile Settings Card */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg sm:text-xl">Account Information</CardTitle>
-                  <CardDescription className="text-sm">Your profile and membership details</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg sm:text-xl">Profile Settings</CardTitle>
+                      <CardDescription className="text-sm">Manage your personal information</CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingProfile(!isEditingProfile)}
+                    >
+                      {isEditingProfile ? <Save className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                      <p className="text-base font-medium">{clientData.fullName}</p>
+                <CardContent className="space-y-6">
+                  {/* Profile Photo */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage src={profileData.profileImage} alt={profileData.fullName} />
+                        <AvatarFallback className="text-lg">
+                          {profileData.fullName.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      {isEditingProfile && (
+                        <label className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90">
+                          <Camera className="h-4 w-4" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
                     </div>
+                    <Badge variant="secondary">{membershipStatus}</Badge>
+                  </div>
+
+                  {/* Profile Form */}
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                      <p className="text-base">{clientData.phone}</p>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="fullName"
+                          value={profileData.fullName}
+                          onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-base font-medium">{profileData.fullName}</p>
+                      )}
                     </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <p className="text-base break-all">{clientData.email}</p>
+                      <Label htmlFor="email">Email</Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profileData.email}
+                          onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-base break-all">{profileData.email}</p>
+                      )}
                     </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Member ID</label>
-                      <p className="text-base font-mono">{clientData.clientCode}</p>
+                      <Label htmlFor="phone">Phone</Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={profileData.phone}
+                          onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-base">{profileData.phone}</p>
+                      )}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="jobTitle">Job Title</Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="jobTitle"
+                          value={profileData.jobTitle}
+                          onChange={(e) => setProfileData({ ...profileData, jobTitle: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-base">{profileData.jobTitle}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Member ID</Label>
+                      <p className="text-base font-mono text-muted-foreground">{clientData?.clientCode}</p>
+                    </div>
+
+                    {isEditingProfile && (
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleProfileSave} className="flex-1">
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditingProfile(false);
+                            setProfileData({
+                              fullName: clientData?.fullName || '',
+                              email: clientData?.email || '',
+                              phone: clientData?.phone || '',
+                              jobTitle: clientData?.jobTitle || '',
+                              profileImage: profileData.profileImage
+                            });
+                          }}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Membership Status Card */}
+              {/* Membership & Activity Card */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg sm:text-xl">Membership Status</CardTitle>
-                  <CardDescription className="text-sm">Current membership plan and benefits</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Membership & Activity</CardTitle>
+                  <CardDescription className="text-sm">Your membership status and recent activity</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4">
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Current Plan</label>
-                      <Badge variant="secondary" className="self-start">Basic Member</Badge>
+                      <Label>Current Plan</Label>
+                      <Badge variant={membershipStatus !== 'No active membership' ? 'default' : 'secondary'} className="self-start">
+                        {membershipStatus}
+                      </Badge>
                     </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Member Since</label>
-                      <p className="text-base">January 2024</p>
+                      <Label>Check-ins This Month</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="text-2xl font-bold text-primary">{checkInsLast30Days}</div>
+                        <span className="text-sm text-muted-foreground">visits</span>
+                      </div>
                     </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Benefits</label>
-                      <div className="space-y-1">
+                      <Label>Events This Year</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="text-2xl font-bold text-primary">{eventsThisYear}</div>
+                        <span className="text-sm text-muted-foreground">attended</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Current Status</Label>
+                      <Badge variant={checkInStatus === 'checked_in' ? 'default' : 'secondary'}>
+                        {checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {membershipStatus !== 'No active membership' && (
+                    <div className="border-t pt-4">
+                      <Label className="mb-3 block">Membership Benefits</Label>
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
-                          <span>Unlimited day use</span>
+                          <span>Priority booking access</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
-                          <span>Free coffee (2 cups/day)</span>
+                          <span>Member-only events</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
-                          <span>Meeting room discounts</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
-                          <span>Event priority booking</span>
+                          <span>Exclusive discounts</span>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
