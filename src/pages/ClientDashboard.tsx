@@ -11,7 +11,6 @@ import { Progress } from '@/components/ui/progress';
 import { Users, Clock, MapPin, Coffee, Calendar, CreditCard, Download, FileText, Plus, Minus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
 interface ClientData {
   id: string;
   clientCode: string;
@@ -24,14 +23,12 @@ interface ClientData {
   jobTitle: string;
   howDidYouFindUs: string;
 }
-
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
 }
-
 interface Drink {
   id: string;
   name: string;
@@ -40,7 +37,6 @@ interface Drink {
   description: string;
   is_available: boolean;
 }
-
 interface Event {
   id: string;
   title: string;
@@ -54,16 +50,16 @@ interface Event {
   category: string;
   location: string;
 }
-
 interface TrafficData {
   current_occupancy: number;
   max_capacity: number;
   area: string;
 }
-
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +67,6 @@ export default function ClientDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [trafficData, setTrafficData] = useState<TrafficData[]>([]);
   const [checkInStatus, setCheckInStatus] = useState<string>('checked_out');
-
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
     if (storedClientData) {
@@ -91,13 +86,14 @@ export default function ClientDashboard() {
     }
     setLoading(false);
   }, [navigate]);
-
   const verifyClientSession = async (clientId: string) => {
     try {
-      const { data, error } = await supabase.rpc('get_client_by_id', {
+      const {
+        data,
+        error
+      } = await supabase.rpc('get_client_by_id', {
         client_id: clientId
       });
-
       const authResult = data as any;
       if (error || !authResult?.success) {
         throw new Error('Invalid session');
@@ -107,128 +103,115 @@ export default function ClientDashboard() {
       handleLogout();
     }
   };
-
   const fetchRealData = async () => {
     try {
       // Fetch drinks
-      const { data: drinksData, error: drinksError } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('is_available', true)
-        .order('category', { ascending: true });
-
+      const {
+        data: drinksData,
+        error: drinksError
+      } = await supabase.from('drinks').select('*').eq('is_available', true).order('category', {
+        ascending: true
+      });
       if (drinksError) throw drinksError;
       setDrinks(drinksData || []);
 
       // Fetch events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_active', true)
-        .gte('event_date', new Date().toISOString().split('T')[0])
-        .order('event_date', { ascending: true });
-
+      const {
+        data: eventsData,
+        error: eventsError
+      } = await supabase.from('events').select('*').eq('is_active', true).gte('event_date', new Date().toISOString().split('T')[0]).order('event_date', {
+        ascending: true
+      });
       if (eventsError) throw eventsError;
       setEvents(eventsData || []);
 
       // Fetch traffic data
-      const { data: trafficDataResult, error: trafficError } = await supabase
-        .from('traffic_data')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(3);
-
+      const {
+        data: trafficDataResult,
+        error: trafficError
+      } = await supabase.from('traffic_data').select('*').order('timestamp', {
+        ascending: false
+      }).limit(3);
       if (trafficError) throw trafficError;
       setTrafficData(trafficDataResult || []);
-
     } catch (error) {
       console.error('Error fetching real data:', error);
       toast({
         title: "Error",
         description: "Failed to load latest data. Please refresh the page.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const fetchCheckInStatus = async (clientId: string) => {
     try {
-      const { data, error } = await supabase.rpc('get_client_check_in_status', {
+      const {
+        data,
+        error
+      } = await supabase.rpc('get_client_check_in_status', {
         p_client_id: clientId
       });
-
       if (error) throw error;
       setCheckInStatus(data || 'checked_out');
     } catch (error) {
       console.error('Error fetching check-in status:', error);
     }
   };
-
   const handleLogout = () => {
     localStorage.removeItem('spotinClientData');
     navigate('/client-login');
   };
-
   const addToCart = (drink: Drink) => {
     const existingItem = cart.find(item => item.id === drink.id);
     if (existingItem) {
-      setCart(cart.map(item => 
-        item.id === drink.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
+      setCart(cart.map(item => item.id === drink.id ? {
+        ...item,
+        quantity: item.quantity + 1
+      } : item));
     } else {
-      setCart([...cart, { id: drink.id, name: drink.name, price: drink.price, quantity: 1 }]);
+      setCart([...cart, {
+        id: drink.id,
+        name: drink.name,
+        price: drink.price,
+        quantity: 1
+      }]);
     }
-    
     toast({
       title: "Added to cart",
-      description: `${drink.name} added to your order`,
+      description: `${drink.name} added to your order`
     });
   };
-
   const removeFromCart = (itemId: string) => {
     setCart(cart.filter(item => item.id !== itemId));
   };
-
   const updateCartQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity === 0) {
       removeFromCart(itemId);
     } else {
-      setCart(cart.map(item => 
-        item.id === itemId 
-          ? { ...item, quantity: newQuantity }
-          : item
-      ));
+      setCart(cart.map(item => item.id === itemId ? {
+        ...item,
+        quantity: newQuantity
+      } : item));
     }
   };
-
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
-
   const getCurrentLocation = () => {
     return checkInStatus === 'checked_in' ? "Checked in - Active session" : "Not checked in";
   };
-
   const getTotalOccupancy = () => {
     return trafficData.reduce((total, area) => total + area.current_occupancy, 0);
   };
-
   const getMaxCapacity = () => {
     return trafficData.reduce((total, area) => total + area.max_capacity, 0);
   };
-
   if (loading || !clientData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <SpotinHeader />
       
       <div className="container mx-auto px-4 py-4 sm:py-8">
@@ -250,40 +233,16 @@ export default function ClientDashboard() {
 
         {/* Metrics Grid - Mobile Responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <MetricCard
-            title="Current Crowd"
-            value={getTotalOccupancy().toString()}
-            change={`${Math.round((getTotalOccupancy() / getMaxCapacity()) * 100)}% occupied`}
-            icon={Users}
-            variant="info"
-          />
-          <MetricCard
-            title="Check-in Status"
-            value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'}
-            change={getCurrentLocation()}
-            icon={Clock}
-            variant={checkInStatus === 'checked_in' ? 'success' : 'default'}
-          />
-          <MetricCard
-            title="Cart Total"
-            value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'}
-            change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'}
-            icon={CreditCard}
-            variant={cart.length > 0 ? 'success' : 'default'}
-          />
-          <MetricCard
-            title="Current Location"
-            value={getCurrentLocation()}
-            change={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'}
-            icon={MapPin}
-            variant={checkInStatus === 'checked_in' ? 'success' : 'warning'}
-          />
+          <MetricCard title="Current Crowd" value={getTotalOccupancy().toString()} change={`${Math.round(getTotalOccupancy() / getMaxCapacity() * 100)}% occupied`} icon={Users} variant="info" />
+          <MetricCard title="Check-in Status" value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'} change={getCurrentLocation()} icon={Clock} variant={checkInStatus === 'checked_in' ? 'success' : 'default'} />
+          <MetricCard title="Cart Total" value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'} change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'} icon={CreditCard} variant={cart.length > 0 ? 'success' : 'default'} />
+          <MetricCard title="Current Location" value={getCurrentLocation()} change={checkInStatus === 'checked_in' ? 'Use barcode to check out' : 'Use barcode to check in'} icon={MapPin} variant={checkInStatus === 'checked_in' ? 'success' : 'warning'} />
         </div>
 
         {/* Tabs - Mobile Optimized Navigation */}
         <Tabs defaultValue="barcode" className="space-y-4 sm:space-y-6">
           <div className="overflow-x-auto pb-2">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 min-w-max sm:min-w-0">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 min-w-max sm:min-w-0 my-[40px]">
               <TabsTrigger value="barcode" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 My Barcode
               </TabsTrigger>
@@ -315,12 +274,7 @@ export default function ClientDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
-                <BarcodeCard 
-                  clientCode={clientData.clientCode}
-                  barcode={clientData.barcode}
-                  userName={clientData.fullName}
-                  userEmail={clientData.email}
-                />
+                <BarcodeCard clientCode={clientData.clientCode} barcode={clientData.barcode} userName={clientData.fullName} userEmail={clientData.email} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -345,15 +299,14 @@ export default function ClientDashboard() {
                       <span>Total Occupancy</span>
                       <span className="font-medium">{getTotalOccupancy()}/{getMaxCapacity()}</span>
                     </div>
-                    <Progress value={(getTotalOccupancy() / getMaxCapacity()) * 100} className="w-full h-3" />
+                    <Progress value={getTotalOccupancy() / getMaxCapacity() * 100} className="w-full h-3" />
                     <p className="text-xs text-muted-foreground">Updated in real-time</p>
                   </div>
                   
                   <div className="space-y-3">
                     <h4 className="font-medium text-sm sm:text-base">Area Breakdown</h4>
                     <div className="space-y-3">
-                      {trafficData.map((area, index) => (
-                        <div key={index} className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                      {trafficData.map((area, index) => <div key={index} className="space-y-2 p-3 bg-muted/50 rounded-lg">
                           <div className="flex justify-between items-center">
                             <span className="capitalize font-medium text-sm">
                               {area.area.replace('_', ' ')}
@@ -362,12 +315,8 @@ export default function ClientDashboard() {
                               {area.current_occupancy}/{area.max_capacity}
                             </span>
                           </div>
-                          <Progress 
-                            value={(area.current_occupancy / area.max_capacity) * 100} 
-                            className="w-full h-2" 
-                          />
-                        </div>
-                      ))}
+                          <Progress value={area.current_occupancy / area.max_capacity * 100} className="w-full h-2" />
+                        </div>)}
                     </div>
                   </div>
                 </div>
@@ -393,8 +342,7 @@ export default function ClientDashboard() {
                   </div>
                   
                   <div className="grid gap-3 max-h-[400px] overflow-y-auto">
-                    {drinks.filter(drink => drink.is_available).map((drink) => (
-                      <div key={drink.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                    {drinks.filter(drink => drink.is_available).map(drink => <div key={drink.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
                         <div className="flex-1 min-w-0 pr-2">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
                             <h4 className="font-medium text-sm truncate">{drink.name}</h4>
@@ -403,15 +351,10 @@ export default function ClientDashboard() {
                           <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{drink.description}</p>
                           <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
                         </div>
-                        <Button 
-                          onClick={() => addToCart(drink)}
-                          size="sm"
-                          className="shrink-0 ml-2"
-                        >
+                        <Button onClick={() => addToCart(drink)} size="sm" className="shrink-0 ml-2">
                           <Plus className="h-4 w-4" />
                         </Button>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -430,35 +373,21 @@ export default function ClientDashboard() {
                     </Badge>
                   </div>
                   
-                  {cart.length === 0 ? (
-                    <div className="text-center py-8">
+                  {cart.length === 0 ? <div className="text-center py-8">
                       <Coffee className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground">No items in cart</p>
                       <p className="text-xs text-muted-foreground mt-1">Add drinks from the menu to get started</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
+                    </div> : <div className="space-y-3">
                       <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {cart.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        {cart.map(item => <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div className="flex-1 min-w-0 pr-2">
                               <span className="font-medium text-sm block truncate">{item.name}</span>
                               <div className="flex items-center gap-2 mt-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                                  className="h-6 w-6 p-0 shrink-0"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="h-6 w-6 p-0 shrink-0">
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 <span className="text-sm w-8 text-center font-medium">{item.quantity}</span>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                                  className="h-6 w-6 p-0 shrink-0"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="h-6 w-6 p-0 shrink-0">
                                   <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -466,8 +395,7 @@ export default function ClientDashboard() {
                             <div className="text-right shrink-0">
                               <span className="font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
                             </div>
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                       
                       <div className="border-t pt-3 space-y-3">
@@ -480,8 +408,7 @@ export default function ClientDashboard() {
                           Place Order
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
             </div>
@@ -501,15 +428,11 @@ export default function ClientDashboard() {
                 </div>
                 
                 <div className="space-y-4">
-                  {events.length === 0 ? (
-                    <div className="text-center py-8">
+                  {events.length === 0 ? <div className="text-center py-8">
                       <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground">No upcoming events</p>
                       <p className="text-xs text-muted-foreground mt-1">Check back later for new events</p>
-                    </div>
-                  ) : (
-                    events.map((event) => (
-                      <Card key={event.id} className="p-4 border bg-card">
+                    </div> : events.map(event => <Card key={event.id} className="p-4 border bg-card">
                         <div className="space-y-3">
                           {/* Event Header */}
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -542,17 +465,13 @@ export default function ClientDashboard() {
                               <Users className="h-4 w-4 shrink-0" />
                               <span>{event.registered_attendees}/{event.capacity} registered</span>
                             </div>
-                            {event.location && (
-                              <div className="flex items-center gap-2 sm:col-span-2">
+                            {event.location && <div className="flex items-center gap-2 sm:col-span-2">
                                 <MapPin className="h-4 w-4 shrink-0" />
                                 <span className="truncate">{event.location}</span>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </div>
-                      </Card>
-                    ))
-                  )}
+                      </Card>)}
                 </div>
               </CardContent>
             </Card>
@@ -666,6 +585,5 @@ export default function ClientDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 }
