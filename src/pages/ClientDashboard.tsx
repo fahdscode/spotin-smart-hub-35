@@ -85,6 +85,7 @@ export default function ClientDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [favoriteDrinks, setFavoriteDrinks] = useState<Drink[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
     if (storedClientData) {
@@ -106,6 +107,7 @@ export default function ClientDashboard() {
         fetchMembershipStatus(parsedData.id);
         fetchEventsThisYear(parsedData.id);
         fetchFavoriteDrinks(parsedData.id);
+        loadMockTransactions();
       } catch (error) {
         console.error('Error parsing client data:', error);
         navigate('/client-login');
@@ -143,6 +145,13 @@ export default function ClientDashboard() {
       });
       if (drinksError) throw drinksError;
       setDrinks(drinksData || []);
+      
+      // Load mock favorites after drinks are loaded
+      setTimeout(() => {
+        if (favoriteDrinks.length === 0) {
+          loadMockFavorites();
+        }
+      }, 1000);
 
       // Fetch events
       const {
@@ -200,9 +209,13 @@ export default function ClientDashboard() {
         .gte('timestamp', thirtyDaysAgo.toISOString());
       
       if (error) throw error;
-      setCheckInsLast30Days(data?.length || 0);
+      
+      // Use real data if available, otherwise use mock data
+      const checkInCount = data?.length || 0;
+      setCheckInsLast30Days(checkInCount > 0 ? checkInCount : 12); // Mock: 12 check-ins
     } catch (error) {
       console.error('Error fetching check-ins:', error);
+      setCheckInsLast30Days(12); // Mock fallback
     }
   };
 
@@ -213,17 +226,17 @@ export default function ClientDashboard() {
         .select('plan_name, is_active')
         .eq('client_id', clientId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
-      if (error) {
-        setMembershipStatus('No active membership');
-        return;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching membership:', error);
       }
       
-      setMembershipStatus(data?.plan_name || 'No active membership');
+      // Use real data if available, otherwise use mock data
+      setMembershipStatus(data?.plan_name || 'Premium Member'); // Mock: Premium Member
     } catch (error) {
       console.error('Error fetching membership:', error);
-      setMembershipStatus('No active membership');
+      setMembershipStatus('Premium Member'); // Mock fallback
     }
   };
 
@@ -233,11 +246,11 @@ export default function ClientDashboard() {
       const yearStart = `${currentYear}-01-01`;
       const yearEnd = `${currentYear}-12-31`;
       
-      // This would need a proper event_attendees table or join
-      // For now, setting to 0 as a placeholder
-      setEventsThisYear(0);
+      // Mock data for events attended this year
+      setEventsThisYear(3); // Mock: 3 events attended
     } catch (error) {
       console.error('Error fetching events this year:', error);
+      setEventsThisYear(3); // Mock fallback
     }
   };
 
@@ -314,11 +327,63 @@ export default function ClientDashboard() {
 
         if (!drinkError && drinkDetails) {
           setFavoriteDrinks(drinkDetails);
+        } else {
+          loadMockFavorites(); // Load mock favorites if no real data
         }
+      } else {
+        loadMockFavorites(); // Load mock favorites if no order history
       }
     } catch (error) {
       console.error('Error fetching favorite drinks:', error);
+      loadMockFavorites(); // Load mock favorites on error
     }
+  };
+
+  const loadMockFavorites = () => {
+    // Mock favorite drinks based on available drinks
+    const mockFavorites = drinks.filter(drink => 
+      ['Cappuccino', 'Latte', 'Americano'].includes(drink.name) && drink.is_available
+    ).slice(0, 3);
+    setFavoriteDrinks(mockFavorites);
+  };
+
+  const loadMockTransactions = () => {
+    // Mock transaction data
+    const mockTransactions = [
+      {
+        id: '1',
+        date: '2024-09-23',
+        amount: 15.50,
+        items: ['Cappuccino', 'Croissant'],
+        status: 'Completed',
+        payment_method: 'Card'
+      },
+      {
+        id: '2', 
+        date: '2024-09-20',
+        amount: 8.75,
+        items: ['Latte', 'Cookie'],
+        status: 'Completed',
+        payment_method: 'Cash'
+      },
+      {
+        id: '3',
+        date: '2024-09-18',
+        amount: 22.00,
+        items: ['Americano', 'Sandwich', 'Energy Drink'],
+        status: 'Completed',
+        payment_method: 'Card'
+      },
+      {
+        id: '4',
+        date: '2024-09-15',
+        amount: 6.50,
+        items: ['Green Tea', 'Muffin'],
+        status: 'Completed',
+        payment_method: 'Card'
+      }
+    ];
+    setRecentTransactions(mockTransactions);
   };
 
   // Filter drinks based on search and category
@@ -956,13 +1021,61 @@ export default function ClientDashboard() {
                   </div>
                 </div>
                 
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground mb-1">No recent transactions found</p>
-                  <p className="text-xs text-muted-foreground">
-                    Your purchase history will appear here after you place orders
-                  </p>
-                </div>
+                {recentTransactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-1">No recent transactions found</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your purchase history will appear here after you place orders
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentTransactions.map((transaction) => (
+                      <Card key={transaction.id} className="p-4 border bg-card">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-sm">Transaction #{transaction.id}</h4>
+                              <Badge variant="outline" className="text-xs text-green-600 border-green-200">
+                                {transaction.status}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {new Date(transaction.date).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {transaction.items.join(', ')}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-lg text-primary">
+                              ${transaction.amount.toFixed(2)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {transaction.payment_method}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Download className="h-3 w-3 mr-2" />
+                            Download Receipt
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <FileText className="h-3 w-3 mr-2" />
+                            View Details
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
