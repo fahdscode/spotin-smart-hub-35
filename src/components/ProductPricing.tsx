@@ -22,6 +22,7 @@ interface Product {
   is_available: boolean;
   ingredients?: string[];
   image_url?: string;
+  prep_time?: string;
 }
 
 const ProductPricing = () => {
@@ -33,7 +34,9 @@ const ProductPricing = () => {
     category: "beverage",
     description: "",
     is_available: true,
-    image_url: ""
+    image_url: "",
+    prep_time: "",
+    ingredients: [] as string[]
   });
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -89,7 +92,8 @@ const ProductPricing = () => {
           category: newProduct.category,
           description: newProduct.description || null,
           is_available: newProduct.is_available,
-          image_url: newProduct.image_url || null
+          image_url: newProduct.image_url || null,
+          ingredients: newProduct.ingredients.length > 0 ? newProduct.ingredients : null
         }])
         .select();
 
@@ -102,7 +106,9 @@ const ProductPricing = () => {
         category: "beverage",
         description: "",
         is_available: true,
-        image_url: ""
+        image_url: "",
+        prep_time: "",
+        ingredients: []
       });
       setIsAddingProduct(false);
 
@@ -259,6 +265,15 @@ const ProductPricing = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label htmlFor="productPrepTime">Avg. Prep Time</Label>
+                    <Input
+                      id="productPrepTime"
+                      value={newProduct.prep_time}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, prep_time: e.target.value }))}
+                      placeholder="e.g., 5 min"
+                    />
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="available"
@@ -275,7 +290,20 @@ const ProductPricing = () => {
                     value={newProduct.description}
                     onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Product description..."
-                    rows={3}
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="productIngredients">Ingredients (comma-separated)</Label>
+                  <Textarea
+                    id="productIngredients"
+                    value={newProduct.ingredients.join(", ")}
+                    onChange={(e) => setNewProduct(prev => ({ 
+                      ...prev, 
+                      ingredients: e.target.value.split(",").map(ing => ing.trim()).filter(Boolean)
+                    }))}
+                    placeholder="e.g., Coffee beans, Milk, Sugar"
+                    rows={2}
                   />
                 </div>
                 <div>
@@ -403,6 +431,18 @@ const ProductPricing = () => {
                               />
                             </div>
                             <div>
+                              <Label>Avg. Prep Time</Label>
+                              <Input
+                                value={product.prep_time || ""}
+                                onChange={(e) => {
+                                  setProducts(products.map(p => 
+                                    p.id === product.id ? { ...p, prep_time: e.target.value } : p
+                                  ));
+                                }}
+                                placeholder="e.g., 5 min"
+                              />
+                            </div>
+                            <div>
                               <Label>Description</Label>
                               <Textarea
                                 value={product.description || ""}
@@ -412,6 +452,20 @@ const ProductPricing = () => {
                                   ));
                                 }}
                                 rows={2}
+                              />
+                            </div>
+                            <div>
+                              <Label>Ingredients (comma-separated)</Label>
+                              <Textarea
+                                value={product.ingredients?.join(", ") || ""}
+                                onChange={(e) => {
+                                  const ingredients = e.target.value.split(",").map(ing => ing.trim()).filter(Boolean);
+                                  setProducts(products.map(p => 
+                                    p.id === product.id ? { ...p, ingredients } : p
+                                  ));
+                                }}
+                                rows={2}
+                                placeholder="e.g., Coffee beans, Milk, Sugar"
                               />
                             </div>
                             <div>
@@ -433,7 +487,9 @@ const ProductPricing = () => {
                                   handleUpdateProduct(product.id, { 
                                     price: product.price,
                                     description: product.description,
-                                    image_url: product.image_url
+                                    image_url: product.image_url,
+                                    prep_time: product.prep_time,
+                                    ingredients: product.ingredients
                                   });
                                   setEditingProduct(null);
                                 }}

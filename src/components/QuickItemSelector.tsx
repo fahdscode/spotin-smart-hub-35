@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Coffee, Clock, Package } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Search, Coffee, Clock, Package, StickyNote, XCircle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -30,7 +32,7 @@ interface QuickItemSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   selectedClient: Client | null;
-  onItemSelect: (itemName: string) => void;
+  onItemSelect: (itemName: string, note?: string) => void;
 }
 
 // Mock products data with prep times
@@ -61,6 +63,8 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [itemNote, setItemNote] = useState("");
 
   useEffect(() => {
     // Filter products based on search term and category
@@ -78,8 +82,16 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
   }, [searchTerm, selectedCategory, products]);
 
   const handleItemSelect = (itemName: string) => {
-    onItemSelect(itemName);
-    onClose();
+    setSelectedItem(itemName);
+  };
+
+  const handleConfirmItem = () => {
+    if (selectedItem) {
+      onItemSelect(selectedItem, itemNote);
+      setSelectedItem(null);
+      setItemNote("");
+      onClose();
+    }
   };
 
   const groupedProducts = filteredProducts.reduce((acc, product) => {
@@ -161,7 +173,7 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
                   {categoryProducts.map((product) => (
                     <Card 
                       key={product.id} 
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className={`cursor-pointer hover:shadow-md transition-shadow ${selectedItem === product.name ? 'ring-2 ring-primary' : ''}`}
                       onClick={() => handleItemSelect(product.name)}
                     >
                       <CardHeader className="pb-2">
@@ -195,6 +207,55 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
             </div>
           )}
         </div>
+
+        {/* Item Confirmation with Note */}
+        {selectedItem && (
+          <div className="border-t pt-4 mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Selected: {selectedItem}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setItemNote("");
+                }}
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="itemNote" className="flex items-center gap-2">
+                <StickyNote className="h-4 w-4" />
+                Add Note (Optional)
+              </Label>
+              <Textarea
+                id="itemNote"
+                value={itemNote}
+                onChange={(e) => setItemNote(e.target.value)}
+                placeholder="Any special instructions or notes..."
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleConfirmItem} className="flex-1" variant="professional">
+                Add Item
+              </Button>
+              <Button 
+                onClick={() => {
+                  setSelectedItem(null);
+                  setItemNote("");
+                }} 
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -161,6 +161,27 @@ export default function ClientDashboard() {
     localStorage.removeItem('spotinClientData');
     navigate('/client-login');
   };
+  const playOrderNotification = () => {
+    // Create audio context for notification sound when client orders
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Different tone pattern for client orders vs barista quick adds
+    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.15);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.3);
+    
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.45);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.45);
+  };
+
   const addToCart = (drink: Drink) => {
     const existingItem = cart.find(item => item.id === drink.id);
     if (existingItem) {
@@ -176,6 +197,10 @@ export default function ClientDashboard() {
         quantity: 1
       }]);
     }
+    
+    // Play notification sound for new client order
+    playOrderNotification();
+    
     toast({
       title: "Added to cart",
       description: `${drink.name} added to your order`

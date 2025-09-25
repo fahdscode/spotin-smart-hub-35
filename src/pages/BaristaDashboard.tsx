@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit } from "lucide-react";
+import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit, XCircle } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
 import ClientProductEditor from "@/components/ClientProductEditor";
@@ -75,7 +75,7 @@ const BaristaDashboard = () => {
     { name: "Mocha", time: "5 min", icon: Coffee }
   ];
 
-  const addQuickItem = (itemName: string) => {
+  const addQuickItem = (itemName: string, note?: string) => {
     if (!selectedClient) {
       toast({
         title: "No Client Selected",
@@ -93,11 +93,14 @@ const BaristaDashboard = () => {
       clientId: selectedClient.id,
       status: "pending",
       orderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      notes: `Quick add by barista for ${selectedClient.client_code}`
+      notes: note || `Quick add by barista for ${selectedClient.client_code}`
     };
 
     setOrders(prev => [...prev, newOrder]);
     setIsQuickAddOpen(false);
+    
+    // Play notification sound for new order
+    playOrderNotification();
     
     toast({
       title: "Item Added",
@@ -109,6 +112,34 @@ const BaristaDashboard = () => {
     setOrders(orders.map(order => 
       order.id === orderId ? { ...order, status: newStatus } : order
     ));
+  };
+
+  const cancelOrder = (orderId: string) => {
+    setOrders(orders.filter(order => order.id !== orderId));
+    toast({
+      title: "Order Cancelled",
+      description: "Order has been cancelled successfully",
+    });
+  };
+
+  const playOrderNotification = () => {
+    // Create audio context for notification sound
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
   };
 
   const getStatusColor = (status: Order["status"]) => {
@@ -229,13 +260,22 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>
                           )}
-                          <Button 
-                            onClick={() => updateOrderStatus(order.id, "preparing")}
-                            className="w-full"
-                            variant="professional"
-                          >
-                            Start Preparing
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => updateOrderStatus(order.id, "preparing")}
+                              className="flex-1"
+                              variant="professional"
+                            >
+                              Start Preparing
+                            </Button>
+                            <Button 
+                              onClick={() => cancelOrder(order.id)}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
@@ -273,13 +313,22 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>
                           )}
-                          <Button 
-                            onClick={() => updateOrderStatus(order.id, "ready")}
-                            className="w-full"
-                            variant="accent"
-                          >
-                            Mark as Ready
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => updateOrderStatus(order.id, "ready")}
+                              className="flex-1"
+                              variant="accent"
+                            >
+                              Mark as Ready
+                            </Button>
+                            <Button 
+                              onClick={() => cancelOrder(order.id)}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
