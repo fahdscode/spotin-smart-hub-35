@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt as ReceiptIcon, Plus, Minus, Trash2 } from "lucide-react";
+import { Receipt as ReceiptIcon, Plus, Minus, Trash2, Search } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 
 interface ReceiptItem {
@@ -45,6 +45,7 @@ const EditableReceipt = ({
     }
   ]);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   
   const availableItems = [
     { name: "Coffee - Small", price: 30.00, category: 'product' as const }, // ~$1.50 
@@ -137,16 +138,45 @@ const EditableReceipt = ({
           {/* Add Items Section */}
           <div className="space-y-3">
             <h3 className="font-semibold text-sm">Add Items</h3>
-            <Select onValueChange={addItem}>
-              <SelectTrigger>
+            
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select onValueChange={(value) => {
+              addItem(value);
+              setSearchTerm(""); // Clear search after adding
+            }}>
+              <SelectTrigger className="bg-popover border-input">
                 <SelectValue placeholder="Select item to add" />
               </SelectTrigger>
-              <SelectContent>
-                {availableItems.map((item) => (
-                  <SelectItem key={item.name} value={item.name}>
-                    {item.name} - {formatPrice(item.price)}
-                  </SelectItem>
-                ))}
+              <SelectContent className="bg-popover border-input z-50">
+                {availableItems
+                  .filter(item => 
+                    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.category.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((item) => (
+                    <SelectItem key={item.name} value={item.name} className="hover:bg-accent">
+                      {item.name} - {formatPrice(item.price)}
+                    </SelectItem>
+                  ))}
+                {availableItems.filter(item => 
+                  item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  item.category.toLowerCase().includes(searchTerm.toLowerCase())
+                ).length === 0 && searchTerm && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    No items found matching "{searchTerm}"
+                  </div>
+                )}
               </SelectContent>
             </Select>
           </div>
