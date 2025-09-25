@@ -436,6 +436,45 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_percentage: number
+          duration_months: number
+          id: string
+          is_active: boolean
+          perks: string[] | null
+          plan_name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          perks?: string[] | null
+          plan_name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           created_at: string
