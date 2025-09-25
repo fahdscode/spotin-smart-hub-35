@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Phone, Lock, Check, AlertCircle } from "lucide-react";
+import { Coffee, User, Phone, Lock, Check, AlertCircle, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import bcrypt from "bcryptjs";
@@ -39,7 +40,17 @@ const signupSchema = z.object({
     .max(100, "Job title must be less than 100 characters"),
   howDidYouFindUs: z.string()
     .min(2, "Please tell us how you found us")
-    .max(200, "Response must be less than 200 characters")
+    .max(200, "Response must be less than 200 characters"),
+  gender: z.string()
+    .min(1, "Please select your gender"),
+  birthday: z.string()
+    .min(1, "Please enter your birthday")
+    .refine((date) => {
+      const birthDate = new Date(date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      return age >= 16 && age <= 100;
+    }, "You must be between 16 and 100 years old")
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -54,6 +65,8 @@ interface FormData {
   confirmPassword: string;
   jobTitle: string;
   howDidYouFindUs: string;
+  gender: string;
+  birthday: string;
 }
 
 const ClientSignup = () => {
@@ -65,7 +78,9 @@ const ClientSignup = () => {
     password: "",
     confirmPassword: "",
     jobTitle: "",
-    howDidYouFindUs: ""
+    howDidYouFindUs: "",
+    gender: "",
+    birthday: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -202,6 +217,18 @@ const ClientSignup = () => {
     }
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear errors for this field on change
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-8">
@@ -269,6 +296,42 @@ const ClientSignup = () => {
                     />
                     {errors.lastName && (
                       <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(value) => handleSelectChange('gender', value)}>
+                      <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-50">
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.gender && (
+                      <p className="text-sm text-destructive mt-1">{errors.gender}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="birthday">Birthday</Label>
+                    <Input
+                      id="birthday"
+                      name="birthday"
+                      type="date"
+                      value={formData.birthday}
+                      onChange={handleInputChange}
+                      className={errors.birthday ? "border-destructive" : ""}
+                      max={new Date(Date.now() - 16 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    />
+                    {errors.birthday && (
+                      <p className="text-sm text-destructive mt-1">{errors.birthday}</p>
                     )}
                   </div>
                 </div>

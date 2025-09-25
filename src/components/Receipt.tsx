@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Receipt as ReceiptIcon, Download, Mail, Check } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 
 interface ReceiptItem {
   name: string;
@@ -27,13 +28,13 @@ const Receipt = ({
   receiptNumber = "RCP-2024-001",
   customerName = "Demo Customer",
   items = [
-    { name: "Coffee - Large", quantity: 2, price: 4.50, total: 9.00 },
-    { name: "Meeting Room - 1hr", quantity: 1, price: 15.00, total: 15.00 },
-    { name: "Day Use Pass", quantity: 1, price: 25.00, total: 25.00 }
+    { name: "Coffee - Large", quantity: 2, price: 45.00, total: 90.00 },
+    { name: "Meeting Room - 1hr", quantity: 1, price: 300.00, total: 300.00 },
+    { name: "Day Use Pass", quantity: 1, price: 500.00, total: 500.00 }
   ],
-  subtotal = 49.00,
-  discount = 4.90,
-  total = 44.10,
+  subtotal = 890.00,
+  discount = 89.00,
+  total = 801.00,
   paymentMethod = "Credit Card",
   date = new Date().toLocaleDateString()
 }: ReceiptProps) => {
@@ -93,10 +94,10 @@ const Receipt = ({
               <div className="flex-1">
                 <div className="font-medium">{item.name}</div>
                 <div className="text-muted-foreground">
-                  ${item.price.toFixed(2)} × {item.quantity}
+                  {formatPrice(item.price)} × {item.quantity}
                 </div>
               </div>
-              <div className="font-mono">${item.total.toFixed(2)}</div>
+              <div className="font-mono">{formatPrice(item.total)}</div>
             </div>
           ))}
         </div>
@@ -107,18 +108,18 @@ const Receipt = ({
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span className="font-mono">${subtotal.toFixed(2)}</span>
+            <span className="font-mono">{formatPrice(subtotal)}</span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Member Discount (10%):</span>
-              <span className="font-mono">-${discount.toFixed(2)}</span>
+              <span className="font-mono">-{formatPrice(discount)}</span>
             </div>
           )}
           <Separator />
           <div className="flex justify-between font-semibold text-lg">
             <span>Total:</span>
-            <span className="font-mono">${total.toFixed(2)}</span>
+            <span className="font-mono">{formatPrice(total)}</span>
           </div>
         </div>
 

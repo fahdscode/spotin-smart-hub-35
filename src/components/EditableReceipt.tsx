@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt as ReceiptIcon, Plus, Minus, Trash2 } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 
 interface ReceiptItem {
   id: string;
@@ -46,14 +47,14 @@ const EditableReceipt = ({
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   
   const availableItems = [
-    { name: "Coffee - Small", price: 3.50, category: 'product' as const },
-    { name: "Coffee - Large", price: 4.50, category: 'product' as const },
-    { name: "Tea", price: 3.00, category: 'product' as const },
-    { name: "Sandwich", price: 8.50, category: 'product' as const },
-    { name: "Pastry", price: 5.00, category: 'product' as const },
-    { name: "Meeting Room - 1hr", price: 15.00, category: 'room' as const },
-    { name: "Phone Booth - 30min", price: 8.00, category: 'room' as const },
-    { name: "Event Ticket", price: 20.00, category: 'ticket' as const },
+    { name: "Coffee - Small", price: 30.00, category: 'product' as const }, // ~$1.50 
+    { name: "Coffee - Large", price: 45.00, category: 'product' as const }, // ~$2.25
+    { name: "Tea", price: 25.00, category: 'product' as const }, // ~$1.25
+    { name: "Sandwich", price: 85.00, category: 'product' as const }, // ~$4.25
+    { name: "Pastry", price: 50.00, category: 'product' as const }, // ~$2.50
+    { name: "Meeting Room - 1hr", price: 300.00, category: 'room' as const }, // ~$15
+    { name: "Phone Booth - 30min", price: 160.00, category: 'room' as const }, // ~$8
+    { name: "Event Ticket", price: 400.00, category: 'ticket' as const }, // ~$20
   ];
 
   const addItem = (itemName: string) => {
@@ -143,7 +144,7 @@ const EditableReceipt = ({
               <SelectContent>
                 {availableItems.map((item) => (
                   <SelectItem key={item.name} value={item.name}>
-                    {item.name} - ${item.price.toFixed(2)}
+                    {item.name} - {formatPrice(item.price)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -160,7 +161,7 @@ const EditableReceipt = ({
                 <div className="flex-1">
                   <div className="font-medium">{item.name}</div>
                   <div className="text-muted-foreground">
-                    ${item.price.toFixed(2)} each
+                    {formatPrice(item.price)} each
                   </div>
                   <Badge variant="outline" className="text-xs mt-1">
                     {item.category}
@@ -194,7 +195,7 @@ const EditableReceipt = ({
                     </Button>
                   )}
                 </div>
-                <div className="font-mono ml-4">${item.total.toFixed(2)}</div>
+                <div className="font-mono ml-4">{formatPrice(item.total)}</div>
               </div>
             ))}
           </div>
@@ -205,16 +206,16 @@ const EditableReceipt = ({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span className="font-mono">${subtotal.toFixed(2)}</span>
+              <span className="font-mono">{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between text-success">
               <span>Member Discount (10%):</span>
-              <span className="font-mono">-${discount.toFixed(2)}</span>
+              <span className="font-mono">-{formatPrice(discount)}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-semibold text-lg">
               <span>Total:</span>
-              <span className="font-mono">${total.toFixed(2)}</span>
+              <span className="font-mono">{formatPrice(total)}</span>
             </div>
           </div>
 
