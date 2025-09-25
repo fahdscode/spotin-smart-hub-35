@@ -1,17 +1,30 @@
 import { useState } from "react";
 import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
+import ClientSelector from "@/components/ClientSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+
+interface Client {
+  id: string;
+  client_code: string;
+  full_name: string;
+  phone: string;
+  email?: string;
+  active: boolean;
+}
 
 interface Order {
   id: string;
   item: string;
   location: string;
   customerName: string;
+  clientId?: string;
   status: "pending" | "preparing" | "ready" | "completed";
   orderTime: string;
   notes?: string;
@@ -19,6 +32,9 @@ interface Order {
 
 const BaristaDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "ORD-001",
@@ -55,6 +71,36 @@ const BaristaDashboard = () => {
     { name: "Macchiato", time: "3 min", icon: Coffee },
     { name: "Mocha", time: "5 min", icon: Coffee }
   ];
+
+  const addQuickItem = (itemName: string) => {
+    if (!selectedClient) {
+      toast({
+        title: "No Client Selected",
+        description: "Please select an active client before adding items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newOrder: Order = {
+      id: `ORD-${Date.now()}`,
+      item: itemName,
+      location: "Station Pickup",
+      customerName: selectedClient.full_name,
+      clientId: selectedClient.id,
+      status: "pending",
+      orderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      notes: `Quick add by barista for ${selectedClient.client_code}`
+    };
+
+    setOrders(prev => [...prev, newOrder]);
+    setIsQuickAddOpen(false);
+    
+    toast({
+      title: "Item Added",
+      description: `${itemName} added for ${selectedClient.full_name}`,
+    });
+  };
 
   const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
     setOrders(orders.map(order => 
@@ -285,35 +331,72 @@ const BaristaDashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div>
+          <div className="space-y-6">
+            {/* Client Selection */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5 text-accent" />
                   Quick Add Items
                 </CardTitle>
-                <CardDescription>Fast buttons for popular drinks</CardDescription>
+                <CardDescription>Select client and add items quickly</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {quickItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.name}
-                      variant="outline"
-                      className="w-full justify-between h-auto p-4"
+              <CardContent className="space-y-4">
+                <ClientSelector 
+                  onClientSelect={setSelectedClient}
+                  selectedClientId={selectedClient?.id}
+                />
+                
+                <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="professional" 
+                      className="w-full"
+                      disabled={!selectedClient}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-muted-foreground">~{item.time}</div>
-                        </div>
-                      </div>
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Quick Item
                     </Button>
-                  );
-                })}
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Quick Add Item</DialogTitle>
+                      <DialogDescription>
+                        {selectedClient 
+                          ? `Adding item for ${selectedClient.full_name} (${selectedClient.client_code})`
+                          : "Please select a client first"
+                        }
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      {quickItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Button
+                            key={item.name}
+                            variant="outline"
+                            className="h-20 flex-col gap-2"
+                            onClick={() => addQuickItem(item.name)}
+                          >
+                            <Icon className="h-6 w-6" />
+                            <div className="text-center">
+                              <div className="font-medium text-sm">{item.name}</div>
+                              <div className="text-xs text-muted-foreground">~{item.time}</div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {selectedClient && (
+                  <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    <strong>Selected:</strong> {selectedClient.full_name}
+                    <br />
+                    <strong>Code:</strong> {selectedClient.client_code}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

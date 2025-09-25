@@ -14,6 +14,7 @@ import DayUseTicketControls from "@/components/DayUseTicketControls";
 import MembershipManagement from "@/components/MembershipManagement";
 import RoomsManagement from "@/components/RoomsManagement";
 import MembershipPlansManagement from "@/components/MembershipPlansManagement";
+import ProductPricing from "@/components/ProductPricing";
 import { useNavigate } from "react-router-dom";
 
 const OperationsDashboard = () => {
@@ -105,8 +106,9 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="stock">Stock Management</TabsTrigger>
+            <TabsTrigger value="pricing">Product Pricing</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="control">Control Panel</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
@@ -211,6 +213,11 @@ const OperationsDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Product Pricing Tab */}
+          <TabsContent value="pricing" className="space-y-6">
+            <ProductPricing />
           </TabsContent>
 
           {/* Expenses Tab */}
