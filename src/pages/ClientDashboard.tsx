@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar } from 'lucide-react';
+import SatisfactionPopup from '@/components/SatisfactionPopup';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
@@ -75,6 +76,14 @@ export default function ClientDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState<boolean>(false);
+  
+  // Analytics data
+  const [lastVisitDate, setLastVisitDate] = useState<string | null>(null);
+  const [totalVisits, setTotalVisits] = useState<number>(0);
+  const [favoriteTimeSlot, setFavoriteTimeSlot] = useState<string>('Morning');
+  
+  // Satisfaction popup
+  const [showSatisfactionPopup, setShowSatisfactionPopup] = useState<boolean>(false);
 
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
@@ -124,10 +133,11 @@ export default function ClientDashboard() {
         setLastOrders(lastOrdersData as unknown as LastOrder[]);
       }
 
-      // Fetch check-ins
+      // Fetch check-ins and analytics
       fetchCheckInsLast30Days(clientId);
       fetchMembershipStatus(clientId);
       fetchCheckInStatus(clientId);
+      fetchClientAnalytics(clientId);
       loadMockTransactions();
       
     } catch (error) {
@@ -200,6 +210,51 @@ export default function ClientDashboard() {
     }
   };
 
+  const fetchClientAnalytics = async (clientId: string) => {
+    try {
+      // Fetch last visit (last check-out)
+      const { data: lastCheckOut } = await supabase
+        .from('check_in_logs')
+        .select('timestamp')
+        .eq('client_id', clientId)
+        .eq('action', 'checked_out')
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (lastCheckOut) {
+        setLastVisitDate(new Date(lastCheckOut.timestamp).toLocaleDateString());
+      }
+
+      // Fetch total visits count
+      const { data: allCheckIns } = await supabase
+        .from('check_in_logs')
+        .select('timestamp')
+        .eq('client_id', clientId)
+        .eq('action', 'checked_in');
+      
+      setTotalVisits(allCheckIns?.length || 0);
+
+      // Analyze favorite time slot based on check-ins
+      if (allCheckIns && allCheckIns.length > 0) {
+        const timeSlots = { Morning: 0, Afternoon: 0, Evening: 0 };
+        allCheckIns.forEach(checkIn => {
+          const hour = new Date(checkIn.timestamp).getHours();
+          if (hour < 12) timeSlots.Morning++;
+          else if (hour < 18) timeSlots.Afternoon++;
+          else timeSlots.Evening++;
+        });
+        
+        const favoriteSlot = Object.entries(timeSlots).reduce((a, b) => 
+          timeSlots[a[0]] > timeSlots[b[0]] ? a : b
+        )[0];
+        setFavoriteTimeSlot(favoriteSlot);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
   const loadMockTransactions = () => {
     const mockTransactions = [
       {
@@ -220,6 +275,15 @@ export default function ClientDashboard() {
       }
     ];
     setRecentTransactions(mockTransactions);
+  };
+
+  const handleCheckOut = () => {
+    // Show satisfaction popup when checking out
+    if (isCheckedIn) {
+      setShowSatisfactionPopup(true);
+      setIsCheckedIn(false);
+      setCheckInTime(null);
+    }
   };
 
   const addToCart = (drink: Drink, goToCart = false) => {
@@ -744,7 +808,7 @@ export default function ClientDashboard() {
                   }
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <BarcodeCard 
                   barcode={clientData?.barcode || ''} 
                   userName={clientData?.fullName || ''}
@@ -752,6 +816,51 @@ export default function ClientDashboard() {
                   clientCode={clientData?.clientCode || ''}
                   compact={true}
                 />
+                {isCheckedIn && (
+                  <Button 
+                    onClick={handleCheckOut} 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Check Out & Rate Visit
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Visit Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Visit Analytics
+                </CardTitle>
+                <CardDescription>Your coworking space activity insights</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <div className="text-2xl font-bold text-primary">{totalVisits}</div>
+                    <div className="text-sm text-muted-foreground">Total Visits</div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <div className="text-2xl font-bold text-primary">{checkInsLast30Days}</div>
+                    <div className="text-sm text-muted-foreground">Last 30 Days</div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <div className="text-2xl font-bold text-primary">{favoriteTimeSlot}</div>
+                    <div className="text-sm text-muted-foreground">Favorite Time</div>
+                  </div>
+                </div>
+                {lastVisitDate && (
+                  <div className="mt-4 p-3 rounded-lg bg-accent/50 flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      Last visit: <span className="font-medium">{lastVisitDate}</span>
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -828,6 +937,13 @@ export default function ClientDashboard() {
           </div>
         )}
       </div>
+
+      {/* Satisfaction Popup */}
+      <SatisfactionPopup
+        isOpen={showSatisfactionPopup}
+        onClose={() => setShowSatisfactionPopup(false)}
+        clientId={clientData?.id || ''}
+      />
     </div>
   );
 }
