@@ -73,7 +73,7 @@ const ManagementLogin = () => {
             navigate('/operations');
             break;
           case 'community_manager':
-            navigate('/crm');
+            navigate('/community-manager');
             break;
           default:
             navigate('/receptionist');

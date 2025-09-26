@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode } from 'lucide-react';
+import ClientEvents from '@/components/ClientEvents';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
@@ -60,7 +61,7 @@ export default function ClientDashboard() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
   
   // Order data
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -406,6 +407,15 @@ export default function ClientDashboard() {
             )}
           </Button>
           <Button
+            variant={currentView === 'events' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCurrentView('events')}
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Calendar className="h-4 w-4" />
+            <span className="text-xs">Events</span>
+          </Button>
+          <Button
             variant={currentView === 'profile' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setCurrentView('profile')}
@@ -440,6 +450,13 @@ export default function ClientDashboard() {
                 {cart.length}
               </Badge>
             )}
+          </Button>
+          <Button
+            variant={currentView === 'events' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('events')}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Events
           </Button>
           <Button
             variant={currentView === 'profile' ? 'default' : 'outline'}
@@ -801,6 +818,13 @@ export default function ClientDashboard() {
             <Button variant="outline" onClick={handleLogout} className="w-full">
               Sign Out
             </Button>
+          </div>
+        )}
+
+        {/* Events View */}
+        {currentView === 'events' && (
+          <div className="space-y-6">
+            <ClientEvents clientData={clientData} />
           </div>
         )}
       </div>

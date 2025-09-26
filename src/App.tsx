@@ -13,6 +13,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import OperationsDashboard from "./pages/OperationsDashboard";
 import BaristaDashboard from "./pages/BaristaDashboard";
 import CrmDashboard from "./pages/CrmDashboard";
+import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import ClientSignup from "./pages/ClientSignup";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/operations" element={<OperationsDashboard />} />
             <Route path="/barista" element={<BaristaDashboard />} />
             <Route path="/crm" element={<CrmDashboard />} />
+            <Route path="/community-manager" element={<CommunityManagerDashboard />} />
             <Route path="/client-signup" element={<ClientSignup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
