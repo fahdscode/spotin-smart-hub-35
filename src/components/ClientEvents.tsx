@@ -105,14 +105,17 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
     }
 
     try {
-      // Here you would typically create an event_registrations table
-      // For now, we'll just update the attendees count
+      // Insert into event_registrations table
       const { error } = await supabase
-        .from('events')
-        .update({ 
-          registered_attendees: selectedEvent.registered_attendees + 1 
-        })
-        .eq('id', selectedEvent.id);
+        .from('event_registrations')
+        .insert([{
+          event_id: selectedEvent.id,
+          attendee_name: registrationForm.attendee_name,
+          attendee_email: registrationForm.attendee_email,
+          attendee_phone: registrationForm.attendee_phone,
+          client_id: clientData?.id || null,
+          special_requests: registrationForm.special_requests || null
+        }]);
 
       if (error) throw error;
 

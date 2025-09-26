@@ -358,6 +358,63 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          attendance_status: string
+          attendee_email: string
+          attendee_name: string
+          attendee_phone: string
+          client_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          registration_date: string
+          special_requests: string | null
+          updated_at: string
+        }
+        Insert: {
+          attendance_status?: string
+          attendee_email: string
+          attendee_name: string
+          attendee_phone: string
+          client_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          registration_date?: string
+          special_requests?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attendance_status?: string
+          attendee_email?: string
+          attendee_name?: string
+          attendee_phone?: string
+          client_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          registration_date?: string
+          special_requests?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           capacity: number
@@ -989,6 +1046,10 @@ export type Database = {
       get_client_status: {
         Args: { client_id: string }
         Returns: string
+      }
+      get_event_analytics: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
       }
       get_receptionist_active_sessions: {
         Args: Record<PropertyKey, never>

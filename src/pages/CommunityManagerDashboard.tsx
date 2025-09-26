@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign, Mail, Phone, CheckCircle, XCircle, AlertCircle, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import SpotinHeader from "@/components/SpotinHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,11 +45,49 @@ interface EventFormData {
   category: string;
 }
 
+interface EventRegistration {
+  id: string;
+  event_id: string;
+  attendee_name: string;
+  attendee_email: string;
+  attendee_phone: string;
+  client_id: string | null;
+  registration_date: string;
+  special_requests: string | null;
+  attendance_status: 'registered' | 'attended' | 'no_show' | 'cancelled';
+  events?: Event;
+}
+
+interface EventAnalytics {
+  total_events: number;
+  total_registrations: number;
+  total_revenue: number;
+  avg_attendance_rate: number;
+  popular_categories: Array<{
+    category: string;
+    count: number;
+    registrations: number;
+  }>;
+  monthly_stats: Array<{
+    month: string;
+    events: number;
+    registrations: number;
+    revenue: number;
+  }>;
+  date_range: {
+    start_date: string;
+    end_date: string;
+  };
+}
+
 const CommunityManagerDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [analytics, setAnalytics] = useState<EventAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedEventFilter, setSelectedEventFilter] = useState<string>('all');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [eventForm, setEventForm] = useState<EventFormData>({
@@ -65,6 +104,8 @@ const CommunityManagerDashboard = () => {
 
   useEffect(() => {
     fetchEvents();
+    fetchRegistrations();
+    fetchAnalytics();
   }, []);
 
   const fetchEvents = async () => {
@@ -85,6 +126,52 @@ const CommunityManagerDashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRegistrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select(`
+          *,
+          events (
+            title,
+            event_date,
+            start_time,
+            end_time,
+            location,
+            category
+          )
+        `)
+        .order('registration_date', { ascending: false });
+
+      if (error) throw error;
+      setRegistrations((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch registrations",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_event_analytics');
+
+      if (error) throw error;
+      setAnalytics(data as unknown as EventAnalytics);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch analytics",
+        variant: "destructive"
+      });
     }
   };
 
@@ -119,6 +206,7 @@ const CommunityManagerDashboard = () => {
       setEditingEvent(null);
       resetForm();
       fetchEvents();
+      fetchAnalytics(); // Refresh analytics when events change
     } catch (error) {
       console.error('Error saving event:', error);
       toast({
@@ -159,6 +247,7 @@ const CommunityManagerDashboard = () => {
         description: "Event deleted successfully"
       });
       fetchEvents();
+      fetchAnalytics(); // Refresh analytics when events change
     } catch (error) {
       console.error('Error deleting event:', error);
       toast({
@@ -189,6 +278,51 @@ const CommunityManagerDashboard = () => {
     setIsEventDialogOpen(true);
   };
 
+  const updateAttendanceStatus = async (registrationId: string, status: 'registered' | 'attended' | 'no_show' | 'cancelled') => {
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .update({ attendance_status: status })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Attendance status updated"
+      });
+      fetchRegistrations();
+      fetchEvents(); // Refresh to update attendee counts
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update attendance status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'registered': return 'bg-blue-500/10 text-blue-600';
+      case 'attended': return 'bg-green-500/10 text-green-600';
+      case 'no_show': return 'bg-red-500/10 text-red-600';
+      case 'cancelled': return 'bg-gray-500/10 text-gray-600';
+      default: return 'bg-gray-500/10 text-gray-600';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'registered': return <AlertCircle className="h-4 w-4" />;
+      case 'attended': return <CheckCircle className="h-4 w-4" />;
+      case 'no_show': return <XCircle className="h-4 w-4" />;
+      case 'cancelled': return <XCircle className="h-4 w-4" />;
+      default: return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'workshop': return 'bg-blue-500/10 text-blue-600';
@@ -198,6 +332,10 @@ const CommunityManagerDashboard = () => {
       default: return 'bg-gray-500/10 text-gray-600';
     }
   };
+
+  const filteredRegistrations = selectedEventFilter === 'all' 
+    ? registrations 
+    : registrations.filter(reg => reg.event_id === selectedEventFilter);
 
   if (loading) {
     return (
@@ -505,13 +643,110 @@ const CommunityManagerDashboard = () => {
           <TabsContent value="attendees" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Event Attendees</CardTitle>
-                <CardDescription>Manage event registrations and attendee lists</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Event Attendees</CardTitle>
+                    <CardDescription>Manage event registrations and attendee lists</CardDescription>
+                  </div>
+                  <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Filter by event" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Events</SelectItem>
+                      {events.map((event) => (
+                        <SelectItem key={event.id} value={event.id}>
+                          {event.title} - {new Date(event.event_date).toLocaleDateString()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Attendee management features coming soon...
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Attendee</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Registration Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Special Requests</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRegistrations.map((registration) => (
+                      <TableRow key={registration.id}>
+                        <TableCell className="font-medium">{registration.attendee_name}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{registration.events?.title}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {registration.events?.event_date ? new Date(registration.events.event_date).toLocaleDateString() : ''}
+                              {registration.events?.start_time && ` at ${registration.events.start_time}`}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-sm">
+                              <Mail className="h-3 w-3" />
+                              {registration.attendee_email}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              {registration.attendee_phone}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(registration.registration_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(registration.attendance_status)}>
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(registration.attendance_status)}
+                              {registration.attendance_status}
+                            </div>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-32 truncate text-sm text-muted-foreground">
+                            {registration.special_requests || 'None'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Select 
+                              value={registration.attendance_status} 
+                              onValueChange={(value: 'registered' | 'attended' | 'no_show' | 'cancelled') => 
+                                updateAttendanceStatus(registration.id, value)
+                              }
+                            >
+                              <SelectTrigger className="w-32 h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="registered">Registered</SelectItem>
+                                <SelectItem value="attended">Attended</SelectItem>
+                                <SelectItem value="no_show">No Show</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {filteredRegistrations.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No registrations found for the selected filter.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -523,9 +758,134 @@ const CommunityManagerDashboard = () => {
                 <CardDescription>Event performance and attendance metrics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Analytics dashboard coming soon...
-                </div>
+                {analytics ? (
+                  <div className="space-y-6">
+                    {/* Overview Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <div className="text-sm font-medium">Total Events</div>
+                          </div>
+                          <div className="text-2xl font-bold mt-2">{analytics.total_events}</div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <div className="text-sm font-medium">Total Registrations</div>
+                          </div>
+                          <div className="text-2xl font-bold mt-2">{analytics.total_registrations}</div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <div className="text-sm font-medium">Total Revenue</div>
+                          </div>
+                          <div className="text-2xl font-bold mt-2">{analytics.total_revenue.toFixed(0)} EGP</div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-muted-foreground" />
+                            <div className="text-sm font-medium">Avg Attendance Rate</div>
+                          </div>
+                          <div className="text-2xl font-bold mt-2">{analytics.avg_attendance_rate}%</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Popular Categories */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Popular Event Categories</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {analytics.popular_categories.map((category, index) => (
+                            <div key={category.category} className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium capitalize">{category.category}</span>
+                                <span className="text-muted-foreground">
+                                  {category.count} events • {category.registrations} registrations
+                                </span>
+                              </div>
+                              <Progress 
+                                value={(category.registrations / Math.max(...analytics.popular_categories.map(c => c.registrations))) * 100} 
+                                className="h-2"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Monthly Trends */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Monthly Performance Trends</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {analytics.monthly_stats.slice(-6).map((month) => (
+                            <div key={month.month} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                              <div className="flex items-center gap-4">
+                                <div className="text-sm font-medium min-w-20">{month.month}</div>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  {month.events} events
+                                </div>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  {month.registrations} registrations
+                                </div>
+                              </div>
+                              <div className="text-sm font-medium">
+                                {month.revenue.toFixed(0)} EGP
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Registration Status Breakdown */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Registration Status Overview</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {['registered', 'attended', 'no_show', 'cancelled'].map((status) => {
+                            const count = registrations.filter(r => r.attendance_status === status).length;
+                            const percentage = registrations.length > 0 ? (count / registrations.length * 100).toFixed(1) : '0';
+                            
+                            return (
+                              <div key={status} className="text-center p-4 rounded-lg bg-muted/50">
+                                <div className="text-2xl font-bold">{count}</div>
+                                <div className="text-sm text-muted-foreground capitalize">{status.replace('_', ' ')}</div>
+                                <div className="text-xs text-muted-foreground">{percentage}%</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-muted-foreground mt-2">Loading analytics...</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
