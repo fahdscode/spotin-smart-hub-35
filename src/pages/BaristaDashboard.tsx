@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -261,20 +272,54 @@ const BaristaDashboard = () => {
                             </p>
                           )}
                           <div className="flex gap-2">
-                            <Button 
-                              onClick={() => updateOrderStatus(order.id, "preparing")}
-                              className="flex-1"
-                              variant="professional"
-                            >
-                              Start Preparing
-                            </Button>
-                            <Button 
-                              onClick={() => cancelOrder(order.id)}
-                              variant="destructive"
-                              size="sm"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  className="flex-1"
+                                  variant="professional"
+                                >
+                                  Start Preparing
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Start Preparing Order</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to start preparing {order.item} for {order.customerName}?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => updateOrderStatus(order.id, "preparing")}>
+                                    Start Preparing
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to cancel the order for {order.item}? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => cancelOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Cancel Order
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       );
@@ -314,20 +359,54 @@ const BaristaDashboard = () => {
                             </p>
                           )}
                           <div className="flex gap-2">
-                            <Button 
-                              onClick={() => updateOrderStatus(order.id, "ready")}
-                              className="flex-1"
-                              variant="accent"
-                            >
-                              Mark as Ready
-                            </Button>
-                            <Button 
-                              onClick={() => cancelOrder(order.id)}
-                              variant="destructive"
-                              size="sm"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  className="flex-1"
+                                  variant="accent"
+                                >
+                                  Mark as Ready
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Mark Order as Ready</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Confirm that {order.item} for {order.customerName} is ready for pickup?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Not Ready</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => updateOrderStatus(order.id, "ready")}>
+                                    Mark as Ready
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to cancel the order for {order.item}? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => cancelOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Cancel Order
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       );
