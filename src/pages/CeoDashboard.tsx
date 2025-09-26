@@ -1,4 +1,4 @@
-import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import KPIManagement from "@/components/KPIManagement";
+import RolesManagement from "@/components/RolesManagement";
 import { useNavigate } from "react-router-dom";
 
 const CeoDashboard = () => {
@@ -42,11 +43,15 @@ const CeoDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="kpis">
               <BarChart3 className="h-4 w-4 mr-2" />
               KPIs Management
+            </TabsTrigger>
+            <TabsTrigger value="roles">
+              <UserCog className="h-4 w-4 mr-2" />
+              Roles Management
             </TabsTrigger>
           </TabsList>
 
@@ -180,6 +185,10 @@ const CeoDashboard = () => {
 
           <TabsContent value="kpis" className="space-y-6">
             <KPIManagement />
+          </TabsContent>
+
+          <TabsContent value="roles" className="space-y-6">
+            <RolesManagement />
           </TabsContent>
         </Tabs>
       </div>
