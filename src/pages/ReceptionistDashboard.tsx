@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
+import RoomCalendar from '@/components/RoomCalendar';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +68,7 @@ const ReceptionistDashboard = () => {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [finalReceiptData, setFinalReceiptData] = useState<any>(null);
   const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(3);
+  const [showCalendarDialog, setShowCalendarDialog] = useState(false);
 
   const quickActions = [
     { 
@@ -96,6 +98,13 @@ const ReceptionistDashboard = () => {
       icon: UserPlus, 
       action: "membership",
       variant: "default" as const
+    },
+    { 
+      title: "Room Calendar", 
+      description: "View & manage room bookings", 
+      icon: CalendarDays, 
+      action: "calendar",
+      variant: "secondary" as const
     },
   ];
 
@@ -238,6 +247,17 @@ const ReceptionistDashboard = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <MembershipAssignment />
+                      </DialogContent>
+                    )}
+                    {action.action === "calendar" && (
+                      <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Room Calendar</DialogTitle>
+                          <DialogDescription>
+                            View and manage room reservations across all spaces
+                          </DialogDescription>
+                        </DialogHeader>
+                        <RoomCalendar />
                       </DialogContent>
                     )}
                   </Dialog>
