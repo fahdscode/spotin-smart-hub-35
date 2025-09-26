@@ -159,7 +159,7 @@ const VouchersManagement = () => {
       case "percentage":
         return `${voucher.value}% OFF`;
       case "fixed":
-        return `$${voucher.value} OFF`;
+        return `${voucher.value} EGP OFF`;
       case "freeService":
         return "FREE SERVICE";
       default:
@@ -223,12 +223,12 @@ const VouchersManagement = () => {
               {newVoucher.type !== "freeService" && (
                 <div>
                   <Label htmlFor="voucher-value">
-                    {newVoucher.type === "percentage" ? "Discount %" : "Amount $"}
+                    {newVoucher.type === "percentage" ? "Discount %" : "Amount (EGP)"}
                   </Label>
                   <Input
                     id="voucher-value"
                     type="number"
-                    placeholder={newVoucher.type === "percentage" ? "e.g., 20" : "e.g., 50"}
+                    placeholder={newVoucher.type === "percentage" ? "e.g., 20" : "e.g., 50 EGP"}
                     value={newVoucher.value || ""}
                     onChange={(e) => setNewVoucher(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
                   />

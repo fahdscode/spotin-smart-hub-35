@@ -90,7 +90,7 @@ const DayUseTicketControls = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Price ($)</label>
+              <label className="text-sm font-medium">Price (EGP)</label>
               <Input
                 type="number"
                 step="0.01"

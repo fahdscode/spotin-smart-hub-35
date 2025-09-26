@@ -212,9 +212,9 @@ const OperationsDashboard = () => {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <MetricCard title="Low Stock Alerts" value={getCriticalStockCount()} change={`${getCriticalStockCount()} items need attention`} icon={AlertTriangle} variant="warning" />
-          <MetricCard title="Monthly Expenses" value={`$${getTotalExpenses().toLocaleString()}`} change={`${(getTotalExpenses() / getTotalBudget() * 100).toFixed(1)}% of budget`} icon={DollarSign} variant="info" />
+          <MetricCard title="Monthly Expenses" value={`${getTotalExpenses().toLocaleString()} EGP`} change={`${(getTotalExpenses() / getTotalBudget() * 100).toFixed(1)}% of budget`} icon={DollarSign} variant="info" />
           <MetricCard title="Pending Orders" value="7" change="3 arriving today" icon={Truck} variant="default" />
-          <MetricCard title="Inventory Value" value="$12,450" change="+2.1% from last month" icon={Package} variant="success" />
+          <MetricCard title="Inventory Value" value="12,450 EGP" change="+2.1% from last month" icon={Package} variant="success" />
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">

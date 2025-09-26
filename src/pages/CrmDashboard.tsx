@@ -305,7 +305,7 @@ const CrmDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold mb-2">8</div>
-                      <div className="text-sm text-muted-foreground">$95,200</div>
+                      <div className="text-sm text-muted-foreground">95,200 EGP</div>
                     </CardContent>
                   </Card>
                 </div>

@@ -245,7 +245,7 @@ const RoomsManagement = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+                      <Label htmlFor="hourly_rate">Hourly Rate (EGP)</Label>
                       <Input
                         id="hourly_rate"
                         type="number"
@@ -343,7 +343,7 @@ const RoomsManagement = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            <span>${room.hourly_rate}/hour</span>
+                            <span>{room.hourly_rate} EGP/hour</span>
                           </div>
                         </div>
                         

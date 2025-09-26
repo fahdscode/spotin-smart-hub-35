@@ -25,7 +25,7 @@ const KPIManagement = () => {
       name: "Monthly Revenue",
       current_value: 45000,
       target_value: 50000,
-      unit: "$",
+      unit: "EGP",
       category: "Finance",
       color: "text-success"
     },
@@ -173,7 +173,7 @@ const KPIManagement = () => {
                       id="new-unit"
                       value={newKPI.unit || ""}
                       onChange={(e) => setNewKPI(prev => ({ ...prev, unit: e.target.value }))}
-                      placeholder="e.g., $, %, members"
+                      placeholder="e.g., EGP, %, members"
                     />
                   </div>
                   <div>

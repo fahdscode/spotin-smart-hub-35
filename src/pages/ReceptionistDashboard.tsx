@@ -134,7 +134,7 @@ const ReceptionistDashboard = () => {
   };
 
   const calculateSessionCost = (duration: number) => {
-    return duration * 300; // 300 EGP per hour (~$15)
+    return duration * 300; // 300 EGP per hour
   };
 
   const confirmCheckout = (items: any[], total: number, paymentMethod: string) => {
