@@ -713,27 +713,30 @@ export default function ClientDashboard() {
               </CardContent>
             </Card>
 
-            {/* QR Code - Only show when checked in */}
-            {isCheckedIn && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <QrCode className="h-5 w-5" />
-                    Your QR Code
-                  </CardTitle>
-                  <CardDescription>Scan this to check out</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BarcodeCard 
-                    barcode={clientData?.barcode || ''} 
-                    userName={clientData?.fullName || ''}
-                    userEmail={clientData?.email || ''}
-                    clientCode={clientData?.clientCode || ''}
-                    compact={true}
-                  />
-                </CardContent>
-              </Card>
-            )}
+            {/* QR Code - Always show in profile */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5" />
+                  Your QR Code
+                </CardTitle>
+                <CardDescription>
+                  {isCheckedIn 
+                    ? "Scan this to check out" 
+                    : "Show this to reception to check in"
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BarcodeCard 
+                  barcode={clientData?.barcode || ''} 
+                  userName={clientData?.fullName || ''}
+                  userEmail={clientData?.email || ''}
+                  clientCode={clientData?.clientCode || ''}
+                  compact={true}
+                />
+              </CardContent>
+            </Card>
 
             {/* Current Receipt */}
             {cart.length > 0 && (
