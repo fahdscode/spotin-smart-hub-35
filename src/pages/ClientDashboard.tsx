@@ -68,12 +68,12 @@ export default function ClientDashboard() {
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  
   const [trafficData, setTrafficData] = useState<TrafficData[]>([]);
   const [checkInStatus, setCheckInStatus] = useState<string>('checked_out');
   const [checkInsLast30Days, setCheckInsLast30Days] = useState<number>(0);
   const [membershipStatus, setMembershipStatus] = useState<string>('No active membership');
-  const [eventsThisYear, setEventsThisYear] = useState<number>(0);
+  
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState({
     fullName: '',
@@ -115,7 +115,7 @@ export default function ClientDashboard() {
         fetchCheckInStatus(parsedData.id);
         fetchCheckInsLast30Days(parsedData.id);
         fetchMembershipStatus(parsedData.id);
-        fetchEventsThisYear(parsedData.id);
+        
         fetchFavoriteDrinks(parsedData.id);
         loadMockTransactions();
         
@@ -179,16 +179,6 @@ export default function ClientDashboard() {
           loadMockFavorites();
         }
       }, 1000);
-
-      // Fetch events
-      const {
-        data: eventsData,
-        error: eventsError
-      } = await supabase.from('events').select('*').eq('is_active', true).gte('event_date', new Date().toISOString().split('T')[0]).order('event_date', {
-        ascending: true
-      });
-      if (eventsError) throw eventsError;
-      setEvents(eventsData || []);
 
       // Fetch traffic data
       const {
@@ -267,19 +257,6 @@ export default function ClientDashboard() {
     }
   };
 
-  const fetchEventsThisYear = async (clientId: string) => {
-    try {
-      const currentYear = new Date().getFullYear();
-      const yearStart = `${currentYear}-01-01`;
-      const yearEnd = `${currentYear}-12-31`;
-      
-      // Mock data for events attended this year
-      setEventsThisYear(3); // Mock: 3 events attended
-    } catch (error) {
-      console.error('Error fetching events this year:', error);
-      setEventsThisYear(3); // Mock fallback
-    }
-  };
 
   const handleProfileSave = async () => {
     try {
@@ -614,7 +591,7 @@ export default function ClientDashboard() {
           <MetricCard title="Check-ins (30 days)" value={checkInsLast30Days.toString()} change="Total visits this month" icon={Users} variant="info" />
           <MetricCard title="Check-in Status" value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'} change={checkInStatus === 'checked_in' ? 'Active session' : 'Not in space'} icon={Clock} variant={checkInStatus === 'checked_in' ? 'success' : 'default'} />
           <MetricCard title="Cart Total" value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'} change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'} icon={CreditCard} variant={cart.length > 0 ? 'success' : 'default'} />
-          <MetricCard title="Membership Status" value={membershipStatus} change={`Events this year: ${eventsThisYear}`} icon={Award} variant={membershipStatus !== 'No active membership' ? 'success' : 'default'} />
+          <MetricCard title="Membership Status" value={membershipStatus} change="Enjoy premium benefits" icon={Award} variant={membershipStatus !== 'No active membership' ? 'success' : 'default'} />
         </div>
 
         {/* Favorite Drinks Section - Show only if no items in cart and have favorites */}
@@ -859,54 +836,16 @@ export default function ClientDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <h3 className="text-base sm:text-lg font-semibold">Upcoming Events</h3>
-                  <Badge variant="outline" className="self-start">{events.length} events</Badge>
+                  <Badge variant="outline" className="self-start">0 events</Badge>
                 </div>
                 
                 <div className="space-y-4">
-                  {events.length === 0 ? <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground">No upcoming events</p>
-                      <p className="text-xs text-muted-foreground mt-1">Check back later for new events</p>
-                    </div> : events.map(event => <Card key={event.id} className="p-4 border bg-card">
-                        <div className="space-y-3">
-                          {/* Event Header */}
-                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
-                                <h4 className="font-semibold text-base truncate">{event.title}</h4>
-                                <Badge variant="secondary" className="self-start text-xs">{event.category}</Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{event.description}</p>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <div className="font-semibold text-base mb-2">
-                                {Number(event.price) === 0 ? 'Free' : `$${Number(event.price).toFixed(2)}`}
-                              </div>
-                              <Button size="sm" disabled={event.registered_attendees >= event.capacity}>
-                                {event.registered_attendees >= event.capacity ? 'Full' : 'Register'}
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          {/* Event Details */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 shrink-0" />
-                              <span className="truncate">
-                                {new Date(event.event_date).toLocaleDateString()} • {event.start_time} - {event.end_time}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 shrink-0" />
-                              <span>{event.registered_attendees}/{event.capacity} registered</span>
-                            </div>
-                            {event.location && <div className="flex items-center gap-2 sm:col-span-2">
-                                <MapPin className="h-4 w-4 shrink-0" />
-                                <span className="truncate">{event.location}</span>
-                              </div>}
-                          </div>
-                        </div>
-                      </Card>)}
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">No upcoming events</p>
+                    <p className="text-xs text-muted-foreground mt-1">Check back later for new events</p>
+                  </div>
+                </div>
                 </div>
               </CardContent>
             </Card>
@@ -1069,13 +1008,6 @@ export default function ClientDashboard() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Events This Year</Label>
-                      <div className="flex items-center gap-2">
-                        <div className="text-2xl font-bold text-primary">{eventsThisYear}</div>
-                        <span className="text-sm text-muted-foreground">attended</span>
-                      </div>
-                    </div>
 
                     <div className="space-y-2">
                       <Label>Current Status</Label>
@@ -1095,7 +1027,7 @@ export default function ClientDashboard() {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
-                          <span>Member-only events</span>
+                          <span>Premium workspace access</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full shrink-0"></div>
