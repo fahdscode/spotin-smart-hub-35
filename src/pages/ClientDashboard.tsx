@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt } from 'lucide-react';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
@@ -72,6 +72,8 @@ export default function ClientDashboard() {
   const [checkInsLast30Days, setCheckInsLast30Days] = useState<number>(0);
   const [membershipStatus, setMembershipStatus] = useState<string>('No active membership');
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [isCheckedIn, setIsCheckedIn] = useState<boolean>(false);
 
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
@@ -124,6 +126,7 @@ export default function ClientDashboard() {
       // Fetch check-ins
       fetchCheckInsLast30Days(clientId);
       fetchMembershipStatus(clientId);
+      fetchCheckInStatus(clientId);
       loadMockTransactions();
       
     } catch (error) {
@@ -171,6 +174,31 @@ export default function ClientDashboard() {
     }
   };
 
+  const fetchCheckInStatus = async (clientId: string) => {
+    try {
+      const { data } = await supabase
+        .from('check_ins')
+        .select('checked_in_at, status')
+        .eq('client_id', clientId)
+        .eq('status', 'checked_in')
+        .is('checked_out_at', null)
+        .order('checked_in_at', { ascending: false })
+        .maybeSingle();
+      
+      if (data) {
+        setIsCheckedIn(true);
+        setCheckInTime(new Date(data.checked_in_at).toLocaleTimeString());
+      } else {
+        setIsCheckedIn(false);
+        setCheckInTime(null);
+      }
+    } catch (error) {
+      console.error('Error fetching check-in status:', error);
+      setIsCheckedIn(false);
+      setCheckInTime(null);
+    }
+  };
+
   const loadMockTransactions = () => {
     const mockTransactions = [
       {
@@ -193,7 +221,7 @@ export default function ClientDashboard() {
     setRecentTransactions(mockTransactions);
   };
 
-  const addToCart = (drink: Drink) => {
+  const addToCart = (drink: Drink, goToCart = false) => {
     const existingItem = cart.find(item => item.id === drink.id);
     if (existingItem) {
       setCart(cart.map(item => 
@@ -214,6 +242,10 @@ export default function ClientDashboard() {
       title: "Added to cart",
       description: `${drink.name} added to your order`
     });
+
+    if (goToCart) {
+      setCurrentView('order');
+    }
   };
 
   const reorderLastOrder = (order: LastOrder) => {
@@ -470,21 +502,6 @@ export default function ClientDashboard() {
                 </Card>
               )}
 
-              {/* Your QR Code */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your QR Code</CardTitle>
-                  <CardDescription>Scan this to check in/out</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BarcodeCard 
-                    barcode={clientData?.barcode || ''} 
-                    userName={clientData?.fullName || ''}
-                    userEmail={clientData?.email || ''}
-                    clientCode={clientData?.clientCode || ''}
-                  />
-                </CardContent>
-              </Card>
 
               {/* Favorites */}
               {favoriteDrinks.length > 0 && (
@@ -503,7 +520,7 @@ export default function ClientDashboard() {
                             <p className="font-medium">{drink.name}</p>
                             <p className="text-sm text-muted-foreground">{formatCurrency(drink.price)}</p>
                           </div>
-                          <Button size="sm" onClick={() => addToCart(drink)}>
+                          <Button size="sm" onClick={() => addToCart(drink, true)}>
                             <Plus className="h-4 w-4 mr-1" />
                             Add
                           </Button>
@@ -614,14 +631,71 @@ export default function ClientDashboard() {
                       {clientData?.firstName?.[0]}{clientData?.lastName?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-xl font-semibold">{clientData?.fullName}</h3>
                     <p className="text-muted-foreground">{clientData?.jobTitle}</p>
                     <p className="text-sm text-muted-foreground">{clientData?.email}</p>
+                    {isCheckedIn && checkInTime && (
+                      <Badge variant="default" className="mt-2">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Checked in at {checkInTime}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* QR Code - Only show when checked in */}
+            {isCheckedIn && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="h-5 w-5" />
+                    Your QR Code
+                  </CardTitle>
+                  <CardDescription>Scan this to check out</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BarcodeCard 
+                    barcode={clientData?.barcode || ''} 
+                    userName={clientData?.fullName || ''}
+                    userEmail={clientData?.email || ''}
+                    clientCode={clientData?.clientCode || ''}
+                    compact={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Current Receipt */}
+            {cart.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Current Order
+                  </CardTitle>
+                  <CardDescription>Items in your current cart</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center">
+                        <span>{item.name} x {item.quantity}</span>
+                        <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between items-center font-bold">
+                        <span>Total</span>
+                        <span>{formatCurrency(getCartTotal())}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recent Transactions */}
             <Card>
