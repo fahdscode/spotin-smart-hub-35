@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Users, UserCog, Shield, Search, Plus, Edit, Trash2, Crown } from "lucide-react";
+import { Users, UserCog, Shield, Search, Plus, Edit, Trash2, Crown, Key, UserPlus } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -42,6 +42,9 @@ const RolesManagement = () => {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedProfileForPassword, setSelectedProfileForPassword] = useState<Profile | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -122,6 +125,79 @@ const RolesManagement = () => {
     }
   };
 
+  const createNewUser = async (email: string, password: string, fullName: string, role: string, phone: string) => {
+    try {
+      // Create user in Supabase auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          role: role
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Update the profile with additional details
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: fullName,
+            phone: phone,
+            role: role,
+            is_admin: role === 'admin' || role === 'ceo'
+          })
+          .eq('user_id', authData.user.id);
+
+        if (profileError) throw profileError;
+      }
+
+      await fetchProfiles();
+      
+      toast({
+        title: "Success",
+        description: "User account created successfully",
+      });
+
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create user account",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateUserPassword = async (userId: string, newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+
+      setIsPasswordDialogOpen(false);
+      setSelectedProfileForPassword(null);
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getRoleInfo = (role: string) => {
     return ROLE_OPTIONS.find(option => option.value === role) || 
            { value: role, label: role, color: "bg-muted" };
@@ -160,9 +236,10 @@ const RolesManagement = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Role Overview</TabsTrigger>
           <TabsTrigger value="management">User Management</TabsTrigger>
+          <TabsTrigger value="create">Create Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -278,24 +355,101 @@ const RolesManagement = () => {
                           <TableCell>
                             {new Date(profile.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingProfile(profile);
-                                setIsDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                           <TableCell className="text-right">
+                             <div className="flex gap-2">
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => {
+                                   setEditingProfile(profile);
+                                   setIsDialogOpen(true);
+                                 }}
+                               >
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => {
+                                   setSelectedProfileForPassword(profile);
+                                   setIsPasswordDialogOpen(true);
+                                 }}
+                               >
+                                 <Key className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           </TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="create" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Create New User Account
+              </CardTitle>
+              <CardDescription>Create a new user account with role-based portal access</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const email = formData.get('email') as string;
+                  const password = formData.get('password') as string;
+                  const fullName = formData.get('fullName') as string;
+                  const role = formData.get('role') as string;
+                  const phone = formData.get('phone') as string;
+                  createNewUser(email, password, fullName, role, phone);
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input id="fullName" name="fullName" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" name="email" type="email" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" name="phone" type="tel" />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" name="password" type="password" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Role</Label>
+                    <Select name="role" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map((role) => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Create User Account
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
@@ -359,6 +513,55 @@ const RolesManagement = () => {
                 </Button>
                 <Button type="submit">
                   Update Role
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Update Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Password</DialogTitle>
+            <DialogDescription>
+              Update the password for {selectedProfileForPassword?.full_name || selectedProfileForPassword?.email}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProfileForPassword && (
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const newPassword = formData.get('password') as string;
+                updateUserPassword(selectedProfileForPassword.user_id, newPassword);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="password">New Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Enter new password (min 6 characters)"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPasswordDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Update Password
                 </Button>
               </div>
             </form>
