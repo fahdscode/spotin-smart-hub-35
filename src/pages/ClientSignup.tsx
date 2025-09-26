@@ -419,15 +419,23 @@ const ClientSignup = () => {
 
                 <div>
                   <Label htmlFor="howDidYouFindUs">How did you find us?</Label>
-                  <Input
-                    id="howDidYouFindUs"
-                    name="howDidYouFindUs"
-                    type="text"
-                    placeholder="e.g., Social media, Friend referral, Google search"
-                    value={formData.howDidYouFindUs}
-                    onChange={handleInputChange}
-                    className={errors.howDidYouFindUs ? "border-destructive" : ""}
-                  />
+                  <Select value={formData.howDidYouFindUs} onValueChange={(value) => handleSelectChange('howDidYouFindUs', value)}>
+                    <SelectTrigger className={errors.howDidYouFindUs ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select how you found us" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50">
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="friend_referral">Friend Referral</SelectItem>
+                      <SelectItem value="google_search">Google Search</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="walking_by">Walking By</SelectItem>
+                      <SelectItem value="event">Event/Workshop</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {errors.howDidYouFindUs && (
                     <p className="text-sm text-destructive mt-1">{errors.howDidYouFindUs}</p>
                   )}
