@@ -978,6 +978,10 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: string
       }
+      get_client_last_orders: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: Json
+      }
       get_client_memberships: {
         Args: Record<PropertyKey, never>
         Returns: Json
