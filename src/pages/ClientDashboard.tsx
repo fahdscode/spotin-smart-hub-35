@@ -88,10 +88,18 @@ export default function ClientDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   useEffect(() => {
     const storedClientData = localStorage.getItem('clientData');
+    console.log('Checking for stored client data...', !!storedClientData); // Debug log
+    
     if (storedClientData) {
       try {
         const parsedData = JSON.parse(storedClientData);
         console.log('Client data loaded:', parsedData); // Debug log
+        
+        if (!parsedData.id || !parsedData.fullName) {
+          console.error('Invalid client data structure:', parsedData);
+          throw new Error('Invalid client data');
+        }
+        
         setClientData(parsedData);
         setProfileData({
           fullName: parsedData.fullName || '',
@@ -100,6 +108,8 @@ export default function ClientDashboard() {
           jobTitle: parsedData.jobTitle || '',
           profileImage: ''
         });
+        
+        // Verify session and load data
         verifyClientSession(parsedData.id);
         fetchRealData();
         fetchCheckInStatus(parsedData.id);
@@ -108,17 +118,23 @@ export default function ClientDashboard() {
         fetchEventsThisYear(parsedData.id);
         fetchFavoriteDrinks(parsedData.id);
         loadMockTransactions();
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error parsing client data:', error);
+        localStorage.removeItem('clientData'); // Clean up invalid data
+        setLoading(false);
         navigate('/client-login');
       }
     } else {
+      console.log('No client data found, redirecting to login');
+      setLoading(false);
       navigate('/client-login');
     }
-    setLoading(false);
   }, [navigate]);
   const verifyClientSession = async (clientId: string) => {
     try {
+      console.log('Verifying client session for ID:', clientId);
       const {
         data,
         error
@@ -126,11 +142,22 @@ export default function ClientDashboard() {
         client_id: clientId
       });
       const authResult = data as any;
+      
+      console.log('Session verification result:', { data, error, authResult });
+      
       if (error || !authResult?.success) {
+        console.error('Session verification failed:', { error, authResult });
         throw new Error('Invalid session');
       }
+      
+      console.log('Session verification successful');
     } catch (error) {
       console.error('Session verification failed:', error);
+      toast({
+        title: "Session Expired",
+        description: "Please log in again.",
+        variant: "destructive"
+      });
       handleLogout();
     }
   };
@@ -406,7 +433,10 @@ export default function ClientDashboard() {
     });
   };
   const handleLogout = () => {
-    localStorage.removeItem('spotinClientData');
+    console.log('Logging out client...');
+    localStorage.removeItem('clientData'); // Fixed: was 'spotinClientData'
+    setClientData(null);
+    setLoading(false);
     navigate('/client-login');
   };
   const playOrderNotification = () => {
