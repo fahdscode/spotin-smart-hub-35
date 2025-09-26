@@ -500,6 +500,81 @@ export default function ClientDashboard() {
   const getCartTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
+
+  const playOrderSound = () => {
+    try {
+      const audio = new Audio('/order-sound.wav');
+      audio.volume = 0.5;
+      audio.play().catch(err => console.log('Could not play sound:', err));
+    } catch (err) {
+      console.log('Audio not supported:', err);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Please add items to your cart before placing an order.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!clientData) {
+      toast({
+        title: "Error",
+        description: "Client data not found. Please log in again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Create orders in session_line_items table for barista to see
+      for (const item of cart) {
+        const { error } = await supabase
+          .from('session_line_items')
+          .insert({
+            user_id: clientData.id,
+            item_name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error('Error creating order item:', error);
+          throw error;
+        }
+      }
+
+      // Play success sound
+      playOrderSound();
+
+      // Show success message
+      toast({
+        title: "Order Placed Successfully!",
+        description: `Your order for $${getCartTotal().toFixed(2)} has been sent to the barista station.`,
+        variant: "default"
+      });
+
+      // Clear the cart
+      setCart([]);
+
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast({
+        title: "Order Failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   const getCurrentLocation = () => {
     return checkInStatus === 'checked_in' ? "Checked in - Active session" : "Not checked in";
   };
@@ -758,9 +833,14 @@ export default function ClientDashboard() {
                           <span className="font-semibold">Total:</span>
                           <span className="font-bold text-lg text-primary">${getCartTotal().toFixed(2)}</span>
                         </div>
-                        <Button className="w-full" size="lg">
+                        <Button 
+                          className="w-full" 
+                          size="lg" 
+                          onClick={handlePlaceOrder}
+                          disabled={loading || cart.length === 0}
+                        >
                           <Coffee className="mr-2 h-4 w-4" />
-                          Place Order
+                          {loading ? "Placing Order..." : "Place Order"}
                         </Button>
                       </div>
                     </div>}
