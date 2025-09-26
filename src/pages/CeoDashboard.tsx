@@ -631,7 +631,7 @@ const CeoDashboard = () => {
                             borderRadius: '8px'
                           }}
                           formatter={(value, name) => [
-                            name === 'revenue' ? `${value} EGP` : value,
+                            name === 'revenue' ? `${value} EGP` : `${value} orders`,
                             name === 'revenue' ? 'Revenue' : 'Orders'
                           ]}
                         />
@@ -642,15 +642,6 @@ const CeoDashboard = () => {
                           fill={CHART_COLORS.success}
                           fillOpacity={0.2}
                           strokeWidth={2}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="orders" 
-                          stroke={CHART_COLORS.accent}
-                          fill={CHART_COLORS.accent}
-                          fillOpacity={0.1}
-                          strokeWidth={2}
-                          yAxisId="right"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
