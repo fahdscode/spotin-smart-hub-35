@@ -84,7 +84,7 @@ const RolesManagement = () => {
       );
     }
 
-    if (selectedRole) {
+    if (selectedRole && selectedRole !== "all") {
       filtered = filtered.filter(profile => profile.role === selectedRole);
     }
 
@@ -206,7 +206,7 @@ const RolesManagement = () => {
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 {ROLE_OPTIONS.map((role) => (
                   <SelectItem key={role.value} value={role.value}>
                     {role.label}
