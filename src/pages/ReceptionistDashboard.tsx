@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
+import ProductionMonitor from '@/components/ProductionMonitor';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -105,6 +106,13 @@ const ReceptionistDashboard = () => {
       icon: CalendarDays, 
       action: "calendar",
       variant: "secondary" as const
+    },
+    { 
+      title: "System Monitor", 
+      description: "Production health & metrics", 
+      icon: Activity, 
+      action: "monitor",
+      variant: "info" as const
     },
   ];
 
@@ -258,6 +266,17 @@ const ReceptionistDashboard = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <RoomCalendar />
+                      </DialogContent>
+                    )}
+                    {action.action === "monitor" && (
+                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Production Monitor</DialogTitle>
+                          <DialogDescription>
+                            Real-time system health and performance metrics
+                          </DialogDescription>
+                        </DialogHeader>
+                        <ProductionMonitor />
                       </DialogContent>
                     )}
                   </Dialog>

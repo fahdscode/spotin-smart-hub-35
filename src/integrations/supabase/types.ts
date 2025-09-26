@@ -16,25 +16,34 @@ export type Database = {
     Tables: {
       admin_users: {
         Row: {
-          created_at: string
+          created_at: string | null
           email: string
+          full_name: string
           id: string
-          password_hash: string
-          updated_at: string
+          is_active: boolean | null
+          role: string
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           email: string
+          full_name: string
           id?: string
-          password_hash: string
-          updated_at?: string
+          is_active?: boolean | null
+          role: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           email?: string
+          full_name?: string
           id?: string
-          password_hash?: string
-          updated_at?: string
+          is_active?: boolean | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -774,6 +783,53 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          log_level: string
+          message: string
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          log_level: string
+          message: string
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          log_level?: string
+          message?: string
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       traffic_data: {
         Row: {
           area: string
@@ -938,6 +994,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_user_role: {
+        Args: { check_user_id?: string }
+        Returns: string
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -945,6 +1005,21 @@ export type Database = {
       is_admin_or_staff: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      is_admin_user: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      log_system_event: {
+        Args: {
+          p_client_id?: string
+          p_event_type: string
+          p_log_level: string
+          p_message: string
+          p_metadata?: Json
+          p_user_id?: string
+        }
+        Returns: string
       }
       search_clients_for_membership: {
         Args: { search_term: string }
