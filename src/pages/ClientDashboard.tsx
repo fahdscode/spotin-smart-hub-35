@@ -222,6 +222,15 @@ export default function ClientDashboard() {
   };
 
   const addToCart = (drink: Drink, goToCart = false) => {
+    if (!isCheckedIn) {
+      toast({
+        title: "Check-in Required",
+        description: "Please check in at reception before placing orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const existingItem = cart.find(item => item.id === drink.id);
     if (existingItem) {
       setCart(cart.map(item => 
@@ -249,6 +258,15 @@ export default function ClientDashboard() {
   };
 
   const reorderLastOrder = (order: LastOrder) => {
+    if (!isCheckedIn) {
+      toast({
+        title: "Check-in Required",
+        description: "Please check in at reception before placing orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newCartItems: CartItem[] = [];
     
     order.items.forEach(item => {
@@ -289,6 +307,15 @@ export default function ClientDashboard() {
   };
 
   const handlePlaceOrder = async () => {
+    if (!isCheckedIn) {
+      toast({
+        title: "Check-in Required",
+        description: "Please check in at reception before placing orders.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (cart.length === 0) {
       toast({
         title: "Empty Cart",
@@ -366,8 +393,9 @@ export default function ClientDashboard() {
           <Button
             variant={currentView === 'order' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCurrentView('order')}
+            onClick={() => isCheckedIn ? setCurrentView('order') : null}
             className="flex flex-col items-center gap-1 h-auto py-2 relative"
+            disabled={!isCheckedIn}
           >
             <ShoppingCart className="h-4 w-4" />
             <span className="text-xs">Order</span>
@@ -401,8 +429,9 @@ export default function ClientDashboard() {
           </Button>
           <Button
             variant={currentView === 'order' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('order')}
+            onClick={() => isCheckedIn ? setCurrentView('order') : null}
             className="relative"
+            disabled={!isCheckedIn}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
             Order
@@ -446,8 +475,32 @@ export default function ClientDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Client Status & Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className={isCheckedIn ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+                <CardContent className="pt-6 text-center">
+                  <div className={`h-8 w-8 mx-auto mb-2 ${isCheckedIn ? 'text-green-600' : 'text-red-600'}`}>
+                    {isCheckedIn ? (
+                      <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
+                        <div className="h-4 w-4 bg-white rounded-full"></div>
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
+                        <div className="h-4 w-4 bg-white rounded-full"></div>
+                      </div>
+                    )}
+                  </div>
+                  <div className={`text-lg font-bold ${isCheckedIn ? 'text-green-700' : 'text-red-700'}`}>
+                    {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                  </div>
+                  {isCheckedIn && checkInTime && (
+                    <p className="text-sm text-green-600">Since {checkInTime}</p>
+                  )}
+                  {!isCheckedIn && (
+                    <p className="text-sm text-red-600">Visit reception to check in</p>
+                  )}
+                </CardContent>
+              </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
@@ -466,7 +519,20 @@ export default function ClientDashboard() {
 
             {/* Quick Actions */}
             <div className="space-y-4">
-              {cart.length === 0 && lastOrders.length > 0 && (
+              {!isCheckedIn && (
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-orange-600 mb-2">
+                      <QrCode className="h-12 w-12 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-orange-800 mb-2">Please Check In First</h3>
+                    <p className="text-orange-700 mb-4">You need to check in at reception before you can place orders.</p>
+                    <p className="text-sm text-orange-600">Show your QR code (in Profile tab) to the receptionist.</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {isCheckedIn && cart.length === 0 && lastOrders.length > 0 && (
                 <Card className="border-primary/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -492,6 +558,7 @@ export default function ClientDashboard() {
                           size="sm" 
                           onClick={() => reorderLastOrder(order)}
                           className="shrink-0"
+                          disabled={!isCheckedIn}
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Reorder
