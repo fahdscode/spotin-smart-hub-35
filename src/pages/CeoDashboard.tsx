@@ -13,10 +13,10 @@ const CeoDashboard = () => {
   const navigate = useNavigate();
 
   const revenueBreakdown = [
-    { category: "Memberships", amount: "$12,450", percentage: 45, color: "bg-primary" },
-    { category: "Room Bookings", amount: "$8,200", percentage: 30, color: "bg-accent" },
-    { category: "Drinks & Food", amount: "$4,100", percentage: 15, color: "bg-success" },
-    { category: "Events", amount: "$2,750", percentage: 10, color: "bg-warning" },
+    { category: "Memberships", amount: "12,450 EGP", percentage: 45, color: "bg-primary" },
+    { category: "Room Bookings", amount: "8,200 EGP", percentage: 30, color: "bg-accent" },
+    { category: "Drinks & Food", amount: "4,100 EGP", percentage: 15, color: "bg-success" },
+    { category: "Events", amount: "2,750 EGP", percentage: 10, color: "bg-warning" },
   ];
 
   const roomUtilization = [
@@ -59,7 +59,7 @@ const CeoDashboard = () => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard title="Total Revenue" value="$27,500" change="+12.5%" icon={DollarSign} variant="success" />
+          <MetricCard title="Total Revenue" value="27,500 EGP" change="+12.5%" icon={DollarSign} variant="success" />
           <MetricCard title="Active Members" value="147" change="+8" icon={Users} variant="info" />
           <MetricCard title="Occupancy Rate" value="78%" change="+5.2%" icon={Building} variant="default" />
           <MetricCard title="Events This Month" value="23" change="+15%" icon={Calendar} variant="success" />

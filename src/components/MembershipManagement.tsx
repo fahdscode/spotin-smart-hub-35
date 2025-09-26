@@ -377,7 +377,7 @@ const MembershipManagement = () => {
                   </div>
                   <div className="bg-muted p-4 rounded-lg">
                     <div className="text-2xl font-bold">
-                      ${memberships.reduce((sum, m) => sum + Number(m.total_savings), 0).toFixed(2)}
+                      {memberships.reduce((sum, m) => sum + Number(m.total_savings), 0).toFixed(2)} EGP
                     </div>
                     <div className="text-sm text-muted-foreground">Total Savings</div>
                   </div>
@@ -416,7 +416,7 @@ const MembershipManagement = () => {
                               {membership.discount_percentage}% OFF
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Saved: ${Number(membership.total_savings).toFixed(2)}
+                              Saved: {Number(membership.total_savings).toFixed(2)} EGP
                             </div>
                           </div>
                         </div>
@@ -642,7 +642,7 @@ const MembershipManagement = () => {
                           </div>
                         </div>
                         <div className="text-2xl font-bold text-primary">
-                          ${plan.price}/month
+                          {plan.price} EGP/month
                         </div>
                         <Badge variant="secondary" className="w-fit">
                           {plan.discount_percentage}% Discount

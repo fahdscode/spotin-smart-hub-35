@@ -260,7 +260,7 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
             {calculateTotal() > 0 && (
               <div className="bg-accent/10 p-4 rounded-lg">
                 <div className="text-lg font-semibold text-accent">
-                  Total: ${calculateTotal()}
+                  Total: {calculateTotal()} EGP
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Duration: {calculateDuration().toFixed(1)} hours

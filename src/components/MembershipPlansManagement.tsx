@@ -386,7 +386,7 @@ const MembershipPlansManagement = () => {
                         <p className="text-muted-foreground mb-3">{plan.description}</p>
                         
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <span className="font-medium">${plan.price}/{getDurationLabel(plan.duration_type).toLowerCase()}</span>
+                          <span className="font-medium">{plan.price} EGP/{getDurationLabel(plan.duration_type).toLowerCase()}</span>
                           <span>{plan.discount_percentage}% discount on services</span>
                           <Badge variant="secondary" className="text-xs">
                             {getDurationLabel(plan.duration_type)}

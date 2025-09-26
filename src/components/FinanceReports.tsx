@@ -98,21 +98,21 @@ const FinanceReports = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
           title="Monthly Revenue"
-          value={`€${currentData.revenue.toLocaleString()}`}
+          value={`${currentData.revenue.toLocaleString()} EGP`}
           change={`${revenueChange > 0 ? '+' : ''}${revenueChange.toFixed(1)}%`}
           icon={DollarSign}
           variant="success"
         />
         <MetricCard
           title="Monthly Expenses"
-          value={`€${currentData.expenses.toLocaleString()}`}
+          value={`${currentData.expenses.toLocaleString()} EGP`}
           change={`${expenseChange > 0 ? '+' : ''}${expenseChange.toFixed(1)}%`}
           icon={TrendingDown}
           variant="warning"
         />
         <MetricCard
           title="Net Profit"
-          value={`€${currentData.profit.toLocaleString()}`}
+          value={`${currentData.profit.toLocaleString()} EGP`}
           change={`${profitChange > 0 ? '+' : ''}${profitChange.toFixed(1)}%`}
           icon={TrendingUp}
           variant="success"

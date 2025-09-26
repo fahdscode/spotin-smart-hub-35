@@ -513,7 +513,7 @@ const BillManagement = () => {
                                 />
                               </TableCell>
                               <TableCell>
-                                ${item.total_price.toFixed(2)}
+                                {item.total_price.toFixed(2)} EGP
                               </TableCell>
                               <TableCell>
                                 <Button 
@@ -535,7 +535,7 @@ const BillManagement = () => {
                   {lineItems.length > 0 && (
                     <div className="flex justify-end">
                       <div className="text-lg font-semibold">
-                        Total: ${getTotalAmount().toFixed(2)}
+                        Total: {getTotalAmount().toFixed(2)} EGP
                       </div>
                     </div>
                   )}
@@ -596,7 +596,7 @@ const BillManagement = () => {
               <DollarSign className="h-5 w-5 text-green-500" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Amount</p>
-                <p className="text-2xl font-bold">${bills.reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}</p>
+                <p className="text-2xl font-bold">{bills.reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)} EGP</p>
               </div>
             </div>
           </Card>
@@ -643,7 +643,7 @@ const BillManagement = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">${bill.amount.toFixed(2)}</span>
+                        <span className="font-medium">{bill.amount.toFixed(2)} EGP</span>
                       </div>
                       {bill.notes && (
                         <p className="text-xs">{bill.notes}</p>

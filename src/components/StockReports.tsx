@@ -126,7 +126,7 @@ const StockReports = () => {
         />
         <MetricCard
           title="Total Value"
-          value={`€${totalValue.toLocaleString()}`}
+          value={`${totalValue.toLocaleString()} EGP`}
           icon={TrendingUp}
           variant="success"
         />

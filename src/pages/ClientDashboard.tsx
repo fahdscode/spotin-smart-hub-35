@@ -534,7 +534,7 @@ export default function ClientDashboard() {
       // Show success message
       toast({
         title: "Order Placed Successfully!",
-        description: `Your order for $${getCartTotal().toFixed(2)} has been sent to the barista station.`,
+        description: `Your order for ${getCartTotal().toFixed(2)} EGP has been sent to the barista station.`,
         variant: "default"
       });
 
@@ -590,7 +590,7 @@ export default function ClientDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <MetricCard title="Check-ins (30 days)" value={checkInsLast30Days.toString()} change="Total visits this month" icon={Users} variant="info" />
           <MetricCard title="Check-in Status" value={checkInStatus === 'checked_in' ? 'Checked In' : 'Checked Out'} change={checkInStatus === 'checked_in' ? 'Active session' : 'Not in space'} icon={Clock} variant={checkInStatus === 'checked_in' ? 'success' : 'default'} />
-          <MetricCard title="Cart Total" value={cart.length > 0 ? `$${getCartTotal().toFixed(2)}` : '$0.00'} change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'} icon={CreditCard} variant={cart.length > 0 ? 'success' : 'default'} />
+          <MetricCard title="Cart Total" value={cart.length > 0 ? `${getCartTotal().toFixed(2)} EGP` : '0.00 EGP'} change={cart.length > 0 ? 'Ready to order' : 'Cart is empty'} icon={CreditCard} variant={cart.length > 0 ? 'success' : 'default'} />
           <MetricCard title="Membership Status" value={membershipStatus} change="Enjoy premium benefits" icon={Award} variant={membershipStatus !== 'No active membership' ? 'success' : 'default'} />
         </div>
 
@@ -614,7 +614,7 @@ export default function ClientDashboard() {
                         <Heart className="h-4 w-4 text-red-500 fill-current" />
                       </div>
                       <p className="text-xs text-muted-foreground mb-1 line-clamp-1">{drink.description}</p>
-                      <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
+                      <p className="text-sm font-semibold text-primary">{Number(drink.price).toFixed(2)} EGP</p>
                     </div>
                     <Button onClick={() => addFavoriteToCart(drink)} size="sm" className="shrink-0 ml-2">
                       <Plus className="h-4 w-4" />
@@ -750,7 +750,7 @@ export default function ClientDashboard() {
                                  <Badge variant="secondary" className="text-xs self-start">{drink.category}</Badge>
                                </div>
                                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{drink.description}</p>
-                               <p className="text-sm font-semibold text-primary">${Number(drink.price).toFixed(2)}</p>
+                               <p className="text-sm font-semibold text-primary">{Number(drink.price).toFixed(2)} EGP</p>
                              </div>
                              <Button onClick={() => addToCart(drink)} size="sm" className="shrink-0 ml-2">
                                <Plus className="h-4 w-4" />
@@ -797,7 +797,7 @@ export default function ClientDashboard() {
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</span>
+                              <span className="font-semibold text-sm">{(item.price * item.quantity).toFixed(2)} EGP</span>
                             </div>
                           </div>)}
                       </div>
@@ -805,7 +805,7 @@ export default function ClientDashboard() {
                       <div className="border-t pt-3 space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="font-semibold">Total:</span>
-                          <span className="font-bold text-lg text-primary">${getCartTotal().toFixed(2)}</span>
+                          <span className="font-bold text-lg text-primary">{getCartTotal().toFixed(2)} EGP</span>
                         </div>
                         <Button 
                           className="w-full" 
@@ -1069,7 +1069,7 @@ export default function ClientDashboard() {
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-lg text-primary">
-                              ${transaction.amount.toFixed(2)}
+                              {transaction.amount.toFixed(2)} EGP
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {transaction.payment_method}

@@ -14,16 +14,16 @@ const CrmDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const leads = [
-    { id: 1, name: "John Smith", email: "john@example.com", phone: "+1234567890", status: "New", source: "Website", value: "$2,500", lastContact: "2024-01-15" },
-    { id: 2, name: "Sarah Johnson", email: "sarah@company.com", phone: "+1987654321", status: "Qualified", source: "Referral", value: "$5,000", lastContact: "2024-01-14" },
-    { id: 3, name: "Mike Davis", email: "mike@startup.com", phone: "+1555123456", status: "Proposal", source: "LinkedIn", value: "$8,500", lastContact: "2024-01-13" },
-    { id: 4, name: "Lisa Chen", email: "lisa@corp.com", phone: "+1444987654", status: "Negotiation", source: "Cold Call", value: "$12,000", lastContact: "2024-01-12" },
+    { id: 1, name: "John Smith", email: "john@example.com", phone: "+1234567890", status: "New", source: "Website", value: "2,500 EGP", lastContact: "2024-01-15" },
+    { id: 2, name: "Sarah Johnson", email: "sarah@company.com", phone: "+1987654321", status: "Qualified", source: "Referral", value: "5,000 EGP", lastContact: "2024-01-14" },
+    { id: 3, name: "Mike Davis", email: "mike@startup.com", phone: "+1555123456", status: "Proposal", source: "LinkedIn", value: "8,500 EGP", lastContact: "2024-01-13" },
+    { id: 4, name: "Lisa Chen", email: "lisa@corp.com", phone: "+1444987654", status: "Negotiation", source: "Cold Call", value: "12,000 EGP", lastContact: "2024-01-12" },
   ];
 
   const customers = [
-    { id: 1, name: "Tech Solutions Inc", email: "contact@techsolutions.com", phone: "+1234567890", plan: "Premium", since: "2023-06-15", value: "$15,000", status: "Active" },
-    { id: 2, name: "Design Studio", email: "hello@designstudio.com", phone: "+1987654321", plan: "Standard", since: "2023-08-20", value: "$8,500", status: "Active" },
-    { id: 3, name: "Marketing Pro", email: "info@marketingpro.com", phone: "+1555123456", plan: "Basic", since: "2023-10-10", value: "$3,200", status: "Renewal Due" },
+    { id: 1, name: "Tech Solutions Inc", email: "contact@techsolutions.com", phone: "+1234567890", plan: "Premium", since: "2023-06-15", value: "15,000 EGP", status: "Active" },
+    { id: 2, name: "Design Studio", email: "hello@designstudio.com", phone: "+1987654321", plan: "Standard", since: "2023-08-20", value: "8,500 EGP", status: "Active" },
+    { id: 3, name: "Marketing Pro", email: "info@marketingpro.com", phone: "+1555123456", plan: "Basic", since: "2023-10-10", value: "3,200 EGP", status: "Renewal Due" },
   ];
 
   const getStatusColor = (status: string) => {
@@ -94,7 +94,7 @@ const CrmDashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$125,400</div>
+              <div className="text-2xl font-bold">125,400 EGP</div>
               <p className="text-xs text-muted-foreground">+22% from last month</p>
             </CardContent>
           </Card>
@@ -275,7 +275,7 @@ const CrmDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold mb-2">24</div>
-                      <div className="text-sm text-muted-foreground">$28,000</div>
+                      <div className="text-sm text-muted-foreground">28,000 EGP</div>
                     </CardContent>
                   </Card>
                   
@@ -285,7 +285,7 @@ const CrmDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold mb-2">18</div>
-                      <div className="text-sm text-muted-foreground">$42,500</div>
+                      <div className="text-sm text-muted-foreground">42,500 EGP</div>
                     </CardContent>
                   </Card>
                   
@@ -295,7 +295,7 @@ const CrmDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold mb-2">12</div>
-                      <div className="text-sm text-muted-foreground">$68,900</div>
+                      <div className="text-sm text-muted-foreground">68,900 EGP</div>
                     </CardContent>
                   </Card>
                   

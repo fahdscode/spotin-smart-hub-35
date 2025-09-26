@@ -369,7 +369,7 @@ const RoomCalendar = () => {
               <div>
                 <Label className="text-sm font-medium">Total Amount</Label>
                 <p className="text-sm text-muted-foreground">
-                  ${selectedReservation.total_amount}
+                  {selectedReservation.total_amount} EGP
                 </p>
               </div>
 

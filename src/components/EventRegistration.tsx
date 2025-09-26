@@ -218,7 +218,7 @@ const EventRegistration = ({ events }: { events: Event[] }) => {
                     </div>
                     <div>
                       <Label className="text-xs font-medium">Amount Paid</Label>
-                      <div className="text-sm font-semibold">€{ticket.totalAmount.toFixed(2)}</div>
+                      <div className="text-sm font-semibold">{ticket.totalAmount.toFixed(2)} EGP</div>
                       <div className="text-xs text-muted-foreground">Issued: {ticket.issueDate}</div>
                     </div>
                     <div>
@@ -348,7 +348,7 @@ const EventRegistration = ({ events }: { events: Event[] }) => {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total Amount:</span>
                   <span className="font-bold">
-                    €{(selectedEvent.price * registrationData.ticketQuantity).toFixed(2)}
+                    {(selectedEvent.price * registrationData.ticketQuantity).toFixed(2)} EGP
                   </span>
                 </div>
               </div>
