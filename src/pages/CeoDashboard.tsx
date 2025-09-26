@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, AreaChart, Area } from "recharts";
 
 const CeoDashboard = () => {
   const navigate = useNavigate();
@@ -64,6 +65,45 @@ const CeoDashboard = () => {
       { group: '46+', percentage: 9, count: 14 }
     ]
   });
+
+  // Chart data
+  const [peakHoursData, setPeakHoursData] = useState([
+    { hour: '6AM', visitors: 5 },
+    { hour: '7AM', visitors: 12 },
+    { hour: '8AM', visitors: 25 },
+    { hour: '9AM', visitors: 45 },
+    { hour: '10AM', visitors: 38 },
+    { hour: '11AM', visitors: 52 },
+    { hour: '12PM', visitors: 65 },
+    { hour: '1PM', visitors: 58 },
+    { hour: '2PM', visitors: 72 },
+    { hour: '3PM', visitors: 68 },
+    { hour: '4PM', visitors: 55 },
+    { hour: '5PM', visitors: 42 },
+    { hour: '6PM', visitors: 35 },
+    { hour: '7PM', visitors: 28 },
+    { hour: '8PM', visitors: 18 },
+    { hour: '9PM', visitors: 12 }
+  ]);
+
+  const [dailyRevenueData, setDailyRevenueData] = useState([
+    { date: 'Mon', revenue: 2450, orders: 32 },
+    { date: 'Tue', revenue: 2890, orders: 38 },
+    { date: 'Wed', revenue: 3200, orders: 42 },
+    { date: 'Thu', revenue: 3650, orders: 48 },
+    { date: 'Fri', revenue: 4200, orders: 55 },
+    { date: 'Sat', revenue: 3800, orders: 51 },
+    { date: 'Sun', revenue: 2900, orders: 39 }
+  ]);
+
+  const CHART_COLORS = {
+    primary: 'hsl(var(--primary))',
+    secondary: 'hsl(var(--secondary))',
+    accent: 'hsl(var(--accent))',
+    success: 'hsl(142 71% 45%)',
+    warning: 'hsl(38 92% 50%)',
+    destructive: 'hsl(var(--destructive))'
+  };
 
   useEffect(() => {
     refreshData();
@@ -512,6 +552,111 @@ const CeoDashboard = () => {
                 icon={Users} 
                 variant="success" 
               />
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Peak Hours Chart */}
+              <Card className="bg-card/50 backdrop-blur border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Peak Hours Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Daily visitor patterns throughout the day
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={peakHoursData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                        <XAxis 
+                          dataKey="hour" 
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                        />
+                        <YAxis 
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar 
+                          dataKey="visitors" 
+                          fill={CHART_COLORS.primary}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Daily Revenue Chart */}
+              <Card className="bg-card/50 backdrop-blur border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Daily Revenue Trend
+                  </CardTitle>
+                  <CardDescription>
+                    Weekly revenue and order patterns
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={dailyRevenueData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                        />
+                        <YAxis 
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                          formatter={(value, name) => [
+                            name === 'revenue' ? `${value} EGP` : value,
+                            name === 'revenue' ? 'Revenue' : 'Orders'
+                          ]}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="revenue" 
+                          stroke={CHART_COLORS.success}
+                          fill={CHART_COLORS.success}
+                          fillOpacity={0.2}
+                          strokeWidth={2}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="orders" 
+                          stroke={CHART_COLORS.accent}
+                          fill={CHART_COLORS.accent}
+                          fillOpacity={0.1}
+                          strokeWidth={2}
+                          yAxisId="right"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
