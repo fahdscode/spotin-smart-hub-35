@@ -402,12 +402,12 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="jobTitle">Job Title / Student Status</Label>
+                  <Label htmlFor="jobTitle">Job Title / Profession</Label>
                   <Input
                     id="jobTitle"
                     name="jobTitle"
                     type="text"
-                    placeholder="e.g., Software Engineer, Student, Freelancer"
+                    placeholder="e.g., Software Engineer, Marketing Manager, Freelancer"
                     value={formData.jobTitle}
                     onChange={handleInputChange}
                     className={errors.jobTitle ? "border-destructive" : ""}
@@ -415,6 +415,16 @@ const ClientSignup = () => {
                   {errors.jobTitle && (
                     <p className="text-sm text-destructive mt-1">{errors.jobTitle}</p>
                   )}
+                  
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input
+                      type="checkbox"
+                      id="isStudent"
+                      name="isStudent"
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="isStudent" className="text-sm font-normal">I am a student</Label>
+                  </div>
                 </div>
 
                 <div>
