@@ -629,15 +629,12 @@ export default function ClientDashboard() {
         {/* Tabs - Mobile Optimized Navigation */}
         <Tabs defaultValue="barcode" className="space-y-4 sm:space-y-6">
           <div className="overflow-x-auto pb-2">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 min-w-max sm:min-w-0 my-[40px]">
+            <TabsList className="grid w-full grid-cols-4 gap-1 min-w-max sm:min-w-0 my-[40px]">
               <TabsTrigger value="barcode" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 My QR Code
               </TabsTrigger>
               <TabsTrigger value="drinks" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 Order Drinks
-              </TabsTrigger>
-              <TabsTrigger value="events" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
-                Events
               </TabsTrigger>
               <TabsTrigger value="account" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                 My Account
@@ -824,31 +821,6 @@ export default function ClientDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          {/* Events Tab - Mobile Optimized */}
-          <TabsContent value="events" className="space-y-4 sm:space-y-6">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg sm:text-xl">Upcoming Events</CardTitle>
-                <CardDescription className="text-sm">Register for workshops, networking events, and more</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <h3 className="text-base sm:text-lg font-semibold">Upcoming Events</h3>
-                  <Badge variant="outline" className="self-start">0 events</Badge>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground">No upcoming events</p>
-                    <p className="text-xs text-muted-foreground mt-1">Check back later for new events</p>
-                  </div>
-                </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Account Tab - Mobile Optimized */}
