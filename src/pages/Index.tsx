@@ -4,12 +4,16 @@ import { Users, Shield, Coffee, Calendar, TrendingUp, Package, UserCheck, LogIn,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SpotinHeader from "@/components/SpotinHeader";
+import { AuthDebugger } from "@/components/AuthDebugger";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
   const [showAdminSetup, setShowAdminSetup] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [showDebugger, setShowDebugger] = useState(false);
+  const { isAuthenticated, userRole } = useAuth();
 
   useEffect(() => {
     const checkAdminExists = async () => {
@@ -38,6 +42,20 @@ const Index = () => {
       <SpotinHeader />
       
       <div className="container mx-auto p-6">
+        {/* Debug Toggle - only show if authenticated */}
+        {isAuthenticated && (
+          <div className="mb-4 text-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowDebugger(!showDebugger)}
+            >
+              {showDebugger ? "Hide" : "Show"} Auth Debug
+            </Button>
+          </div>
+        )}
+        
+        {showDebugger && <AuthDebugger />}
         <div className="text-center mb-12 animate-fade-in">
           <h2 className="text-4xl font-bold text-foreground mb-4">
             SpotIn Coworking Management

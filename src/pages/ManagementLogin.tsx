@@ -35,18 +35,24 @@ const ManagementLogin = () => {
 
       if (data.user) {
         // Check if user is an admin/staff member
+        console.log('🔍 Checking admin privileges for user:', data.user.id);
         const { data: adminUser, error: adminError } = await supabase
           .from('admin_users')
-          .select('role')
+          .select('role, is_active, email')
           .eq('user_id', data.user.id)
           .eq('is_active', true)
           .single();
 
+        console.log('Admin user query result:', { adminUser, adminError });
+
         if (adminError || !adminUser) {
+          console.log('❌ Access denied - no admin privileges');
           await supabase.auth.signOut();
           toast.error("Access denied. This account does not have management privileges.");
           return;
         }
+
+        console.log('✅ Admin access confirmed:', adminUser.role);
 
         // Log successful login
         await supabase.rpc('log_system_event', {

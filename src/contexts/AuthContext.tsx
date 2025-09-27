@@ -107,20 +107,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('🔍 Fetching user role for:', userId);
+      
       const { data: adminUser, error } = await supabase
         .from('admin_users')
-        .select('role')
+        .select('role, is_active, email')
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
       
       if (error) {
-        console.error('Error fetching user role:', error);
+        console.error('❌ Error fetching user role:', error);
+        setUserRole(null);
+      } else if (!adminUser) {
+        console.warn('⚠️ No admin user found for userId:', userId);
+        setUserRole(null);
+      } else {
+        console.log('✅ User role fetched successfully:', adminUser);
+        setUserRole(adminUser.role);
       }
-      
-      setUserRole(adminUser?.role || null);
     } catch (error) {
-      console.error('Error in fetchUserRole:', error);
+      console.error('❌ Exception in fetchUserRole:', error);
       setUserRole(null);
     } finally {
       setIsLoading(false);
