@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Coffee, User, Phone, Lock, Check, AlertCircle, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -86,6 +87,7 @@ const ClientSignup = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setClientAuth } = useAuth();
 
   const validateForm = () => {
     try {
@@ -164,20 +166,18 @@ const ClientSignup = () => {
         description: `Welcome ${result.full_name}! Your client ID: ${result.client_code}`,
       });
 
-      // Store client info and redirect
-      localStorage.setItem('clientData', JSON.stringify({
+      // Store client info and redirect using auth context
+      const clientData = {
         id: result.client_id,
-        clientCode: result.client_code,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        fullName: result.full_name,
+        client_code: result.client_code,
+        full_name: result.full_name,
         phone: formData.phone,
-        email: formData.email || '',
-        barcode: result.barcode,
-        jobTitle: formData.jobTitle,
-        howDidYouFindUs: formData.howDidYouFindUs
-      }));
-
+        email: formData.email || ''
+      };
+      
+      // Use auth context to set client authentication
+      setClientAuth(clientData);
+      
       setTimeout(() => {
         navigate("/client");
       }, 1500);

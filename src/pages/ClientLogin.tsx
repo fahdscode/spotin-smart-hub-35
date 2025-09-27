@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Coffee, User, Phone, LogIn, Check, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import spotinLogo from "@/assets/spotin-logo.png";
@@ -24,9 +25,8 @@ const ClientLogin = () => {
     password?: string;
   }>({});
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { setClientAuth } = useAuth();
   const validateForm = () => {
     try {
       loginSchema.parse({
@@ -110,7 +110,7 @@ const ClientLogin = () => {
         description: `Welcome back, ${result.client.full_name}!`
       });
 
-      // Store client data for auth context
+      // Store client data using auth context
       const clientData = {
         id: result.client.id,
         client_code: result.client.client_code,
@@ -119,10 +119,11 @@ const ClientLogin = () => {
         email: result.client.email
       };
       
-      localStorage.setItem('clientData', JSON.stringify(clientData));
+      // Use auth context to set client authentication
+      setClientAuth(clientData);
       
-      // Force page reload to trigger auth context update
-      window.location.href = '/client';
+      // Navigate to client dashboard
+      navigate('/client');
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
