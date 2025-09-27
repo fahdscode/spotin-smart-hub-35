@@ -359,6 +359,71 @@ const CeoDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Role Portal Access */}
+            <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCog className="h-5 w-5" />
+                  Role Portal Access
+                </CardTitle>
+                <CardDescription>
+                  As CEO, you have access to all management portals
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/receptionist")}
+                  >
+                    <Users className="h-6 w-6" />
+                    <span className="text-sm">Receptionist</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/barista")}
+                  >
+                    <Coffee className="h-6 w-6" />
+                    <span className="text-sm">Barista</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/community-manager")}
+                  >
+                    <Calendar className="h-6 w-6" />
+                    <span className="text-sm">Community</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/operations")}
+                  >
+                    <Building className="h-6 w-6" />
+                    <span className="text-sm">Operations</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/crm")}
+                  >
+                    <TrendingUp className="h-6 w-6" />
+                    <span className="text-sm">CRM</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
+                    onClick={() => navigate("/client")}
+                  >
+                    <Star className="h-6 w-6" />
+                    <span className="text-sm">Client Portal</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Enhanced Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard 

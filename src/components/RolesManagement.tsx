@@ -200,6 +200,47 @@ const RolesManagement = () => {
     }
   };
 
+  const deleteUser = async (userId: string, userEmail: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete user",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data?.success) {
+        toast({
+          title: "Error",
+          description: data?.error || "Failed to delete user",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await fetchProfiles();
+      
+      toast({
+        title: "Success",
+        description: `User ${userEmail} deleted successfully`,
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getRoleInfo = (role: string) => {
     return ROLE_OPTIONS.find(option => option.value === role) || 
            { value: role, label: role, color: "bg-muted" };
@@ -358,7 +399,7 @@ const RolesManagement = () => {
                             {new Date(profile.created_at).toLocaleDateString()}
                           </TableCell>
                            <TableCell className="text-right">
-                             <div className="flex gap-2">
+                             <div className="flex gap-2 justify-end">
                                <Button
                                  variant="ghost"
                                  size="sm"
@@ -366,6 +407,7 @@ const RolesManagement = () => {
                                    setEditingProfile(profile);
                                    setIsDialogOpen(true);
                                  }}
+                                 className="hover:bg-muted"
                                >
                                  <Edit className="h-4 w-4" />
                                </Button>
@@ -376,8 +418,21 @@ const RolesManagement = () => {
                                    setSelectedProfileForPassword(profile);
                                    setIsPasswordDialogOpen(true);
                                  }}
+                                 className="hover:bg-muted"
                                >
                                  <Key className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => {
+                                   if (window.confirm(`Are you sure you want to delete ${profile.full_name || profile.email}? This action cannot be undone.`)) {
+                                     deleteUser(profile.user_id, profile.email);
+                                   }
+                                 }}
+                                 className="hover:bg-destructive/10 hover:text-destructive"
+                               >
+                                 <Trash2 className="h-4 w-4" />
                                </Button>
                              </div>
                            </TableCell>
