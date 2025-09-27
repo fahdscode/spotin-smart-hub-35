@@ -22,84 +22,14 @@ import VendorManagement from "@/components/VendorManagement";
 import BillManagement from "@/components/BillManagement";
 import RolesManagement from "@/components/RolesManagement";
 import { useNavigate } from "react-router-dom";
+import { useStockData } from "@/hooks/useStockData";
+import { Skeleton } from "@/components/ui/skeleton";
 const OperationsDashboard = () => {
   const navigate = useNavigate();
+  const { stockItems, loading, getCriticalStockCount, getTotalInventoryValue, getStockStatusCounts } = useStockData();
   const [restockAmount, setRestockAmount] = useState<{
-    [key: number]: number;
+    [key: string]: number;
   }>({});
-  const stockItems = [{
-    id: 1,
-    name: "Coffee Beans - Premium",
-    current: 12,
-    minimum: 25,
-    maximum: 100,
-    unit: "kg",
-    category: "Coffee",
-    status: "low"
-  }, {
-    id: 2,
-    name: "Milk - Whole",
-    current: 45,
-    minimum: 20,
-    maximum: 80,
-    unit: "liters",
-    category: "Dairy",
-    status: "good"
-  }, {
-    id: 3,
-    name: "Sugar",
-    current: 15,
-    minimum: 10,
-    maximum: 50,
-    unit: "kg",
-    category: "Ingredients",
-    status: "good"
-  }, {
-    id: 4,
-    name: "Flour",
-    current: 8,
-    minimum: 12,
-    maximum: 40,
-    unit: "kg",
-    category: "Ingredients",
-    status: "low"
-  }, {
-    id: 5,
-    name: "Tea Leaves - Assorted",
-    current: 2.8,
-    minimum: 5,
-    maximum: 20,
-    unit: "kg",
-    category: "Tea",
-    status: "critical"
-  }, {
-    id: 6,
-    name: "Cocoa Powder",
-    current: 1.2,
-    minimum: 2,
-    maximum: 10,
-    unit: "kg",
-    category: "Ingredients",
-    status: "critical"
-  }, {
-    id: 7,
-    name: "Butter",
-    current: 3.5,
-    minimum: 3,
-    maximum: 15,
-    unit: "kg",
-    category: "Dairy",
-    status: "good"
-  }, {
-    id: 8,
-    name: "Eggs",
-    current: 24,
-    minimum: 36,
-    maximum: 100,
-    unit: "dozen",
-    category: "Dairy",
-    status: "low"
-  }];
   const expenses = [{
     id: 1,
     category: "Rent",
@@ -181,10 +111,7 @@ const OperationsDashboard = () => {
   const getTotalBudget = () => {
     return expenses.reduce((total, expense) => total + expense.budget, 0);
   };
-  const getCriticalStockCount = () => {
-    return stockItems.filter(item => item.status === "critical" || item.status === "low").length;
-  };
-  const handleRestock = (itemId: number) => {
+  const handleRestock = (itemId: string) => {
     const amount = restockAmount[itemId];
     if (amount && amount > 0) {
       // In a real app, this would make an API call
@@ -195,6 +122,8 @@ const OperationsDashboard = () => {
       }));
     }
   };
+
+  const statusCounts = getStockStatusCounts();
   return <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
@@ -212,10 +141,45 @@ const OperationsDashboard = () => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard title="Low Stock Alerts" value={getCriticalStockCount()} change={`${getCriticalStockCount()} items need attention`} icon={AlertTriangle} variant="warning" />
-          <MetricCard title="Monthly Expenses" value={`${getTotalExpenses().toLocaleString()} EGP`} change={`${(getTotalExpenses() / getTotalBudget() * 100).toFixed(1)}% of budget`} icon={DollarSign} variant="info" />
-          <MetricCard title="Pending Orders" value="7" change="3 arriving today" icon={Truck} variant="default" />
-          <MetricCard title="Inventory Value" value="12,450 EGP" change="+2.1% from last month" icon={Package} variant="success" />
+          {loading ? (
+            <>
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+            <>
+              <MetricCard 
+                title="Low Stock Alerts" 
+                value={getCriticalStockCount()} 
+                change={`${getCriticalStockCount()} items need attention`} 
+                icon={AlertTriangle} 
+                variant="warning" 
+              />
+              <MetricCard 
+                title="Monthly Expenses" 
+                value="27,629 EGP" 
+                change="85.2% of budget" 
+                icon={DollarSign} 
+                variant="info" 
+              />
+              <MetricCard 
+                title="Pending Orders" 
+                value="7" 
+                change="3 arriving today" 
+                icon={Truck} 
+                variant="default" 
+              />
+              <MetricCard 
+                title="Inventory Value" 
+                value={`${getTotalInventoryValue().toLocaleString()} EGP`} 
+                change="+2.1% from last month" 
+                icon={Package} 
+                variant="success" 
+              />
+            </>
+          )}
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
@@ -242,37 +206,55 @@ const OperationsDashboard = () => {
                     <CardDescription>Current stock status and reorder alerts</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {stockItems.map(item => <Card key={item.id} className={`p-4 ${item.status === "critical" ? "border-destructive bg-destructive/5" : item.status === "low" ? "border-warning bg-warning/5" : ""}`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <h4 className="font-semibold">{item.name}</h4>
-                              <p className="text-sm text-muted-foreground">{item.category}</p>
+                    {loading ? (
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                          <Skeleton key={i} className="h-24" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {stockItems.map(item => (
+                          <Card key={item.id} className={`p-4 ${item.status === "critical" ? "border-destructive bg-destructive/5" : item.status === "low" ? "border-warning bg-warning/5" : ""}`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h4 className="font-semibold">{item.name}</h4>
+                                <p className="text-sm text-muted-foreground">{item.category}</p>
+                              </div>
+                              <Badge variant={getStockStatusColor(item.status)}>
+                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                              </Badge>
                             </div>
-                            <Badge variant={getStockStatusColor(item.status)}>
-                              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span>Current: {item.current} {item.unit}</span>
-                              <span>Min: {item.minimum} {item.unit}</span>
+                            
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span>Current: {item.current_quantity} {item.unit}</span>
+                                <span>Min: {item.min_quantity} {item.unit}</span>
+                              </div>
+                              <Progress value={(item.current_quantity / item.maximum) * 100} className="h-2" />
                             </div>
-                            <Progress value={item.current / item.maximum * 100} className="h-2" />
-                          </div>
 
-                          {(item.status === "critical" || item.status === "low") && <div className="flex gap-2 mt-3">
-                              <Input type="number" placeholder="Qty to restock" value={restockAmount[item.id] || ""} onChange={e => setRestockAmount(prev => ({
-                          ...prev,
-                          [item.id]: parseInt(e.target.value) || 0
-                        }))} className="flex-1" />
-                              <Button variant="accent" size="sm" onClick={() => handleRestock(item.id)}>
-                                Order
-                              </Button>
-                            </div>}
-                        </Card>)}
-                    </div>
+                            {(item.status === "critical" || item.status === "low") && (
+                              <div className="flex gap-2 mt-3">
+                                <Input 
+                                  type="number" 
+                                  placeholder="Qty to restock" 
+                                  value={restockAmount[item.id] || ""} 
+                                  onChange={e => setRestockAmount(prev => ({
+                                    ...prev,
+                                    [item.id]: parseInt(e.target.value) || 0
+                                  }))} 
+                                  className="flex-1" 
+                                />
+                                <Button variant="accent" size="sm" onClick={() => handleRestock(item.id)}>
+                                  Order
+                                </Button>
+                              </div>
+                            )}
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -284,26 +266,34 @@ const OperationsDashboard = () => {
                   <CardDescription>Overall inventory status</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                      <span className="text-sm font-medium">Critical Stock</span>
-                      <span className="font-bold text-destructive">
-                        {stockItems.filter(item => item.status === "critical").length}
-                      </span>
+                  {loading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-warning/10 rounded-lg border border-warning/20">
-                      <span className="text-sm font-medium">Low Stock</span>
-                      <span className="font-bold text-warning">
-                        {stockItems.filter(item => item.status === "low").length}
-                      </span>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                        <span className="text-sm font-medium">Critical Stock</span>
+                        <span className="font-bold text-destructive">
+                          {statusCounts.critical}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-warning/10 rounded-lg border border-warning/20">
+                        <span className="text-sm font-medium">Low Stock</span>
+                        <span className="font-bold text-warning">
+                          {statusCounts.low}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg border border-success/20">
+                        <span className="text-sm font-medium">Well Stocked</span>
+                        <span className="font-bold text-success">
+                          {statusCounts.good}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg border border-success/20">
-                      <span className="text-sm font-medium">Well Stocked</span>
-                      <span className="font-bold text-success">
-                        {stockItems.filter(item => item.status === "good").length}
-                      </span>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="border-t pt-4">
                     <Button variant="professional" className="w-full mb-2">

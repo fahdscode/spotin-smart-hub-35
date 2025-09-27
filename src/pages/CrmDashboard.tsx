@@ -7,35 +7,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import SpotinHeader from "@/components/SpotinHeader";
+import { useClientsData } from "@/hooks/useClientsData";
 
 const CrmDashboard = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const { clients, loading, getTotalClientsCount, getActiveClientsCount, getLeadSources, getRecentClients, getClientsByStatus } = useClientsData();
 
-  const leads = [
-    { id: 1, name: "John Smith", email: "john@example.com", phone: "+1234567890", status: "New", source: "Website", value: "2,500 EGP", lastContact: "2024-01-15" },
-    { id: 2, name: "Sarah Johnson", email: "sarah@company.com", phone: "+1987654321", status: "Qualified", source: "Referral", value: "5,000 EGP", lastContact: "2024-01-14" },
-    { id: 3, name: "Mike Davis", email: "mike@startup.com", phone: "+1555123456", status: "Proposal", source: "LinkedIn", value: "8,500 EGP", lastContact: "2024-01-13" },
-    { id: 4, name: "Lisa Chen", email: "lisa@corp.com", phone: "+1444987654", status: "Negotiation", source: "Cold Call", value: "12,000 EGP", lastContact: "2024-01-12" },
-  ];
+  const filteredClients = clients.filter(client => 
+    client.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.phone.includes(searchQuery) ||
+    client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.client_code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const customers = [
-    { id: 1, name: "Tech Solutions Inc", email: "contact@techsolutions.com", phone: "+1234567890", plan: "Premium", since: "2023-06-15", value: "15,000 EGP", status: "Active" },
-    { id: 2, name: "Design Studio", email: "hello@designstudio.com", phone: "+1987654321", plan: "Standard", since: "2023-08-20", value: "8,500 EGP", status: "Active" },
-    { id: 3, name: "Marketing Pro", email: "info@marketingpro.com", phone: "+1555123456", plan: "Basic", since: "2023-10-10", value: "3,200 EGP", status: "Renewal Due" },
-  ];
+  const leadSources = getLeadSources();
+  const clientStats = getClientsByStatus();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "New": return "bg-blue-500/10 text-blue-600";
-      case "Qualified": return "bg-green-500/10 text-green-600";
-      case "Proposal": return "bg-yellow-500/10 text-yellow-600";
-      case "Negotiation": return "bg-orange-500/10 text-orange-600";
-      case "Active": return "bg-green-500/10 text-green-600";
-      case "Renewal Due": return "bg-red-500/10 text-red-600";
-      default: return "bg-gray-500/10 text-gray-600";
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive ? "bg-green-500/10 text-green-600" : "bg-gray-500/10 text-gray-600";
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -66,49 +62,62 @@ const CrmDashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">127</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-              <UserPlus className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">89</div>
-              <p className="text-xs text-muted-foreground">+8% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pipeline Value</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">125,400 EGP</div>
-              <p className="text-xs text-muted-foreground">+22% from last month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">23.5%</div>
-              <p className="text-xs text-muted-foreground">+3.2% from last month</p>
-            </CardContent>
-          </Card>
+          {loading ? (
+            <>
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{getTotalClientsCount()}</div>
+                  <p className="text-xs text-muted-foreground">Registered clients</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                  <UserPlus className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{getActiveClientsCount()}</div>
+                  <p className="text-xs text-muted-foreground">Currently active</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">With Memberships</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{clientStats.withMembership}</div>
+                  <p className="text-xs text-muted-foreground">Active memberships</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {getTotalClientsCount() > 0 ? Math.round((getActiveClientsCount() / getTotalClientsCount()) * 100) : 0}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">Active vs total</p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <Tabs defaultValue="leads" className="space-y-6">
@@ -124,14 +133,14 @@ const CrmDashboard = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Lead Management</CardTitle>
-                    <CardDescription>Track and manage potential customers</CardDescription>
+                    <CardTitle>Client Management</CardTitle>
+                    <CardDescription>Track and manage registered clients</CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search leads..."
+                        placeholder="Search clients..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 w-64"
@@ -144,56 +153,69 @@ const CrmDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Last Contact</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.name}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3" />
-                              {lead.email}
-                            </div>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Phone className="h-3 w-3" />
-                              {lead.phone}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(lead.status)}>
-                            {lead.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{lead.source}</TableCell>
-                        <TableCell className="font-medium">{lead.value}</TableCell>
-                        <TableCell>{lead.lastContact}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              Contact
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Update
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-16" />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead>Job Title</TableHead>
+                        <TableHead>Registered</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredClients.map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{client.full_name}</div>
+                              <div className="text-xs text-muted-foreground">{client.client_code}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-sm">
+                                <Mail className="h-3 w-3" />
+                                {client.email || 'No email'}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {client.phone}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(client.active)}>
+                              {client.active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{client.how_did_you_find_us}</TableCell>
+                          <TableCell>{client.job_title}</TableCell>
+                          <TableCell>{formatDate(client.created_at)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm">
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -201,62 +223,77 @@ const CrmDashboard = () => {
           <TabsContent value="customers" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Customer Management</CardTitle>
-                <CardDescription>Manage existing customers and accounts</CardDescription>
+                <CardTitle>Active Clients</CardTitle>
+                <CardDescription>Manage clients with memberships and special status</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Customer Since</TableHead>
-                      <TableHead>Total Value</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">{customer.name}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3" />
-                              {customer.email}
-                            </div>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Phone className="h-3 w-3" />
-                              {customer.phone}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{customer.plan}</Badge>
-                        </TableCell>
-                        <TableCell>{customer.since}</TableCell>
-                        <TableCell className="font-medium">{customer.value}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(customer.status)}>
-                            {customer.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              View
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Edit
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16" />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Membership</TableHead>
+                        <TableHead>Customer Since</TableHead>
+                        <TableHead>Job Title</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clients.filter(client => client.membership?.is_active).map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{client.full_name}</div>
+                              <div className="text-xs text-muted-foreground">{client.client_code}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-sm">
+                                <Mail className="h-3 w-3" />
+                                {client.email || 'No email'}
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {client.phone}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {client.membership?.plan_name} ({client.membership?.discount_percentage}% off)
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(client.created_at)}</TableCell>
+                          <TableCell>{client.job_title}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(client.active)}>
+                              {client.active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm">
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -326,24 +363,22 @@ const CrmDashboard = () => {
                       <CardTitle className="text-lg">Lead Sources</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span>Website</span>
-                          <span className="font-medium">35%</span>
+                      {loading ? (
+                        <div className="space-y-3">
+                          {[...Array(4)].map((_, i) => (
+                            <Skeleton key={i} className="h-6" />
+                          ))}
                         </div>
-                        <div className="flex justify-between">
-                          <span>Referrals</span>
-                          <span className="font-medium">28%</span>
+                      ) : (
+                        <div className="space-y-3">
+                          {leadSources.slice(0, 4).map((source) => (
+                            <div key={source.source} className="flex justify-between">
+                              <span>{source.source}</span>
+                              <span className="font-medium">{source.percentage}%</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex justify-between">
-                          <span>LinkedIn</span>
-                          <span className="font-medium">22%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Cold Calls</span>
-                          <span className="font-medium">15%</span>
-                        </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                   
@@ -352,24 +387,34 @@ const CrmDashboard = () => {
                       <CardTitle className="text-lg">Monthly Performance</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span>New Leads</span>
-                          <span className="font-medium">+12%</span>
+                      {loading ? (
+                        <div className="space-y-3">
+                          {[...Array(4)].map((_, i) => (
+                            <Skeleton key={i} className="h-6" />
+                          ))}
                         </div>
-                        <div className="flex justify-between">
-                          <span>Conversions</span>
-                          <span className="font-medium">+8%</span>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span>Total Clients</span>
+                            <span className="font-medium">{getTotalClientsCount()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Active Clients</span>
+                            <span className="font-medium">{getActiveClientsCount()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>With Memberships</span>
+                            <span className="font-medium">{clientStats.withMembership}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Activation Rate</span>
+                            <span className="font-medium">
+                              {getTotalClientsCount() > 0 ? Math.round((getActiveClientsCount() / getTotalClientsCount()) * 100) : 0}%
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Revenue</span>
-                          <span className="font-medium">+22%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Customer Retention</span>
-                          <span className="font-medium">94%</span>
-                        </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
