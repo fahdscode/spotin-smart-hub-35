@@ -16,7 +16,7 @@ import CrmDashboard from "./pages/CrmDashboard";
 import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import ClientSignup from "./pages/ClientSignup";
 import PasswordReset from "./pages/PasswordReset";
-import TestClientInfo from "./pages/TestClientInfo";
+import SuperAdminSetup from "./pages/SuperAdminSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,7 +41,7 @@ const App = () => (
             <Route path="/community-manager" element={<CommunityManagerDashboard />} />
             <Route path="/client-signup" element={<ClientSignup />} />
             <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/test-client" element={<TestClientInfo />} />
+            <Route path="/super-admin-setup" element={<SuperAdminSetup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

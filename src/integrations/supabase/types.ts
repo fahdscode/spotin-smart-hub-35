@@ -1088,6 +1088,10 @@ export type Database = {
         Args: { p_checkout_by_user_id?: string; p_client_id: string }
         Returns: Json
       }
+      create_super_admin: {
+        Args: { p_email: string; p_full_name: string; p_password: string }
+        Returns: Json
+      }
       generate_barcode: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1128,6 +1132,10 @@ export type Database = {
         Args: { client_id: string }
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_event_analytics: {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: Json
@@ -1154,6 +1162,14 @@ export type Database = {
       }
       is_admin_user: {
         Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_staff: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       log_login_attempt: {

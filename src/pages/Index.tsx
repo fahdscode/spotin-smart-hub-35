@@ -95,14 +95,13 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="text-center mt-12 space-y-4">
-          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 max-w-2xl mx-auto border">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Test Accounts Available</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Use the test client account to try the system
+        <div className="text-center mt-12">
+          <div className="bg-muted/30 backdrop-blur-sm rounded-lg p-4 max-w-lg mx-auto border">
+            <p className="text-sm text-muted-foreground mb-3">
+              First-time setup? Create your admin account
             </p>
             <Button asChild variant="outline" size="sm">
-              <a href="/test-client">View Test Login Info</a>
+              <a href="/super-admin-setup">Super Admin Setup</a>
             </Button>
           </div>
         </div>
