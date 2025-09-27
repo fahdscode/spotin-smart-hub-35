@@ -56,6 +56,17 @@ const BaristaDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Function to play notification sound for new orders
+  const playOrderSound = () => {
+    try {
+      const audio = new Audio('/order-sound.wav');
+      audio.volume = 0.7;
+      audio.play().catch(e => console.log('Could not play sound:', e));
+    } catch (error) {
+      console.log('Sound not available:', error);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
     
@@ -69,13 +80,25 @@ const BaristaDashboard = () => {
           schema: 'public',
           table: 'session_line_items'
         },
-        () => {
+        (payload) => {
+          console.log('Real-time order update:', payload);
+          
+          // Refresh orders when any change occurs
           fetchOrders();
+          
+          // Play sound for new orders
+          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+            console.log('New order received, playing sound');
+            playOrderSound();
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, []);

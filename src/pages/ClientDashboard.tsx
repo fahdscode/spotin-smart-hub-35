@@ -426,10 +426,21 @@ export default function ClientDashboard() {
       return;
     }
 
+    if (!clientData?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "Client information not found. Please try logging in again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Placing order for client:', clientData.id, 'Items:', cart);
+      
       const orderPromises = cart.map(item =>
         supabase.from('session_line_items').insert({
-          user_id: clientData?.id,
+          user_id: clientData.id,
           item_name: item.name,
           quantity: item.quantity,
           price: item.price,
@@ -437,7 +448,16 @@ export default function ClientDashboard() {
         })
       );
 
-      await Promise.all(orderPromises);
+      const results = await Promise.all(orderPromises);
+      
+      // Check for any errors in the results
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        console.error('Order placement errors:', errors);
+        throw new Error(`Failed to place ${errors.length} order items`);
+      }
+      
+      console.log('Order placed successfully:', results);
       
       setCart([]);
       setCurrentView('home');
