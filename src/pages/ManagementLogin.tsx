@@ -64,29 +64,40 @@ const ManagementLogin = () => {
 
         toast.success("Welcome back!");
         
-        // Navigate based on role
-        switch (adminUser.role) {
-          case 'admin':
-            navigate('/ceo');
-            break;
-          case 'receptionist':
-            navigate('/receptionist');
-            break;
-          case 'barista':
-            navigate('/barista');
-            break;
-          case 'ceo':
-            navigate('/ceo');
-            break;
-          case 'operations_manager':
-            navigate('/operations');
-            break;
-          case 'community_manager':
-            navigate('/community-manager');
-            break;
-          default:
-            navigate('/receptionist');
-        }
+        console.log('🚀 About to navigate to dashboard for role:', adminUser.role);
+        
+        // Wait a moment for auth context to update, then navigate
+        setTimeout(() => {
+          switch (adminUser.role) {
+            case 'admin':
+              console.log('Navigating to CEO dashboard');
+              navigate('/ceo');
+              break;
+            case 'receptionist':
+              console.log('Navigating to receptionist dashboard');
+              navigate('/receptionist');
+              break;
+            case 'barista':
+              console.log('Navigating to barista dashboard');
+              navigate('/barista');
+              break;
+            case 'ceo':
+              console.log('Navigating to CEO dashboard');
+              navigate('/ceo');
+              break;
+            case 'operations_manager':
+              console.log('Navigating to operations dashboard');
+              navigate('/operations');
+              break;
+            case 'community_manager':
+              console.log('Navigating to community manager dashboard');
+              navigate('/community-manager');
+              break;
+            default:
+              console.log('Navigating to default receptionist dashboard');
+              navigate('/receptionist');
+          }
+        }, 500); // Give auth context time to update
       }
     } catch (error: any) {
       console.error('Login error:', error);

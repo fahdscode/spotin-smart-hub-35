@@ -65,15 +65,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         // Defer role fetching to prevent deadlock
         if (session?.user) {
+          console.log('👤 User found, fetching role...');
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
         } else {
+          console.log('❌ No user, clearing role');
           setUserRole(null);
           setIsLoading(false);
         }
@@ -83,15 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     const getSession = async () => {
       try {
+        console.log('🔍 Checking for existing session...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('📄 Existing session found:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('👤 Existing user found, fetching role...');
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
         } else {
+          console.log('❌ No existing session');
           setIsLoading(false);
         }
       } catch (error) {
