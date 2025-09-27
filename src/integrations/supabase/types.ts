@@ -142,7 +142,7 @@ export type Database = {
       check_in_logs: {
         Row: {
           action: string
-          client_id: string
+          client_id: string | null
           id: string
           notes: string | null
           scanned_barcode: string
@@ -151,7 +151,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          client_id: string
+          client_id?: string | null
           id?: string
           notes?: string | null
           scanned_barcode: string
@@ -160,7 +160,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          client_id?: string
+          client_id?: string | null
           id?: string
           notes?: string | null
           scanned_barcode?: string
