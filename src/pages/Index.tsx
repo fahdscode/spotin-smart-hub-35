@@ -14,16 +14,17 @@ const Index = () => {
   useEffect(() => {
     const checkAdminExists = async () => {
       try {
-        const { data: existingAdmin } = await supabase
-          .from('profiles')
-          .select('id')
-          .in('role', ['admin', 'ceo'])
-          .limit(1);
+        const { data, error } = await supabase.rpc('check_admin_exists');
 
-        setShowAdminSetup(!existingAdmin || existingAdmin.length === 0);
+        if (error) {
+          console.error('Error checking for admin:', error);
+          setShowAdminSetup(true);
+        } else {
+          setShowAdminSetup(!data);
+        }
       } catch (error) {
         console.error('Error checking admin:', error);
-        setShowAdminSetup(true); // Show setup if there's an error
+        setShowAdminSetup(true);
       } finally {
         setCheckingAdmin(false);
       }

@@ -1080,6 +1080,10 @@ export type Database = {
         }
         Returns: Json
       }
+      check_admin_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: { p_ip_address?: unknown; p_phone: string }
         Returns: boolean
