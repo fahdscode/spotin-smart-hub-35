@@ -332,6 +332,7 @@ export type Database = {
           ingredients: string[] | null
           is_available: boolean
           name: string
+          prep_time_minutes: number | null
           price: number
           updated_at: string
         }
@@ -344,6 +345,7 @@ export type Database = {
           ingredients?: string[] | null
           is_available?: boolean
           name: string
+          prep_time_minutes?: number | null
           price: number
           updated_at?: string
         }
@@ -356,6 +358,7 @@ export type Database = {
           ingredients?: string[] | null
           is_available?: boolean
           name?: string
+          prep_time_minutes?: number | null
           price?: number
           updated_at?: string
         }
