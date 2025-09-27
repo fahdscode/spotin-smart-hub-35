@@ -14,19 +14,9 @@ import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Hear
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface ClientData {
-  id: string;
-  clientCode: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  phone: string;
-  email: string;
-  barcode: string;
-  jobTitle: string;
-  howDidYouFindUs: string;
-}
+// Remove this interface as we'll use the one from AuthContext
 
 interface CartItem {
   id: string;
@@ -58,10 +48,10 @@ interface LastOrder {
 export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { clientData, isAuthenticated, userRole } = useAuth();
   
   // Core state
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [clientData, setClientData] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
   
@@ -87,30 +77,17 @@ export default function ClientDashboard() {
   const [showSatisfactionPopup, setShowSatisfactionPopup] = useState<boolean>(false);
 
   useEffect(() => {
-    const storedClientData = localStorage.getItem('clientData');
-    
-    if (storedClientData) {
-      try {
-        const parsedData = JSON.parse(storedClientData);
-        
-        if (!parsedData.id || !parsedData.fullName) {
-          throw new Error('Invalid client data');
-        }
-        
-        setClientData(parsedData);
-        fetchAllData(parsedData.id);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error parsing client data:', error);
-        localStorage.removeItem('clientData');
-        setLoading(false);
-        navigate('/client-login');
-      }
-    } else {
+    if (!isAuthenticated || userRole !== 'client') {
       setLoading(false);
       navigate('/client-login');
+      return;
     }
-  }, [navigate]);
+    
+    if (clientData?.id) {
+      fetchAllData(clientData.id);
+      setLoading(false);
+    }
+  }, [isAuthenticated, userRole, clientData, navigate]);
 
   const fetchAllData = async (clientId: string) => {
     try {
@@ -427,8 +404,7 @@ export default function ClientDashboard() {
   );
 
   const handleLogout = () => {
-    localStorage.removeItem('clientData');
-    setClientData(null);
+    // Logout is handled by the LogoutButton component
     navigate('/client-login');
   };
 
@@ -543,11 +519,11 @@ export default function ClientDashboard() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarFallback className="text-lg">
-                      {clientData?.firstName?.[0]}{clientData?.lastName?.[0]}
+                      {clientData?.full_name?.[0]}{clientData?.full_name?.split(' ')[1]?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h1 className="text-2xl font-bold">Welcome back, {clientData?.firstName}!</h1>
+                    <h1 className="text-2xl font-bold">Welcome back, {clientData?.full_name?.split(' ')[0]}!</h1>
                     <p className="text-muted-foreground">Ready to order your favorites?</p>
                     <Badge variant="secondary" className="mt-2">
                       {membershipStatus}
@@ -777,12 +753,12 @@ export default function ClientDashboard() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarFallback className="text-lg">
-                      {clientData?.firstName?.[0]}{clientData?.lastName?.[0]}
+                      {clientData?.full_name?.[0]}{clientData?.full_name?.split(' ')[1]?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold">{clientData?.fullName}</h3>
-                    <p className="text-muted-foreground">{clientData?.jobTitle}</p>
+                    <h3 className="text-xl font-semibold">{clientData?.full_name}</h3>
+                    <p className="text-muted-foreground">Client</p>
                     <p className="text-sm text-muted-foreground">{clientData?.email}</p>
                     {isCheckedIn && checkInTime && (
                       <Badge variant="default" className="mt-2">
@@ -814,10 +790,10 @@ export default function ClientDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <BarcodeCard 
-                  barcode={clientData?.barcode || ''} 
-                  userName={clientData?.fullName || ''}
+                  barcode={clientData?.client_code || ''} 
+                  userName={clientData?.full_name || ''}
                   userEmail={clientData?.email || ''}
-                  clientCode={clientData?.clientCode || ''}
+                  clientCode={clientData?.client_code || ''}
                   compact={true}
                 />
                 {isCheckedIn && (
