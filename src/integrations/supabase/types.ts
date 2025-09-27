@@ -1191,6 +1191,10 @@ export type Database = {
         Args: { search_term: string }
         Returns: Json
       }
+      setup_super_admin_profile: {
+        Args: { p_email: string; p_full_name: string; p_user_id: string }
+        Returns: Json
+      }
       test_client_registration: {
         Args:
           | {
