@@ -86,6 +86,44 @@ export default function ClientDashboard() {
     if (clientData?.id) {
       fetchAllData(clientData.id);
       setLoading(false);
+
+      // Set up real-time subscription for client status updates
+      const channel = supabase
+        .channel('client-status-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'clients',
+            filter: `id=eq.${clientData.id}`
+          },
+          (payload) => {
+            console.log('🔄 Real-time client status update:', payload);
+            // Refresh check-in status when client record is updated
+            fetchCheckInStatus(clientData.id);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'check_ins',
+            filter: `client_id=eq.${clientData.id}`
+          },
+          (payload) => {
+            console.log('🔄 Real-time check-in update:', payload);
+            // Refresh check-in status when check-ins are updated
+            fetchCheckInStatus(clientData.id);
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated, userRole, clientData, navigate]);
 
@@ -165,21 +203,41 @@ export default function ClientDashboard() {
 
   const fetchCheckInStatus = async (clientId: string) => {
     try {
-      const { data } = await supabase
-        .from('check_ins')
-        .select('checked_in_at, status')
-        .eq('client_id', clientId)
-        .eq('status', 'checked_in')
-        .is('checked_out_at', null)
-        .order('checked_in_at', { ascending: false })
-        .maybeSingle();
-      
-      if (data) {
+      // First check the client's active status (most reliable)
+      const { data: clientStatus, error: clientError } = await supabase
+        .from('clients')
+        .select('active, updated_at')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError) {
+        console.error('Error fetching client status:', clientError);
+        setIsCheckedIn(false);
+        setCheckInTime(null);
+        return;
+      }
+
+      console.log('📊 Client status from database:', clientStatus);
+
+      if (clientStatus?.active) {
         setIsCheckedIn(true);
-        setCheckInTime(new Date(data.checked_in_at).toLocaleTimeString());
+        // Get the latest check-in time
+        const { data: checkInData } = await supabase
+          .from('check_ins')
+          .select('checked_in_at')
+          .eq('client_id', clientId)
+          .eq('status', 'checked_in')
+          .is('checked_out_at', null)
+          .order('checked_in_at', { ascending: false })
+          .limit(1);
+        
+        const checkInTime = checkInData?.[0]?.checked_in_at || clientStatus.updated_at;
+        setCheckInTime(new Date(checkInTime).toLocaleTimeString());
+        console.log('✅ Client is checked in, time:', checkInTime);
       } else {
         setIsCheckedIn(false);
         setCheckInTime(null);
+        console.log('❌ Client is checked out');
       }
     } catch (error) {
       console.error('Error fetching check-in status:', error);

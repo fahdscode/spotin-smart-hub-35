@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Users } from 'lucide-react';
+import { CheckCircle, XCircle, Users, Zap } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const CheckInTestHelper = () => {
+  const [processingBarcode, setProcessingBarcode] = useState<string | null>(null);
+  const { toast } = useToast();
   const testBarcodes = [
     { barcode: 'JK48F2', name: 'Norhan khalifa', status: 'checked_out' },
     { barcode: 'JANFPR', name: 'Bakr TresG', status: 'checked_out' },
@@ -17,6 +21,57 @@ const CheckInTestHelper = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to Clipboard",
+      description: `Barcode "${text}" copied to clipboard.`,
+    });
+  };
+
+  const handleQuickCheckIn = async (barcode: string) => {
+    setProcessingBarcode(barcode);
+    
+    try {
+      console.log('🚀 Quick check-in for barcode:', barcode);
+      
+      const { data, error } = await supabase.rpc('toggle_client_checkin_status', {
+        p_barcode: barcode,
+        p_scanned_by_user_id: null // Test without user ID
+      });
+
+      console.log('📡 Quick check-in response:', { data, error });
+
+      if (error) {
+        console.error('❌ RPC Error:', error);
+        throw error;
+      }
+
+      const result = data as any;
+      if (result?.success) {
+        const action = result.action.replace('_', ' ');
+        console.log('✅ Quick check-in successful:', result);
+        
+        toast({
+          title: `Quick ${action} Successful!`,
+          description: `${result.client.full_name} has been ${action}.`,
+        });
+      } else {
+        console.log('❌ Quick check-in failed:', result);
+        toast({
+          title: "Check-in Failed",
+          description: result?.error || "Unknown error occurred.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Quick check-in system error:', error);
+      toast({
+        title: "System Error",
+        description: `Failed to process quick check-in: ${error.message || 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingBarcode(null);
+    }
   };
 
   return (
@@ -61,6 +116,16 @@ const CheckInTestHelper = () => {
                 >
                   Copy
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleQuickCheckIn(client.barcode)}
+                  disabled={processingBarcode === client.barcode}
+                  className="flex items-center gap-1"
+                >
+                  <Zap className="h-3 w-3" />
+                  {processingBarcode === client.barcode ? 'Processing...' : 'Quick Check'}
+                </Button>
               </div>
             </div>
           ))}
@@ -68,10 +133,10 @@ const CheckInTestHelper = () => {
         <div className="mt-4 p-3 bg-muted rounded-lg">
           <p className="text-sm text-muted-foreground">
             <strong>Test Instructions:</strong>
-            <br />1. Click "Copy" on any barcode above
-            <br />2. Open the Check-In Scanner
-            <br />3. Paste the barcode and press Enter
-            <br />4. The system should toggle the client's check-in status
+            <br />• <strong>Quick Check:</strong> Click the "Quick Check" button to instantly toggle check-in status
+            <br />• <strong>Manual Test:</strong> Click "Copy" → Open the Check-In Scanner → Paste barcode → Press Enter
+            <br />• <strong>Real-time Updates:</strong> Check the Client Dashboard to see status changes reflected immediately
+            <br />• Both methods should work and update the client's status in real-time
           </p>
         </div>
       </CardContent>
