@@ -34,12 +34,12 @@ export const useClientsData = () => {
     try {
       setLoading(true);
       
-      // Fetch clients with their memberships
+      // Fetch clients with their memberships (using LEFT JOIN to include all clients)
       const { data, error } = await supabase
         .from('clients')
         .select(`
           *,
-          client_memberships!inner(
+          client_memberships(
             plan_name,
             discount_percentage,
             is_active
