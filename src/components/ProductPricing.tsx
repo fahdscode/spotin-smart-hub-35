@@ -24,6 +24,7 @@ interface Product {
   ingredients?: string[];
   image_url?: string;
   prep_time?: string;
+  prep_time_minutes?: number;
 }
 
 interface StockItem {

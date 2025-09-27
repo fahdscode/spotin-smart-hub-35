@@ -37,10 +37,15 @@ interface ClientProductEditorProps {
 }
 
 const categories = [
-  { value: "beverage", label: "Beverages", icon: "☕" },
+  { value: "all", label: "All Items", icon: "📦" },
+  { value: "coffee", label: "Coffee", icon: "☕" },
+  { value: "tea", label: "Tea", icon: "🍵" },
+  { value: "juice", label: "Fresh Juices", icon: "🧃" },
+  { value: "smoothie", label: "Smoothies", icon: "🥤" },
   { value: "food", label: "Food", icon: "🍽️" },
+  { value: "pastry", label: "Pastries", icon: "🥐" },
   { value: "snack", label: "Snacks", icon: "🥨" },
-  { value: "dessert", label: "Desserts", icon: "🧁" }
+  { value: "add_on", label: "Add-ons", icon: "➕" }
 ];
 
 const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductEditorProps) => {

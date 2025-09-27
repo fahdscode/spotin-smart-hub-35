@@ -10,6 +10,7 @@ interface Product {
   description?: string;
   is_available: boolean;
   image_url?: string;
+  prep_time_minutes?: number;
 }
 
 interface StockItem {
