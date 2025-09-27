@@ -1,32 +1,193 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Ticket, Settings, DollarSign } from "lucide-react";
+import { Ticket, Settings, DollarSign, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data for day use tickets - replace with actual Supabase integration later
-const mockTicketSettings = {
-  name: "Day Use Pass",
-  price: 25.00,
-  description: "Full day access to workspace, WiFi, and common areas",
-  is_active: true
-};
+interface TicketSettings {
+  id?: string;
+  name: string;
+  price: number;
+  description: string;
+  is_active: boolean;
+}
 
 const DayUseTicketControls = () => {
-  const [settings, setSettings] = useState(mockTicketSettings);
+  const [settings, setSettings] = useState<TicketSettings>({
+    name: "Day Use Pass",
+    price: 25.00,
+    description: "Full day access to workspace, WiFi, and common areas",
+    is_active: true
+  });
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasSettings, setHasSettings] = useState(false);
+  const { toast } = useToast();
 
-  const handleSave = () => {
-    // TODO: Implement save to Supabase when table is created
-    setIsEditing(false);
+  useEffect(() => {
+    fetchTicketSettings();
+  }, []);
+
+  const fetchTicketSettings = async () => {
+    try {
+      setLoading(true);
+      // Check for day use ticket in drinks table
+      const { data, error } = await supabase
+        .from('drinks')
+        .select('*')
+        .eq('category', 'day_use_ticket')
+        .maybeSingle();
+
+      if (data) {
+        setSettings({
+          id: data.id,
+          name: data.name,
+          price: data.price,
+          description: data.description || "Full day access to workspace, WiFi, and common areas",
+          is_active: data.is_available
+        });
+        setHasSettings(true);
+      } else {
+        setHasSettings(false);
+      }
+    } catch (error) {
+      console.error('Error fetching ticket settings:', error);
+      setHasSettings(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (hasSettings && settings.id) {
+        // Update existing ticket
+        const { error } = await supabase
+          .from('drinks')
+          .update({
+            name: settings.name,
+            price: settings.price,
+            description: settings.description,
+            is_available: settings.is_active
+          })
+          .eq('id', settings.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Settings Updated",
+          description: "Day use ticket settings have been updated successfully.",
+        });
+      } else {
+        // Create new ticket entry in drinks table
+        const { data, error } = await supabase
+          .from('drinks')
+          .insert({
+            name: settings.name,
+            price: settings.price,
+            description: settings.description,
+            category: 'day_use_ticket',
+            is_available: settings.is_active
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setSettings(prev => ({ ...prev, id: data.id }));
+        setHasSettings(true);
+
+        toast({
+          title: "Day Use Ticket Created",
+          description: "Day use ticket has been set up successfully.",
+        });
+      }
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving ticket settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save ticket settings. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
-    setSettings(mockTicketSettings);
+    fetchTicketSettings();
     setIsEditing(false);
   };
+
+  const handleActiveToggle = async (checked: boolean) => {
+    if (!hasSettings || !settings.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('drinks')
+        .update({ is_available: checked })
+        .eq('id', settings.id);
+
+      if (error) throw error;
+
+      setSettings(prev => ({ ...prev, is_active: checked }));
+
+      toast({
+        title: checked ? "Ticket Sales Activated" : "Ticket Sales Deactivated",
+        description: `Day use ticket sales have been ${checked ? 'enabled' : 'disabled'}.`,
+      });
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update ticket status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasSettings && !isEditing) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Ticket className="h-5 w-5 text-primary" />
+            <CardTitle>Day Use Tickets</CardTitle>
+          </div>
+          <CardDescription>
+            Set up day use ticket pricing and availability for walk-in customers
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Day Use Ticket Configured</h3>
+            <p className="text-muted-foreground mb-4">
+              Create a day use ticket option for walk-in customers to access your workspace.
+            </p>
+            <Button onClick={() => setIsEditing(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Set Up Day Use Ticket
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -65,7 +226,8 @@ const DayUseTicketControls = () => {
               <span className="text-sm font-medium">Ticket Sales Active</span>
               <Switch 
                 checked={settings.is_active} 
-                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, is_active: checked }))}
+                onCheckedChange={handleActiveToggle}
+                disabled={!hasSettings}
               />
             </div>
 
@@ -94,6 +256,7 @@ const DayUseTicketControls = () => {
               <Input
                 type="number"
                 step="0.01"
+                min="0"
                 value={settings.price}
                 onChange={(e) => setSettings(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                 placeholder="Enter price"
@@ -119,7 +282,7 @@ const DayUseTicketControls = () => {
 
             <div className="flex gap-2">
               <Button onClick={handleSave} className="flex-1">
-                Save Changes
+                {hasSettings ? 'Save Changes' : 'Create Ticket'}
               </Button>
               <Button onClick={handleCancel} variant="outline" className="flex-1">
                 Cancel

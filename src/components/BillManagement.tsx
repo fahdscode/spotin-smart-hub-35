@@ -67,56 +67,6 @@ const BillManagement = () => {
   const [lineItems, setLineItems] = useState<Omit<BillLineItem, 'id' | 'bill_id'>[]>([]);
   const { toast } = useToast();
 
-  // Mock data
-  const mockVendors: Vendor[] = [
-    { id: '1', name: 'Fresh Coffee Supplies', is_active: true },
-    { id: '2', name: 'Office Equipment Plus', is_active: true },
-    { id: '3', name: 'Green Energy Solutions', is_active: false }
-  ];
-
-  const mockStock: Stock[] = [
-    { id: '1', name: 'Coffee Beans - Arabica', unit: 'kg', cost_per_unit: 15.50 },
-    { id: '2', name: 'Milk - Whole', unit: 'liter', cost_per_unit: 2.30 },
-    { id: '3', name: 'Sugar - White', unit: 'kg', cost_per_unit: 1.20 },
-    { id: '4', name: 'Paper Cups - 12oz', unit: 'piece', cost_per_unit: 0.15 },
-    { id: '5', name: 'Cleaning Supplies', unit: 'bottle', cost_per_unit: 8.50 }
-  ];
-
-  const mockBills: Bill[] = [
-    {
-      id: '1',
-      vendor_id: '1',
-      vendor_name: 'Fresh Coffee Supplies',
-      bill_number: 'INV-2024-001',
-      amount: 245.50,
-      due_date: '2024-10-15',
-      status: 'pending',
-      notes: 'Monthly coffee supply order',
-      created_at: '2024-09-20T10:00:00Z'
-    },
-    {
-      id: '2',
-      vendor_id: '2',
-      vendor_name: 'Office Equipment Plus',
-      bill_number: 'INV-2024-002',
-      amount: 89.99,
-      due_date: '2024-10-10',
-      status: 'paid',
-      notes: 'Office supplies and equipment',
-      created_at: '2024-09-18T14:30:00Z'
-    },
-    {
-      id: '3',
-      vendor_id: '1',
-      vendor_name: 'Fresh Coffee Supplies',
-      bill_number: 'INV-2024-003',
-      amount: 156.75,
-      due_date: '2024-09-25',
-      status: 'overdue',
-      notes: 'Emergency coffee beans order',
-      created_at: '2024-09-15T09:15:00Z'
-    }
-  ];
 
   useEffect(() => {
     fetchData();
@@ -145,26 +95,23 @@ const BillManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Use real data if available, otherwise use mock data
-      setVendors(vendorsData && vendorsData.length > 0 ? vendorsData : mockVendors);
-      setStockItems(stockData && stockData.length > 0 ? stockData : mockStock);
-      setBills(billsData && billsData.length > 0 ? 
-        billsData.map(bill => ({
-          ...bill,
-          vendor_name: bill.vendors?.name
-        })) : mockBills
-      );
+      if (vendorsError) throw vendorsError;
+      if (stockError) throw stockError;
+      if (billsError) throw billsError;
+
+      setVendors(vendorsData || []);
+      setStockItems(stockData || []);
+      setBills(billsData ? billsData.map(bill => ({
+        ...bill,
+        vendor_name: bill.vendors?.name
+      })) : []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Use mock data on error
-      setVendors(mockVendors);
-      setStockItems(mockStock);
-      setBills(mockBills);
       toast({
-        title: "Loading Mock Data",
-        description: "Using sample bill data for demonstration.",
-        variant: "default",
+        title: "Error Loading Data",
+        description: "Failed to load bill management data. Please try refreshing the page.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -211,10 +158,13 @@ const BillManagement = () => {
     e.preventDefault();
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const billData = {
         ...billForm,
         amount: getTotalAmount(),
-        created_by: 'current_user_id' // In real app, this would be auth.uid()
+        created_by: user.id
       };
 
       let billId: string;

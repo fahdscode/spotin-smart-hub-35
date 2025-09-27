@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Client {
   id: string;
@@ -21,61 +22,16 @@ interface ClientSelectorProps {
   selectedClientId?: string;
 }
 
-// Mock data for active clients
-const mockActiveClients: Client[] = [
-  {
-    id: "1",
-    client_code: "C-2024-000001",
-    full_name: "Ahmed Hassan",
-    phone: "+20123456789",
-    email: "ahmed.hassan@email.com",
-    active: true,
-    barcode: "AH2024"
-  },
-  {
-    id: "2", 
-    client_code: "C-2024-000002",
-    full_name: "Fatima Ali",
-    phone: "+20987654321",
-    email: "fatima.ali@email.com", 
-    active: true,
-    barcode: "FA2024"
-  },
-  {
-    id: "3",
-    client_code: "C-2024-000003", 
-    full_name: "Mohamed Salem",
-    phone: "+20555123456",
-    email: "mohamed.salem@email.com",
-    active: true,
-    barcode: "MS2024"
-  },
-  {
-    id: "4",
-    client_code: "C-2024-000004",
-    full_name: "Nour Ibrahim", 
-    phone: "+20444567890",
-    email: "nour.ibrahim@email.com",
-    active: true,
-    barcode: "NI2024"
-  },
-  {
-    id: "5",
-    client_code: "C-2024-000005",
-    full_name: "Omar Khaled",
-    phone: "+20333789123", 
-    email: "omar.khaled@email.com",
-    active: true,
-    barcode: "OK2024"
-  }
-];
-
 const ClientSelector = ({ onClientSelect, selectedClientId }: ClientSelectorProps) => {
-  const [activeClients, setActiveClients] = useState<Client[]>(mockActiveClients);
-  const [filteredClients, setFilteredClients] = useState<Client[]>(mockActiveClients);
+  const [activeClients, setActiveClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchActiveClients();
+  }, []);
 
   useEffect(() => {
     // Filter clients based on search term
@@ -87,6 +43,31 @@ const ClientSelector = ({ onClientSelect, selectedClientId }: ClientSelectorProp
     );
     setFilteredClients(filtered);
   }, [searchTerm, activeClients]);
+
+  const fetchActiveClients = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, client_code, full_name, phone, email, active, barcode')
+        .eq('is_active', true)
+        .eq('active', true)
+        .order('full_name');
+
+      if (error) throw error;
+
+      setActiveClients(data || []);
+    } catch (error) {
+      console.error('Error fetching active clients:', error);
+      toast({
+        title: "Error Loading Clients",
+        description: "Failed to load active clients. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClientChange = (clientId: string) => {
     if (clientId === "none") {
