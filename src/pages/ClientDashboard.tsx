@@ -438,7 +438,28 @@ export default function ClientDashboard() {
     try {
       console.log('Placing order for client:', clientData.id, 'Items:', cart);
       
-      const orderPromises = cart.map(item =>
+      // Validate cart items before placing order
+      const validatedItems = cart.filter(item => {
+        if (!item.name || item.quantity <= 0 || item.price <= 0) {
+          console.warn('Invalid cart item:', item);
+          return false;
+        }
+        return true;
+      });
+
+      if (validatedItems.length === 0) {
+        throw new Error('No valid items in cart');
+      }
+
+      if (validatedItems.length !== cart.length) {
+        toast({
+          title: "Cart Validation",
+          description: `${cart.length - validatedItems.length} invalid items removed from cart.`,
+          variant: "destructive"
+        });
+      }
+      
+      const orderPromises = validatedItems.map(item =>
         supabase.from('session_line_items').insert({
           user_id: clientData.id,
           item_name: item.name,
@@ -454,7 +475,7 @@ export default function ClientDashboard() {
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Order placement errors:', errors);
-        throw new Error(`Failed to place ${errors.length} order items`);
+        throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
       }
       
       console.log('Order placed successfully:', results);
@@ -464,13 +485,17 @@ export default function ClientDashboard() {
       
       toast({
         title: "Order Placed!",
-        description: "Your order has been sent to the barista. You'll be notified when it's ready.",
+        description: `Your order with ${validatedItems.length} item${validatedItems.length > 1 ? 's' : ''} has been sent to the barista.`,
       });
+
+      // Show satisfaction popup after successful order
+      setShowSatisfactionPopup(true);
+      
     } catch (error) {
       console.error('Error placing order:', error);
       toast({
         title: "Order Failed",
-        description: "Failed to place order. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to place order. Please try again.",
         variant: "destructive"
       });
     }

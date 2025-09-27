@@ -23,6 +23,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import OrderingCycleStatus from "@/components/OrderingCycleStatus";
 
 interface Client {
   id: string;
