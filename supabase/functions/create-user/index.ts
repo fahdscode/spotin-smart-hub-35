@@ -113,24 +113,23 @@ serve(async (req) => {
       );
     }
 
-    // Create profile record
+    // Update the auto-created profile with additional fields
+    // The profile is automatically created by the on_auth_user_created trigger
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        user_id: newUser.user.id,
-        email: email,
-        full_name: fullName,
+      .update({
         role: role,
         phone: phone,
         is_admin: ['admin', 'ceo'].includes(role)
-      });
+      })
+      .eq('user_id', newUser.user.id);
 
     if (profileError) {
-      console.error('Error creating profile:', profileError);
-      // Try to delete the user if profile creation fails
+      console.error('Error updating profile:', profileError);
+      // Try to delete the user if profile update fails
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
       return new Response(
-        JSON.stringify({ error: 'Failed to create user profile' }),
+        JSON.stringify({ error: 'Failed to update user profile' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
