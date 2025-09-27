@@ -7,7 +7,7 @@ export interface OrderItem {
   item_name: string;
   quantity: number;
   price: number;
-  status: 'pending' | 'preparing' | 'completed' | 'served';
+  status: 'pending' | 'preparing' | 'completed' | 'served' | 'cancelled';
 }
 
 export const useOrderProcessing = () => {

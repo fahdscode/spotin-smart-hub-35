@@ -40,7 +40,7 @@ interface Order {
   user_id: string;
   quantity: number;
   price: number;
-  status: "pending" | "preparing" | "ready" | "completed" | "served";
+  status: "pending" | "preparing" | "ready" | "completed" | "served" | "cancelled";
   created_at: string;
   customerName?: string;
   location?: string;
@@ -105,11 +105,13 @@ const BaristaDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      // First get orders
+      setLoading(true);
+      // First get orders - exclude cancelled orders from active view
       const { data: ordersData, error } = await supabase
         .from('session_line_items')
         .select('*')
-        .in('status', ['pending', 'preparing', 'ready'])
+        .not('status', 'eq', 'cancelled')
+        .in('status', ['pending', 'preparing', 'ready', 'completed'])
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -240,9 +242,10 @@ const BaristaDashboard = () => {
 
   const cancelOrder = async (orderId: string) => {
     try {
+      // Instead of deleting, update status to cancelled to maintain order history
       const { error } = await supabase
         .from('session_line_items')
-        .delete()
+        .update({ status: 'cancelled' })
         .eq('id', orderId);
 
       if (error) throw error;
@@ -289,6 +292,8 @@ const BaristaDashboard = () => {
       case "preparing": return "bg-blue-100 text-blue-800 border-blue-200";
       case "ready": return "bg-green-100 text-green-800 border-green-200";
       case "completed": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "served": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "cancelled": return "bg-red-100 text-red-800 border-red-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
