@@ -33,7 +33,11 @@ interface ToggleResult {
   };
 }
 
-export default function BarcodeScanner() {
+interface BarcodeScannerProps {
+  scannedByUserId?: string;
+}
+
+export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps) {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
@@ -51,9 +55,10 @@ export default function BarcodeScanner() {
   const handleBarcodeInput = (value: string) => {
     setBarcodeInput(value);
     
-    // Auto-process when barcode is complete (BC- format or C- format for compatibility)
-    if (value.length >= 10 && (value.startsWith('BC-') || value.startsWith('C-'))) {
-      handleScanResult(value);
+    // Auto-process when Enter is pressed or when a reasonable barcode length is reached
+    // Removed format restrictions to support all barcode formats like "JK48F2", "JANFPR", etc.
+    if (value.length >= 5 && (value.includes('\n') || value.includes('\r'))) {
+      handleScanResult(value.trim());
     }
   };
 
@@ -72,10 +77,10 @@ export default function BarcodeScanner() {
     // Processing barcode scan
 
     try {
-      // Use the new toggle function that handles trimming and concurrency
+      // Use the toggle function with proper user tracking
       const { data: result, error } = await supabase.rpc('toggle_client_checkin_status', {
         p_barcode: barcode,
-        p_scanned_by_user_id: null // Could be current user ID if we track receptionist
+        p_scanned_by_user_id: scannedByUserId || null
       });
 
       if (error) {
@@ -163,7 +168,7 @@ export default function BarcodeScanner() {
             Barcode Scanner
           </CardTitle>
           <CardDescription>
-            Scan client barcodes for check-in and check-out. Focus on the input field and scan or type the barcode.
+            Scan client barcodes for check-in and check-out. Supports all barcode formats. Focus on the input field and scan or type the barcode.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

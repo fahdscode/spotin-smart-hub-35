@@ -11,6 +11,7 @@ import Receipt from "@/components/Receipt";
 import EditableReceipt from "@/components/EditableReceipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
+import CheckInTestHelper from "@/components/CheckInTestHelper";
 import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
@@ -27,6 +28,7 @@ const ReceptionistDashboard = () => {
   
   // State declarations
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeSessions, setActiveSessions] = useState<any[]>([
     {
       id: "session_1",
@@ -119,6 +121,15 @@ const ReceptionistDashboard = () => {
 
   useEffect(() => {
     // Dashboard initialized with sample data
+    
+    // Get current user ID for tracking check-ins/outs
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
   }, []);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {
@@ -228,7 +239,10 @@ const ReceptionistDashboard = () => {
                         <DialogHeader>
                           <DialogTitle>Check-In Scanner</DialogTitle>
                         </DialogHeader>
-                        <BarcodeScanner />
+                        <div className="space-y-6">
+                          <CheckInTestHelper />
+                          <BarcodeScanner scannedByUserId={currentUserId || undefined} />
+                        </div>
                       </DialogContent>
                     )}
                     {action.action === "checkout" && (
@@ -236,7 +250,7 @@ const ReceptionistDashboard = () => {
                         <DialogHeader>
                           <DialogTitle>Check-Out Scanner</DialogTitle>
                         </DialogHeader>
-                        <BarcodeScanner />
+                        <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                       </DialogContent>
                     )}
                     {action.action === "booking" && (
@@ -314,7 +328,7 @@ const ReceptionistDashboard = () => {
                     <DialogHeader>
                       <DialogTitle>QR Code Scanner</DialogTitle>
                     </DialogHeader>
-                    <BarcodeScanner />
+                    <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                   </DialogContent>
                 </Dialog>
               </CardContent>
