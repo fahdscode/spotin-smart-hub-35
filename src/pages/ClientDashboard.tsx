@@ -48,7 +48,7 @@ interface LastOrder {
 export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { clientData, isAuthenticated, userRole } = useAuth();
+  const { clientData, isAuthenticated, userRole, clearClientAuth } = useAuth();
   
   // Core state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -499,9 +499,24 @@ export default function ClientDashboard() {
       
     } catch (error) {
       console.error('Error placing order:', error);
+      
+      // Enhanced error handling for specific cases
+      let errorMessage = "Failed to place order. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Authentication error')) {
+          errorMessage = "Your session has expired. Please log in again.";
+        } else if (error.message.includes('row-level security')) {
+          errorMessage = "Authentication error. Please log in again.";
+          clearClientAuth();
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Order Failed",
-        description: error instanceof Error ? error.message : "Failed to place order. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
