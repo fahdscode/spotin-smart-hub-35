@@ -97,18 +97,13 @@ const Index = () => {
 
         <div className="text-center mt-12 space-y-4">
           <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 max-w-2xl mx-auto border">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Demo Accounts Available</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Test Accounts Available</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Try the system with pre-configured demo accounts for all roles
+              Use the test client account to try the system
             </p>
-            <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-              <div>
-                <strong>Client Demo:</strong> clientdemo / 1234
-              </div>
-              <div>
-                <strong>Staff Demo:</strong> Various roles available
-              </div>
-            </div>
+            <Button asChild variant="outline" size="sm">
+              <a href="/test-client">View Test Login Info</a>
+            </Button>
           </div>
         </div>
       </div>

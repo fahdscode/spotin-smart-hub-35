@@ -15,6 +15,8 @@ import BaristaDashboard from "./pages/BaristaDashboard";
 import CrmDashboard from "./pages/CrmDashboard";
 import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import ClientSignup from "./pages/ClientSignup";
+import PasswordReset from "./pages/PasswordReset";
+import TestClientInfo from "./pages/TestClientInfo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/crm" element={<CrmDashboard />} />
             <Route path="/community-manager" element={<CommunityManagerDashboard />} />
             <Route path="/client-signup" element={<ClientSignup />} />
+            <Route path="/password-reset" element={<PasswordReset />} />
+            <Route path="/test-client" element={<TestClientInfo />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

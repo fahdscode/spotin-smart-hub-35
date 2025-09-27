@@ -272,6 +272,7 @@ export type Database = {
           client_code: string
           created_at: string
           email: string | null
+          email_verified: boolean | null
           first_name: string
           full_name: string
           how_did_you_find_us: string
@@ -289,6 +290,7 @@ export type Database = {
           client_code: string
           created_at?: string
           email?: string | null
+          email_verified?: boolean | null
           first_name: string
           full_name: string
           how_did_you_find_us: string
@@ -306,6 +308,7 @@ export type Database = {
           client_code?: string
           created_at?: string
           email?: string | null
+          email_verified?: boolean | null
           first_name?: string
           full_name?: string
           how_did_you_find_us?: string
@@ -502,6 +505,33 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          attempted_at: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          phone: string
+          success: boolean | null
+        }
+        Insert: {
+          attempted_at?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          phone: string
+          success?: boolean | null
+        }
+        Update: {
+          attempted_at?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          phone?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       membership_plans: {
         Row: {
           created_at: string
@@ -573,6 +603,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      password_reset_tokens: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          token: string
+          used: boolean | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          token: string
+          used?: boolean | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          token?: string
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_ingredients: {
         Row: {
@@ -1007,6 +1072,18 @@ export type Database = {
         Args: { client_password: string; client_phone: string }
         Returns: Json
       }
+      authenticate_client_secure: {
+        Args: {
+          client_password: string
+          client_phone: string
+          p_ip_address?: unknown
+        }
+        Returns: Json
+      }
+      check_rate_limit: {
+        Args: { p_ip_address?: unknown; p_phone: string }
+        Returns: boolean
+      }
       checkout_client: {
         Args: { p_checkout_by_user_id?: string; p_client_id: string }
         Returns: Json
@@ -1022,6 +1099,10 @@ export type Database = {
       generate_client_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_reset_token: {
+        Args: { p_phone: string }
+        Returns: Json
       }
       generate_unique_barcode: {
         Args: Record<PropertyKey, never>
@@ -1074,6 +1155,10 @@ export type Database = {
       is_admin_user: {
         Args: { check_user_id?: string }
         Returns: boolean
+      }
+      log_login_attempt: {
+        Args: { p_ip_address?: unknown; p_phone: string; p_success: boolean }
+        Returns: undefined
       }
       log_system_event: {
         Args: {

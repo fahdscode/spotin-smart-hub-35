@@ -64,13 +64,14 @@ const ClientLogin = () => {
     }
     setIsLoading(true);
     try {
-      // Use secure authentication function
+      // Use secure authentication function with rate limiting
       const {
         data: authResult,
         error
-      } = await supabase.rpc('authenticate_client', {
+      } = await supabase.rpc('authenticate_client_secure', {
         client_phone: phone,
-        client_password: password
+        client_password: password,
+        p_ip_address: null
       });
       if (error) {
         console.error('Authentication error:', error);
@@ -219,6 +220,10 @@ const ClientLogin = () => {
             <div className="mt-6 pt-4 border-t border-gray-200 text-center space-y-2">
               <a href="/client-signup" className="text-sm text-green-600 hover:text-green-700 transition-colors font-medium">
                 Don't have an account? Sign up →
+              </a>
+              <br />
+              <a href="/password-reset" className="text-sm text-orange-600 hover:text-orange-700 transition-colors">
+                Forgot password? →
               </a>
               <br />
               <a href="/management-login" className="text-sm text-blue-600 hover:text-blue-700 transition-colors">
