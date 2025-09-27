@@ -459,6 +459,12 @@ export default function ClientDashboard() {
         });
       }
       
+      console.log('Attempting to place order:', {
+        clientId: clientData.id,
+        validatedItems: validatedItems.length,
+        sampleItem: validatedItems[0]
+      });
+
       const orderPromises = validatedItems.map(item =>
         supabase.from('session_line_items').insert({
           user_id: clientData.id,
