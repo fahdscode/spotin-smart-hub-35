@@ -15,6 +15,7 @@ import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
 import ProductionMonitor from '@/components/ProductionMonitor';
+import { LogoutButton } from '@/components/LogoutButton';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -170,11 +171,12 @@ const ReceptionistDashboard = () => {
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6">
           <Button variant="ghost" onClick={() => navigate("/")} size="sm">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
+          <LogoutButton />
           <div>
             <h2 className="text-2xl font-bold text-foreground">Receptionist Dashboard</h2>
             <p className="text-muted-foreground">Manage check-ins, bookings, and client accounts</p>

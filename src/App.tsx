@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import ClientLogin from "./pages/ClientLogin";
 import ManagementLogin from "./pages/ManagementLogin";
@@ -24,29 +26,64 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="light" storageKey="spotin-ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/client-login" element={<ClientLogin />} />
-            <Route path="/management-login" element={<ManagementLogin />} />
-            <Route path="/receptionist" element={<ReceptionistDashboard />} />
-            <Route path="/ceo" element={<CeoDashboard />} />
-            <Route path="/client" element={<ClientDashboard />} />
-            <Route path="/operations" element={<OperationsDashboard />} />
-            <Route path="/barista" element={<BaristaDashboard />} />
-            <Route path="/crm" element={<CrmDashboard />} />
-            <Route path="/community-manager" element={<CommunityManagerDashboard />} />
-            <Route path="/client-signup" element={<ClientSignup />} />
-            <Route path="/password-reset" element={<PasswordReset />} />
-            <Route path="/super-admin-setup" element={<SuperAdminSetup />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/client-login" element={<ClientLogin />} />
+              <Route path="/management-login" element={<ManagementLogin />} />
+              <Route path="/client-signup" element={<ClientSignup />} />
+              <Route path="/password-reset" element={<PasswordReset />} />
+              <Route path="/super-admin-setup" element={<SuperAdminSetup />} />
+              
+              {/* Protected Client Routes */}
+              <Route path="/client" element={
+                <ProtectedRoute requiredRole="client" redirectTo="/client-login">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              } />
+              
+              {/* Protected Management Routes */}
+              <Route path="/receptionist" element={
+                <ProtectedRoute requiredRole="receptionist" redirectTo="/management-login">
+                  <ReceptionistDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/ceo" element={
+                <ProtectedRoute requiredRole={["ceo", "admin"]} redirectTo="/management-login">
+                  <CeoDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/operations" element={
+                <ProtectedRoute requiredRole="operations_manager" redirectTo="/management-login">
+                  <OperationsDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/barista" element={
+                <ProtectedRoute requiredRole="barista" redirectTo="/management-login">
+                  <BaristaDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/crm" element={
+                <ProtectedRoute requiredRole={["ceo", "admin"]} redirectTo="/management-login">
+                  <CrmDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/community-manager" element={
+                <ProtectedRoute requiredRole="community_manager" redirectTo="/management-login">
+                  <CommunityManagerDashboard />
+                </ProtectedRoute>
+              } />
+              
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

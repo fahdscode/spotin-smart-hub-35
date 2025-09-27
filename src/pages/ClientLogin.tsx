@@ -110,20 +110,19 @@ const ClientLogin = () => {
         description: `Welcome back, ${result.client.full_name}!`
       });
 
-      // Store client data (exclude password hash)
-      localStorage.setItem('clientData', JSON.stringify({
+      // Store client data for auth context
+      const clientData = {
         id: result.client.id,
-        clientCode: result.client.client_code,
-        firstName: result.client.first_name,
-        lastName: result.client.last_name,
-        fullName: result.client.full_name,
+        client_code: result.client.client_code,
+        full_name: result.client.full_name,
         phone: result.client.phone,
-        email: result.client.email,
-        barcode: result.client.barcode,
-        jobTitle: result.client.job_title,
-        howDidYouFindUs: result.client.how_did_you_find_us
-      }));
-      navigate("/client");
+        email: result.client.email
+      };
+      
+      localStorage.setItem('clientData', JSON.stringify(clientData));
+      
+      // Force page reload to trigger auth context update
+      window.location.href = '/client';
     } catch (error: any) {
       console.error('Login error:', error);
       toast({

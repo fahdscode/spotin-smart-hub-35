@@ -9,6 +9,7 @@ import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
 import SatisfactionPopup from '@/components/SatisfactionPopup';
+import { LogoutButton } from '@/components/LogoutButton';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -789,6 +790,9 @@ export default function ClientDashboard() {
                         Checked in at {checkInTime}
                       </Badge>
                     )}
+                  </div>
+                  <div className="ml-auto">
+                    <LogoutButton variant="outline" size="sm" />
                   </div>
                 </div>
               </CardContent>

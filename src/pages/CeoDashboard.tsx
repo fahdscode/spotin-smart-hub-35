@@ -11,6 +11,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import KPIManagement from "@/components/KPIManagement";
 import RolesManagement from "@/components/RolesManagement";
+import { LogoutButton } from "@/components/LogoutButton";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -259,6 +260,7 @@ const CeoDashboard = () => {
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <LogoutButton variant="outline" size="sm" />
           </div>
         </div>
 

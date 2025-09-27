@@ -4,6 +4,7 @@ import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
 import ClientProductEditor from "@/components/ClientProductEditor";
 import QuickItemSelector from "@/components/QuickItemSelector";
+import { LogoutButton } from "@/components/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -288,15 +289,18 @@ const BaristaDashboard = () => {
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Barista Station</h1>
-            <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Barista Station</h1>
+              <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
+            </div>
           </div>
+          <LogoutButton />
         </div>
 
         {/* Quick Stats */}
