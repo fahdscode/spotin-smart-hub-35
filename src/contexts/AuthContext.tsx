@@ -47,68 +47,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for existing Supabase session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Get user role from admin_users table
-        const { data: adminUser } = await supabase
-          .from('admin_users')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true)
-          .single();
-        
-        setUserRole(adminUser?.role || null);
-      }
-      
-      setIsLoading(false);
-    };
-
-    // Check for existing client session
+    // Check for existing client session first
     const clientSession = localStorage.getItem('clientData');
     if (clientSession) {
       try {
         const parsedClient = JSON.parse(clientSession);
         setClientData(parsedClient);
         setUserRole('client');
+        setIsLoading(false);
+        return; // Early return for client auth
       } catch (error) {
         console.error('Error parsing client session:', error);
         localStorage.removeItem('clientData');
       }
     }
 
-    getSession();
-
-    // Listen for auth changes
+    // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Defer role fetching to prevent deadlock
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserRole(session.user.id);
+          }, 0);
+        } else {
+          setUserRole(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Get user role
-          const { data: adminUser } = await supabase
-            .from('admin_users')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .eq('is_active', true)
-            .single();
-          
-          setUserRole(adminUser?.role || null);
+          setTimeout(() => {
+            fetchUserRole(session.user.id);
+          }, 0);
         } else {
-          setUserRole(null);
+          setIsLoading(false);
         }
-        
+      } catch (error) {
+        console.error('Error getting session:', error);
         setIsLoading(false);
       }
-    );
+    };
+
+    getSession();
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data: adminUser, error } = await supabase
+        .from('admin_users')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user role:', error);
+      }
+      
+      setUserRole(adminUser?.role || null);
+    } catch (error) {
+      console.error('Error in fetchUserRole:', error);
+      setUserRole(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const signOut = async () => {
     if (user) {
