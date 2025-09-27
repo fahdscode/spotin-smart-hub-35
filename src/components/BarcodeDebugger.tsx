@@ -61,7 +61,7 @@ export default function BarcodeDebugger() {
 
       if (error) throw error;
 
-      console.log('Test result:', data);
+      // Test completed successfully
       
       const result = data as { success: boolean; action?: string; error?: string };
       

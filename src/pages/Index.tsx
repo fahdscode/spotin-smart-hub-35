@@ -1,11 +1,36 @@
 import { useNavigate } from "react-router-dom";
-import { Users, Shield, Coffee, Calendar, TrendingUp, Package, UserCheck, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, Shield, Coffee, Calendar, TrendingUp, Package, UserCheck, LogIn, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SpotinHeader from "@/components/SpotinHeader";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [showAdminSetup, setShowAdminSetup] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+
+  useEffect(() => {
+    const checkAdminExists = async () => {
+      try {
+        const { data: existingAdmin } = await supabase
+          .from('profiles')
+          .select('id')
+          .in('role', ['admin', 'ceo'])
+          .limit(1);
+
+        setShowAdminSetup(!existingAdmin || existingAdmin.length === 0);
+      } catch (error) {
+        console.error('Error checking admin:', error);
+        setShowAdminSetup(true); // Show setup if there's an error
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+
+    checkAdminExists();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,16 +120,25 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="text-center mt-12">
-          <div className="bg-muted/30 backdrop-blur-sm rounded-lg p-4 max-w-lg mx-auto border">
-            <p className="text-sm text-muted-foreground mb-3">
-              First-time setup? Create your admin account
-            </p>
-            <Button asChild variant="outline" size="sm">
-              <a href="/super-admin-setup">Super Admin Setup</a>
-            </Button>
+        {!checkingAdmin && showAdminSetup && (
+          <div className="text-center mt-12">
+            <div className="bg-gradient-to-r from-destructive/10 to-primary/10 backdrop-blur-sm rounded-lg p-6 max-w-lg mx-auto border border-destructive/20 shadow-lg">
+              <Crown className="w-8 h-8 mx-auto mb-3 text-destructive" />
+              <h3 className="text-lg font-semibold text-destructive mb-2">System Setup Required</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                No admin accounts found. Create the first super admin to manage the system.
+              </p>
+              <Button 
+                onClick={() => navigate("/super-admin-setup")}
+                variant="destructive" 
+                className="w-full"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Create Super Admin Account
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

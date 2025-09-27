@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import MetricCard from "@/components/MetricCard";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -122,8 +123,8 @@ const PendingOrders = () => {
   });
 
   const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
-    // In a real app, this would make an API call
-    console.log(`Updating order ${orderId} to status: ${newStatus}`);
+    // TODO: Implement order status update API call
+    toast("Order status would be updated to: " + newStatus);
   };
 
   const totalOrders = orders.length;

@@ -37,74 +37,30 @@ const SuperAdminSetup = () => {
       // Validate input
       setupSchema.parse(formData);
 
-      // Check if admin already exists
-      const { data: existingAdmin } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'ceo'])
-        .limit(1);
-
-      if (existingAdmin && existingAdmin.length > 0) {
-        toast.error("Super admin already exists. Use the normal login process.");
-        navigate('/management-login');
-        return;
-      }
-
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email.trim(),
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.fullName,
-          role: 'admin'
+      // Call the edge function to create admin
+      const { data, error } = await supabase.functions.invoke('create-admin', {
+        body: {
+          email: formData.email.trim(),
+          password: formData.password,
+          fullName: formData.fullName
         }
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Update profile with admin role
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: formData.fullName,
-            role: 'admin',
-            is_admin: true
-          })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) throw profileError;
-
-        // Create admin_users entry
-        const { error: adminError } = await supabase
-          .from('admin_users')
-          .insert({
-            user_id: authData.user.id,
-            email: formData.email,
-            full_name: formData.fullName,
-            role: 'admin',
-            is_active: true
-          });
-
-        if (adminError) throw adminError;
-
-        // Log the super admin creation
-        await supabase.rpc('log_system_event', {
-          p_log_level: 'INFO',
-          p_event_type: 'SUPER_ADMIN_CREATED',
-          p_message: `Super admin account created: ${formData.email}`,
-          p_metadata: { email: formData.email, full_name: formData.fullName }
-        });
-
-        toast.success("Super admin account created successfully!");
-        toast.success("You can now use the management login.");
-        
-        // Redirect to management login
-        setTimeout(() => {
-          navigate('/management-login');
-        }, 2000);
+      if (error) {
+        throw new Error(error.message || 'Failed to create admin account');
       }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create admin account');
+      }
+
+      toast.success("Super admin account created successfully!");
+      toast.success("You can now use the management login.");
+      
+      // Redirect to management login
+      setTimeout(() => {
+        navigate('/management-login');
+      }, 2000);
     } catch (error: any) {
       console.error('Super admin setup error:', error);
       

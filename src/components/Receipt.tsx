@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Receipt as ReceiptIcon, Download, Mail, Check } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import { toast } from "sonner";
 
 interface ReceiptItem {
   name: string;
@@ -47,8 +48,8 @@ const Receipt = ({
   };
 
   const handleDownload = () => {
-    // TODO: Implement PDF download
-    console.log("Downloading receipt...");
+    // TODO: Implement PDF download functionality
+    toast("PDF download feature coming soon!");
   };
 
   return (

@@ -117,8 +117,7 @@ const ReceptionistDashboard = () => {
   ];
 
   useEffect(() => {
-    // Mock data is already set in state, no backend calls needed
-    console.log('Dashboard loaded with mock data');
+    // Dashboard initialized with sample data
   }, []);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {

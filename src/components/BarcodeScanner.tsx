@@ -69,12 +69,7 @@ export default function BarcodeScanner() {
     setIsProcessing(true);
     setScanResult(null);
 
-    // Log what we're scanning for debugging
-    console.log('🔍 Scanning barcode:', { 
-      original: barcode, 
-      trimmed: barcode.trim(),
-      length: barcode.trim().length 
-    });
+    // Processing barcode scan
 
     try {
       // Use the new toggle function that handles trimming and concurrency
@@ -93,16 +88,9 @@ export default function BarcodeScanner() {
         return;
       }
 
-      console.log('📊 Toggle result:', result);
       const toggleResult = result as unknown as ToggleResult;
       
       if (!toggleResult?.success) {
-        console.error('❌ Scan failed:', {
-          error: toggleResult?.error,
-          debug: toggleResult?.debug,
-          inputBarcode: barcode,
-          trimmedBarcode: barcode.trim()
-        });
 
         toast({
           title: "Invalid Barcode",
@@ -116,11 +104,7 @@ export default function BarcodeScanner() {
       const client = toggleResult.client!;
       const action = toggleResult.action!;
       
-      console.log('✅ Scan successful:', {
-        client: client.full_name,
-        action,
-        debug: toggleResult.debug
-      });
+      // Scan successful
       
       const scanResult: ScanResult = {
         barcode: client.barcode, // Use the actual barcode from DB
