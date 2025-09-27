@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, TrendingDown, TrendingUp, AlertCircle, Search, Filter } from "lucide-react";
+import { Package, TrendingDown, TrendingUp, AlertCircle, Search, Filter, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,85 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MetricCard from "@/components/MetricCard";
-
-interface StockItem {
-  id: string;
-  name: string;
-  category: string;
-  currentStock: number;
-  minStock: number;
-  maxStock: number;
-  unit: string;
-  costPerUnit: number;
-  supplier: string;
-  lastUpdated: string;
-  status: "in-stock" | "low-stock" | "out-of-stock";
-}
+import { useStockData } from "@/hooks/useStockData";
+import type { StockItemWithStatus } from "@/hooks/useStockData";
 
 const StockReports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const { stockItems, loading, error } = useStockData();
 
-  const stockItems: StockItem[] = [
-    {
-      id: "STK-001",
-      name: "Coffee Beans - Arabica",
-      category: "Beverages",
-      currentStock: 25,
-      minStock: 10,
-      maxStock: 100,
-      unit: "kg",
-      costPerUnit: 15.50,
-      supplier: "Premium Coffee Co.",
-      lastUpdated: "2024-01-15",
-      status: "in-stock"
-    },
-    {
-      id: "STK-002",
-      name: "Meeting Room Chairs",
-      category: "Furniture",
-      currentStock: 5,
-      minStock: 8,
-      maxStock: 20,
-      unit: "pieces",
-      costPerUnit: 85.00,
-      supplier: "Office Solutions Ltd.",
-      lastUpdated: "2024-01-14",
-      status: "low-stock"
-    },
-    {
-      id: "STK-003",
-      name: "Printer Paper A4",
-      category: "Office Supplies",
-      currentStock: 0,
-      minStock: 5,
-      maxStock: 50,
-      unit: "reams",
-      costPerUnit: 4.20,
-      supplier: "Stationery Plus",
-      lastUpdated: "2024-01-13",
-      status: "out-of-stock"
-    },
-    {
-      id: "STK-004",
-      name: "Projector Bulbs",
-      category: "Electronics",
-      currentStock: 8,
-      minStock: 3,
-      maxStock: 15,
-      unit: "pieces",
-      costPerUnit: 125.00,
-      supplier: "Tech Components Inc.",
-      lastUpdated: "2024-01-15",
-      status: "in-stock"
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading stock data...</span>
+      </div>
+    );
+  }
 
-  const getStatusColor = (status: StockItem["status"]) => {
+  if (error) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-destructive">Error loading stock data: {error}</p>
+      </div>
+    );
+  }
+
+  const getStatusColor = (status: StockItemWithStatus["status"]) => {
     switch (status) {
-      case "in-stock": return "bg-success/10 text-success border-success/20";
-      case "low-stock": return "bg-warning/10 text-warning border-warning/20";
-      case "out-of-stock": return "bg-destructive/10 text-destructive border-destructive/20";
+      case "good": return "bg-success/10 text-success border-success/20";
+      case "low": return "bg-warning/10 text-warning border-warning/20";
+      case "critical": return "bg-destructive/10 text-destructive border-destructive/20";
       default: return "bg-muted text-muted-foreground border-muted";
     }
   };
@@ -98,9 +49,9 @@ const StockReports = () => {
   });
 
   const totalItems = stockItems.length;
-  const lowStockItems = stockItems.filter(item => item.status === "low-stock").length;
-  const outOfStockItems = stockItems.filter(item => item.status === "out-of-stock").length;
-  const totalValue = stockItems.reduce((sum, item) => sum + (item.currentStock * item.costPerUnit), 0);
+  const lowStockItems = stockItems.filter(item => item.status === "low" || item.status === "critical").length;
+  const outOfStockItems = stockItems.filter(item => item.status === "critical").length;
+  const totalValue = stockItems.reduce((sum, item) => sum + (item.current_quantity * item.cost_per_unit), 0);
 
   return (
     <div className="space-y-6">
@@ -189,39 +140,39 @@ const StockReports = () => {
               <TableBody>
                 {filteredItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-semibold">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">{item.id}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{item.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{item.currentStock} {item.unit}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>Min: {item.minStock}</div>
-                        <div>Max: {item.maxStock}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>€{item.costPerUnit.toFixed(2)}</TableCell>
-                    <TableCell className="font-medium">
-                      €{(item.currentStock * item.costPerUnit).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(item.status)}>
-                        {item.status.replace("-", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{item.supplier}</div>
-                        <div className="text-xs text-muted-foreground">Updated: {item.lastUpdated}</div>
-                      </div>
-                    </TableCell>
+                     <TableCell className="font-medium">
+                       <div>
+                         <div className="font-semibold">{item.name}</div>
+                         <div className="text-xs text-muted-foreground">{item.id}</div>
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <Badge variant="outline">{item.category}</Badge>
+                     </TableCell>
+                     <TableCell>
+                       <div className="font-medium">{item.current_quantity} {item.unit}</div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="text-sm">
+                         <div>Min: {item.min_quantity}</div>
+                         <div>Max: {item.maximum}</div>
+                       </div>
+                     </TableCell>
+                     <TableCell>€{item.cost_per_unit.toFixed(2)}</TableCell>
+                     <TableCell className="font-medium">
+                       €{(item.current_quantity * item.cost_per_unit).toFixed(2)}
+                     </TableCell>
+                     <TableCell>
+                       <Badge className={getStatusColor(item.status)}>
+                         {item.status.replace("-", " ")}
+                       </Badge>
+                     </TableCell>
+                     <TableCell>
+                       <div className="text-sm">
+                         <div>{item.supplier || 'No supplier'}</div>
+                         <div className="text-xs text-muted-foreground">Updated: {new Date(item.updated_at).toLocaleDateString()}</div>
+                       </div>
+                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

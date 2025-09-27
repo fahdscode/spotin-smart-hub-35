@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Receipt as ReceiptIcon, Plus, Minus, Trash2, Search, AlertTriangle, PackageX } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { useProductAvailability } from "@/hooks/useProductAvailability";
+import { useRoomData } from "@/hooks/useRoomData";
 import { useToast } from "@/hooks/use-toast";
 
 interface ReceiptItem {
@@ -50,16 +51,16 @@ const EditableReceipt = ({
   const [searchTerm, setSearchTerm] = useState<string>("");
   
   const { products, loading: productsLoading, checkIngredientAvailability } = useProductAvailability();
+  const { rooms, loading: roomsLoading } = useRoomData();
   const { toast } = useToast();
   
-  // Static items for rooms and other services
+  // Static items for tickets and other services  
   const staticItems = [
-    { id: "room-1hr", name: "Meeting Room - 1hr", price: 300.00, category: 'room' as const, can_make: true },
-    { id: "booth-30min", name: "Phone Booth - 30min", price: 160.00, category: 'room' as const, can_make: true },
-    { id: "event-ticket", name: "Event Ticket", price: 400.00, category: 'ticket' as const, can_make: true }
+    { id: "event-ticket", name: "Event Ticket", price: 400.00, category: 'ticket' as const, can_make: true },
+    { id: "day-pass", name: "Day Pass", price: 250.00, category: 'ticket' as const, can_make: true }
   ];
 
-  // Combine database products with static items
+  // Combine database products, rooms, and static items
   const availableItems = [
     ...products.map(p => ({
       id: p.id,
@@ -69,6 +70,14 @@ const EditableReceipt = ({
       can_make: p.can_make,
       missing_ingredients: p.missing_ingredients,
       description: p.description
+    })),
+    ...rooms.map(r => ({
+      id: r.id,
+      name: r.name,
+      price: r.price,
+      category: 'room' as const,
+      can_make: r.can_make,
+      description: r.description
     })),
     ...staticItems
   ];
@@ -232,11 +241,11 @@ const EditableReceipt = ({
                     No items found matching "{searchTerm}"
                   </div>
                 )}
-                {productsLoading && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    Loading products...
-                  </div>
-                )}
+                 {(productsLoading || roomsLoading) && (
+                   <div className="px-3 py-2 text-sm text-muted-foreground">
+                     Loading items...
+                   </div>
+                 )}
               </SelectContent>
             </Select>
           </div>

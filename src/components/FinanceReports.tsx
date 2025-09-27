@@ -1,81 +1,42 @@
 import { useState } from "react";
-import { DollarSign, TrendingUp, TrendingDown, PieChart, BarChart3, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, PieChart, BarChart3, Calendar, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MetricCard from "@/components/MetricCard";
-
-interface FinancialData {
-  period: string;
-  revenue: number;
-  expenses: number;
-  profit: number;
-  margin: number;
-}
-
-interface ExpenseItem {
-  id: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  type: "fixed" | "variable";
-}
+import { useFinanceData } from "@/hooks/useFinanceData";
+import type { FinancialData, ExpenseItem } from "@/hooks/useFinanceData";
 
 const FinanceReports = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
+  const { financialData, expenseItems, loading, error } = useFinanceData();
 
-  const financialData: FinancialData[] = [
-    { period: "Jan 2024", revenue: 45000, expenses: 32000, profit: 13000, margin: 28.9 },
-    { period: "Dec 2023", revenue: 52000, expenses: 35000, profit: 17000, margin: 32.7 },
-    { period: "Nov 2023", revenue: 48000, expenses: 33000, profit: 15000, margin: 31.3 },
-    { period: "Oct 2023", revenue: 44000, expenses: 31000, profit: 13000, margin: 29.5 }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading financial data...</span>
+      </div>
+    );
+  }
 
-  const expenseItems: ExpenseItem[] = [
-    {
-      id: "EXP-001",
-      category: "Utilities",
-      description: "Electricity & Water",
-      amount: 2500,
-      date: "2024-01-15",
-      type: "fixed"
-    },
-    {
-      id: "EXP-002", 
-      category: "Staff",
-      description: "Salaries & Benefits",
-      amount: 18000,
-      date: "2024-01-01",
-      type: "fixed"
-    },
-    {
-      id: "EXP-003",
-      category: "Supplies",
-      description: "Office & Coffee Supplies",
-      amount: 3200,
-      date: "2024-01-10",
-      type: "variable"
-    },
-    {
-      id: "EXP-004",
-      category: "Maintenance",
-      description: "Equipment Servicing",
-      amount: 800,
-      date: "2024-01-12",
-      type: "variable"
-    },
-    {
-      id: "EXP-005",
-      category: "Marketing",
-      description: "Digital Advertising",
-      amount: 1500,
-      date: "2024-01-08",
-      type: "variable"
-    }
-  ];
+  if (error) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-destructive">Error loading financial data: {error}</p>
+      </div>
+    );
+  }
+
+  if (financialData.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-muted-foreground">No financial data available yet.</p>
+      </div>
+    );
+  }
 
   const currentData = financialData[0];
   const previousData = financialData[1];
