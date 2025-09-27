@@ -311,6 +311,7 @@ const BaristaDashboard = () => {
   const pendingOrders = orders.filter(order => order.status === "pending");
   const preparingOrders = orders.filter(order => order.status === "preparing");
   const readyOrders = orders.filter(order => order.status === "ready");
+  const completedOrders = orders.filter(order => order.status === "completed");
 
   return (
     <div className="min-h-screen bg-background">
