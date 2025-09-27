@@ -124,9 +124,22 @@ const ReceptionistDashboard = () => {
     
     // Get current user ID for tracking check-ins/outs
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.warn('No authenticated user found:', error.message);
+          // Set a fallback system user ID for tracking purposes
+          setCurrentUserId(null);
+        } else if (user) {
+          console.log('✅ Authenticated user found:', user.id);
+          setCurrentUserId(user.id);
+        } else {
+          console.warn('No user in auth response, using fallback tracking');
+          setCurrentUserId(null);
+        }
+      } catch (error) {
+        console.error('Error getting current user:', error);
+        setCurrentUserId(null);
       }
     };
     getCurrentUser();
@@ -240,6 +253,9 @@ const ReceptionistDashboard = () => {
                           <DialogTitle>Check-In Scanner</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-6">
+                          <div className="bg-muted/50 p-3 rounded-md text-sm">
+                            <strong>Scanner Status:</strong> User ID: {currentUserId || 'No authenticated user (actions will be tracked as system)'}
+                          </div>
                           <CheckInTestHelper />
                           <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                         </div>

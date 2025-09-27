@@ -42,6 +42,7 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -73,8 +74,13 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
     
     setIsProcessing(true);
     setScanResult(null);
+    setDebugInfo(null);
 
-    // Processing barcode scan
+    console.log('🔍 Processing barcode:', { 
+      barcode, 
+      length: barcode.length, 
+      scannedByUserId: scannedByUserId || 'NO_USER_ID' 
+    });
 
     try {
       // Use the toggle function with proper user tracking
@@ -85,18 +91,21 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
 
       if (error) {
         console.error('❌ RPC Error:', error);
+        setDebugInfo({ error: error.message, barcode, scannedByUserId });
         toast({
           title: "System Error",
-          description: "System error. Please try again.",
+          description: `Database error: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
       const toggleResult = result as unknown as ToggleResult;
+      console.log('🔄 Toggle result:', toggleResult);
+      setDebugInfo(toggleResult?.debug || { barcode, scannedByUserId });
       
       if (!toggleResult?.success) {
-
+        console.log('❌ Scan failed:', toggleResult?.error);
         toast({
           title: "Invalid Barcode",
           description: toggleResult?.error || "Invalid barcode. Please try again.",
@@ -195,6 +204,8 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
                 variant="outline" 
                 onClick={() => {
                   setBarcodeInput('');
+                  setDebugInfo(null);
+                  setScanResult(null);
                   if (barcodeInputRef.current) {
                     barcodeInputRef.current.focus();
                   }
@@ -204,6 +215,21 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
               </Button>
             </div>
           </div>
+          
+          {/* Debug Information */}
+          {debugInfo && (
+            <div className="mt-4 p-3 bg-muted rounded-md">
+              <div className="text-xs font-mono space-y-1">
+                <div><strong>Debug Info:</strong></div>
+                <div>Barcode: {debugInfo.trimmed_input || debugInfo.barcode || barcodeInput}</div>
+                <div>Length: {debugInfo.input_length || (debugInfo.barcode || barcodeInput).length}</div>
+                <div>User ID: {scannedByUserId || 'Not provided'}</div>
+                {debugInfo.found_client_id && <div>Found Client: {debugInfo.client_name}</div>}
+                {debugInfo.current_active_status !== undefined && <div>Current Status: {debugInfo.current_active_status ? 'Active' : 'Inactive'}</div>}
+                {debugInfo.error && <div className="text-destructive">Error: {debugInfo.error}</div>}
+              </div>
+            </div>
+          )}
           
         </CardContent>
       </Card>
