@@ -48,7 +48,7 @@ const App = () => (
               
               {/* Protected Management Routes */}
               <Route path="/receptionist" element={
-                <ProtectedRoute requiredRole="receptionist" redirectTo="/management-login">
+                <ProtectedRoute requiredRole={["receptionist", "ceo", "admin"]} redirectTo="/management-login">
                   <ReceptionistDashboard />
                 </ProtectedRoute>
               } />
@@ -58,12 +58,12 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/operations" element={
-                <ProtectedRoute requiredRole="operations_manager" redirectTo="/management-login">
+                <ProtectedRoute requiredRole={["operations_manager", "ceo", "admin"]} redirectTo="/management-login">
                   <OperationsDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/barista" element={
-                <ProtectedRoute requiredRole="barista" redirectTo="/management-login">
+                <ProtectedRoute requiredRole={["barista", "ceo", "admin"]} redirectTo="/management-login">
                   <BaristaDashboard />
                 </ProtectedRoute>
               } />
@@ -73,7 +73,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/community-manager" element={
-                <ProtectedRoute requiredRole="community_manager" redirectTo="/management-login">
+                <ProtectedRoute requiredRole={["community_manager", "ceo", "admin"]} redirectTo="/management-login">
                   <CommunityManagerDashboard />
                 </ProtectedRoute>
               } />
