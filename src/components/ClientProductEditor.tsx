@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Plus, Minus, ShoppingCart, Package, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProductAvailability } from "@/hooks/useProductAvailability";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -34,21 +36,7 @@ interface ClientProductEditorProps {
   selectedClient: Client | null;
 }
 
-// Mock products data
-const mockProducts: Product[] = [
-  { id: "1", name: "Espresso", price: 25, category: "beverage", is_available: true, description: "Strong Italian coffee" },
-  { id: "2", name: "Cappuccino", price: 35, category: "beverage", is_available: true, description: "Coffee with steamed milk foam" },
-  { id: "3", name: "Americano", price: 30, category: "beverage", is_available: true, description: "Black coffee with hot water" },
-  { id: "4", name: "Latte", price: 40, category: "beverage", is_available: true, description: "Coffee with steamed milk" },
-  { id: "5", name: "Mocha", price: 45, category: "beverage", is_available: true, description: "Coffee with chocolate" },
-  { id: "6", name: "Croissant", price: 20, category: "food", is_available: true, description: "Buttery pastry" },
-  { id: "7", name: "Sandwich", price: 50, category: "food", is_available: true, description: "Fresh deli sandwich" },
-  { id: "8", name: "Muffin", price: 25, category: "snack", is_available: true, description: "Sweet baked treat" },
-  { id: "9", name: "Cookies", price: 15, category: "snack", is_available: true, description: "Chocolate chip cookies" },
-  { id: "10", name: "Cheesecake", price: 60, category: "dessert", is_available: true, description: "Rich creamy dessert" }
-];
-
-const mockCategories = [
+const categories = [
   { value: "beverage", label: "Beverages", icon: "☕" },
   { value: "food", label: "Food", icon: "🍽️" },
   { value: "snack", label: "Snacks", icon: "🥨" },
@@ -56,11 +44,12 @@ const mockCategories = [
 ];
 
 const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductEditorProps) => {
-  const [products] = useState<Product[]>(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts);
+  const { products, loading, checkIngredientAvailability } = useProductAvailability();
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -108,7 +97,7 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
     return Object.values(cart).reduce((total, quantity) => total + quantity, 0);
   };
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (!selectedClient) {
       toast({
         title: "No Client Selected",
@@ -127,14 +116,58 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
       return;
     }
 
-    // Here you would normally submit the order to your backend
-    toast({
-      title: "Order Submitted",
-      description: `Order for ${selectedClient.full_name} has been submitted successfully`,
-    });
+    setSubmitting(true);
+    try {
+      // Check ingredient availability for all items before submitting
+      for (const [productId, quantity] of Object.entries(cart)) {
+        const isAvailable = await checkIngredientAvailability(productId, quantity);
+        if (!isAvailable) {
+          const product = products.find(p => p.id === productId);
+          toast({
+            title: "Insufficient Ingredients",
+            description: `Not enough ingredients available for ${product?.name}`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
 
-    setCart({});
-    onClose();
+      // Submit each cart item as a session line item
+      const orderPromises = Object.entries(cart).map(async ([productId, quantity]) => {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        const { error } = await supabase
+          .from('session_line_items')
+          .insert({
+            user_id: selectedClient.id,
+            item_name: product.name,
+            quantity: quantity,
+            price: product.price,
+            status: 'pending'
+          });
+
+        if (error) throw error;
+      });
+
+      await Promise.all(orderPromises);
+
+      toast({
+        title: "Order Submitted",
+        description: `Order for ${selectedClient.full_name} has been submitted successfully`,
+      });
+
+      setCart({});
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Order Failed",
+        description: error.message || "Failed to submit order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const groupedProducts = filteredProducts.reduce((acc, product) => {
@@ -187,7 +220,7 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
 
             {/* Category Filter */}
             <div className="flex gap-2 flex-wrap">
-              {mockCategories.map((category) => (
+              {categories.map((category) => (
                 <Button
                   key={category.value}
                   variant={selectedCategory === category.value ? "default" : "outline"}
@@ -208,7 +241,7 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
               <div key={category}>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  {mockCategories.find(c => c.value === category)?.label || category}
+                  {categories.find(c => c.value === category)?.label || category}
                   <Badge variant="outline">{categoryProducts.length} items</Badge>
                 </h3>
                 
@@ -301,11 +334,11 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
                 <span>{getCartTotal()} EGP</span>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setCart({})} className="flex-1">
+                <Button variant="outline" onClick={() => setCart({})} className="flex-1" disabled={submitting}>
                   Clear Cart
                 </Button>
-                <Button variant="professional" onClick={submitOrder} className="flex-1">
-                  Submit Order
+                <Button variant="professional" onClick={submitOrder} className="flex-1" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Submit Order"}
                 </Button>
               </div>
             </CardContent>

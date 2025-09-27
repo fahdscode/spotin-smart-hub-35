@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit, XCircle } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Client {
   id: string;
@@ -34,12 +35,14 @@ interface Client {
 
 interface Order {
   id: string;
-  item: string;
-  location: string;
-  customerName: string;
-  clientId?: string;
-  status: "pending" | "preparing" | "ready" | "completed";
-  orderTime: string;
+  item_name: string;
+  user_id: string;
+  quantity: number;
+  price: number;
+  status: "pending" | "preparing" | "ready" | "completed" | "served";
+  created_at: string;
+  customerName?: string;
+  location?: string;
   notes?: string;
 }
 
@@ -49,33 +52,80 @@ const BaristaDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isEditProductsOpen, setIsEditProductsOpen] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "ORD-001",
-      item: "Cappuccino",
-      location: "Desk A12",
-      customerName: "Sarah Johnson",
-      status: "pending",
-      orderTime: "14:23",
-      notes: "Extra foam"
-    },
-    {
-      id: "ORD-002",
-      item: "Americano",
-      location: "Meeting Room 2",
-      customerName: "Mike Chen",
-      status: "preparing",
-      orderTime: "14:21"
-    },
-    {
-      id: "ORD-003",
-      item: "Latte",
-      location: "Desk B7",
-      customerName: "Emma Wilson",
-      status: "ready",
-      orderTime: "14:18"
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders();
+    
+    // Set up real-time subscription for new orders
+    const channel = supabase
+      .channel('barista-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'session_line_items'
+        },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      // First get orders
+      const { data: ordersData, error } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .in('status', ['pending', 'preparing', 'ready'])
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      // Then get client names for each order
+      const clientIds = [...new Set(ordersData?.map(order => order.user_id) || [])];
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('id, full_name, client_code')
+        .in('id', clientIds);
+
+      const clientsMap = new Map(clientsData?.map(client => [client.id, client]) || []);
+
+      const formattedOrders: Order[] = ordersData?.map(order => {
+        const client = clientsMap.get(order.user_id);
+        return {
+          id: order.id,
+          item_name: order.item_name,
+          user_id: order.user_id,
+          quantity: order.quantity,
+          price: order.price,
+          status: order.status as any,
+          created_at: order.created_at,
+          customerName: client?.full_name || 'Unknown Client',
+          location: 'Station Pickup',
+          notes: `Order #${order.id.slice(-8)}`
+        };
+      }) || [];
+
+      setOrders(formattedOrders);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching orders",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const quickItems = [
     { name: "Espresso", time: "2 min", icon: Coffee },
@@ -86,7 +136,7 @@ const BaristaDashboard = () => {
     { name: "Mocha", time: "5 min", icon: Coffee }
   ];
 
-  const addQuickItem = (itemName: string, note?: string) => {
+  const addQuickItem = async (itemName: string, note?: string) => {
     if (!selectedClient) {
       toast({
         title: "No Client Selected",
@@ -96,41 +146,97 @@ const BaristaDashboard = () => {
       return;
     }
 
-    const newOrder: Order = {
-      id: `ORD-${Date.now()}`,
-      item: itemName,
-      location: "Station Pickup",
-      customerName: selectedClient.full_name,
-      clientId: selectedClient.id,
-      status: "pending",
-      orderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      notes: note || `Quick add by barista for ${selectedClient.client_code}`
-    };
+    try {
+      // Get the drink price from the database
+      const { data: drinkData, error: drinkError } = await supabase
+        .from('drinks')
+        .select('price')
+        .eq('name', itemName)
+        .single();
 
-    setOrders(prev => [...prev, newOrder]);
-    setIsQuickAddOpen(false);
-    
-    // Play notification sound for new order
-    playOrderNotification();
-    
-    toast({
-      title: "Item Added",
-      description: `${itemName} added for ${selectedClient.full_name}`,
-    });
+      if (drinkError) throw drinkError;
+
+      const { error } = await supabase
+        .from('session_line_items')
+        .insert({
+          user_id: selectedClient.id,
+          item_name: itemName,
+          quantity: 1,
+          price: drinkData.price,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setIsQuickAddOpen(false);
+      
+      // Play notification sound for new order
+      playOrderNotification();
+      
+      toast({
+        title: "Item Added",
+        description: `${itemName} added for ${selectedClient.full_name}`,
+      });
+
+      // Refresh orders list
+      fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error Adding Item",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
+  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    try {
+      const { error } = await supabase
+        .from('session_line_items')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order Updated",
+        description: `Order status updated to ${newStatus}`,
+      });
+
+      // Refresh orders list
+      fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error Updating Order",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const cancelOrder = (orderId: string) => {
-    setOrders(orders.filter(order => order.id !== orderId));
-    toast({
-      title: "Order Cancelled",
-      description: "Order has been cancelled successfully",
-    });
+  const cancelOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('session_line_items')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order Cancelled",
+        description: "Order has been cancelled successfully",
+      });
+
+      // Refresh orders list
+      fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error Cancelling Order",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const playOrderNotification = () => {
@@ -248,7 +354,7 @@ const BaristaDashboard = () => {
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-muted-foreground" />
                               <div>
-                                <h4 className="font-semibold">{order.item}</h4>
+                                <h4 className="font-semibold">{order.item_name} x{order.quantity}</h4>
                                 <p className="text-sm text-muted-foreground">{order.customerName}</p>
                               </div>
                             </div>
@@ -263,7 +369,7 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {order.orderTime}
+                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                           {order.notes && (
@@ -285,7 +391,7 @@ const BaristaDashboard = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Start Preparing Order</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to start preparing {order.item} for {order.customerName}?
+                                    Are you sure you want to start preparing {order.item_name} for {order.customerName}?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -309,7 +415,7 @@ const BaristaDashboard = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Cancel Order</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to cancel the order for {order.item}? This action cannot be undone.
+                                    Are you sure you want to cancel the order for {order.item_name}? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -335,7 +441,7 @@ const BaristaDashboard = () => {
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-primary animate-pulse" />
                               <div>
-                                <h4 className="font-semibold">{order.item}</h4>
+                                <h4 className="font-semibold">{order.item_name} x{order.quantity}</h4>
                                 <p className="text-sm text-muted-foreground">{order.customerName}</p>
                               </div>
                             </div>
@@ -350,7 +456,7 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {order.orderTime}
+                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                           {order.notes && (
@@ -372,7 +478,7 @@ const BaristaDashboard = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Mark Order as Ready</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Confirm that {order.item} for {order.customerName} is ready for pickup?
+                                    Confirm that {order.item_name} for {order.customerName} is ready for pickup?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -396,7 +502,7 @@ const BaristaDashboard = () => {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Cancel Order</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to cancel the order for {order.item}? This action cannot be undone.
+                                    Are you sure you want to cancel the order for {order.item_name}? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -422,7 +528,7 @@ const BaristaDashboard = () => {
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-success" />
                               <div>
-                                <h4 className="font-semibold">{order.item}</h4>
+                                <h4 className="font-semibold">{order.item_name} x{order.quantity}</h4>
                                 <p className="text-sm text-muted-foreground">{order.customerName}</p>
                               </div>
                             </div>
@@ -437,7 +543,7 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {order.orderTime}
+                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                           {order.notes && (

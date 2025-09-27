@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Search, Coffee, Clock, Package, StickyNote, XCircle } from "lucide-react";
+import { useProductAvailability } from "@/hooks/useProductAvailability";
 
 interface Product {
   id: string;
@@ -35,23 +36,7 @@ interface QuickItemSelectorProps {
   onItemSelect: (itemName: string, note?: string) => void;
 }
 
-// Mock products data with prep times
-const mockProducts: Product[] = [
-  { id: "1", name: "Espresso", price: 25, category: "beverage", is_available: true, description: "Strong Italian coffee", prep_time: "2 min" },
-  { id: "2", name: "Cappuccino", price: 35, category: "beverage", is_available: true, description: "Coffee with steamed milk foam", prep_time: "4 min" },
-  { id: "3", name: "Americano", price: 30, category: "beverage", is_available: true, description: "Black coffee with hot water", prep_time: "3 min" },
-  { id: "4", name: "Latte", price: 40, category: "beverage", is_available: true, description: "Coffee with steamed milk", prep_time: "4 min" },
-  { id: "5", name: "Mocha", price: 45, category: "beverage", is_available: true, description: "Coffee with chocolate", prep_time: "5 min" },
-  { id: "6", name: "Macchiato", price: 38, category: "beverage", is_available: true, description: "Espresso with a dollop of foam", prep_time: "3 min" },
-  { id: "7", name: "Flat White", price: 42, category: "beverage", is_available: true, description: "Double shot with steamed milk", prep_time: "4 min" },
-  { id: "8", name: "Croissant", price: 20, category: "food", is_available: true, description: "Buttery pastry", prep_time: "1 min" },
-  { id: "9", name: "Sandwich", price: 50, category: "food", is_available: true, description: "Fresh deli sandwich", prep_time: "5 min" },
-  { id: "10", name: "Muffin", price: 25, category: "snack", is_available: true, description: "Sweet baked treat", prep_time: "1 min" },
-  { id: "11", name: "Cookies", price: 15, category: "snack", is_available: true, description: "Chocolate chip cookies", prep_time: "1 min" },
-  { id: "12", name: "Cheesecake", price: 60, category: "dessert", is_available: true, description: "Rich creamy dessert", prep_time: "2 min" }
-];
-
-const mockCategories = [
+const categories = [
   { value: "beverage", label: "Beverages", icon: "☕" },
   { value: "food", label: "Food", icon: "🍽️" },
   { value: "snack", label: "Snacks", icon: "🥨" },
@@ -59,8 +44,8 @@ const mockCategories = [
 ];
 
 const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: QuickItemSelectorProps) => {
-  const [products] = useState<Product[]>(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts);
+  const { products, loading } = useProductAvailability();
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -144,7 +129,7 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
 
             {/* Category Filter */}
             <div className="flex gap-2 flex-wrap">
-              {mockCategories.map((category) => (
+              {categories.map((category) => (
                 <Button
                   key={category.value}
                   variant={selectedCategory === category.value ? "default" : "outline"}
@@ -160,45 +145,49 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
           </div>
 
           {/* Products Grid */}
-          <div className="space-y-6">
-            {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
-              <div key={category}>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  {mockCategories.find(c => c.value === category)?.label || category}
-                  <Badge variant="outline">{categoryProducts.length} items</Badge>
-                </h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {categoryProducts.map((product) => (
-                    <Card 
-                      key={product.id} 
-                      className={`cursor-pointer hover:shadow-md transition-shadow ${selectedItem === product.name ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => handleItemSelect(product.name)}
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">{product.name}</CardTitle>
-                        <CardDescription className="text-xs line-clamp-2">
-                          {product.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {product.prep_time}
+          {loading ? (
+            <div className="text-center py-8">Loading products...</div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
+                <div key={category}>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    {categories.find(c => c.value === category)?.label || category}
+                    <Badge variant="outline">{categoryProducts.length} items</Badge>
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {categoryProducts.map((product) => (
+                      <Card 
+                        key={product.id} 
+                        className={`cursor-pointer hover:shadow-md transition-shadow ${selectedItem === product.name ? 'ring-2 ring-primary' : ''}`}
+                        onClick={() => handleItemSelect(product.name)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">{product.name}</CardTitle>
+                          <CardDescription className="text-xs line-clamp-2">
+                            {product.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              2-5 min
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {product.price} EGP
+                            </Badge>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {product.price} EGP
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {filteredProducts.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
