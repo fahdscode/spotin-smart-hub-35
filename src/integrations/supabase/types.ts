@@ -1176,6 +1176,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_valid_client_id: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       log_login_attempt: {
         Args: { p_ip_address?: unknown; p_phone: string; p_success: boolean }
         Returns: undefined
