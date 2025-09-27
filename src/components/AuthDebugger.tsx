@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
 export const AuthDebugger: React.FC = () => {
-  const { user, session, userRole, isAuthenticated, isLoading, clientData } = useAuth();
+  const { user, session, userRole, isAuthenticated, isLoading, clientData, authError, refreshAuth } = useAuth();
 
-  const refreshAuth = async () => {
-    console.log('🔄 Refreshing authentication...');
-    await supabase.auth.refreshSession();
+  const manualRefresh = async () => {
+    console.log('🔄 Manual refresh triggered...');
+    await refreshAuth();
   };
 
   const checkUserRole = async () => {
@@ -65,6 +65,15 @@ export const AuthDebugger: React.FC = () => {
           </div>
         )}
         
+        {authError && (
+          <div className="pt-2 border-t">
+            <strong className="text-red-600">Auth Error:</strong>
+            <div className="text-xs text-red-500 bg-red-50 p-2 rounded border mt-1">
+              {authError}
+            </div>
+          </div>
+        )}
+        
         <div className="pt-2 border-t">
           <strong>Session Valid:</strong> 
           <Badge variant={session ? "default" : "destructive"} className="ml-1">
@@ -78,8 +87,8 @@ export const AuthDebugger: React.FC = () => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" onClick={refreshAuth}>
-            Refresh Session
+          <Button size="sm" variant="outline" onClick={manualRefresh}>
+            Refresh Auth
           </Button>
           <Button size="sm" variant="outline" onClick={checkUserRole}>
             Check Role

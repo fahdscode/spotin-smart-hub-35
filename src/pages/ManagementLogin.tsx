@@ -66,38 +66,42 @@ const ManagementLogin = () => {
         
         console.log('🚀 About to navigate to dashboard for role:', adminUser.role);
         
-        // Wait a moment for auth context to update, then navigate
+        // Wait longer for auth context to fully update
         setTimeout(() => {
-          switch (adminUser.role) {
-            case 'admin':
-              console.log('Navigating to CEO dashboard');
-              navigate('/ceo');
-              break;
-            case 'receptionist':
-              console.log('Navigating to receptionist dashboard');
-              navigate('/receptionist');
-              break;
-            case 'barista':
-              console.log('Navigating to barista dashboard');
-              navigate('/barista');
-              break;
-            case 'ceo':
-              console.log('Navigating to CEO dashboard');
-              navigate('/ceo');
-              break;
-            case 'operations_manager':
-              console.log('Navigating to operations dashboard');
-              navigate('/operations');
-              break;
-            case 'community_manager':
-              console.log('Navigating to community manager dashboard');
-              navigate('/community-manager');
-              break;
-            default:
-              console.log('Navigating to default receptionist dashboard');
-              navigate('/receptionist');
-          }
-        }, 500); // Give auth context time to update
+          console.log('🔄 Checking auth state before navigation...');
+          
+          // Force a manual auth refresh to ensure state is updated
+          const checkAndNavigate = () => {
+            switch (adminUser.role) {
+              case 'admin':
+              case 'ceo':
+                console.log('Navigating to CEO dashboard');
+                navigate('/ceo', { replace: true });
+                break;
+              case 'receptionist':
+                console.log('Navigating to receptionist dashboard');
+                navigate('/receptionist', { replace: true });
+                break;
+              case 'barista':
+                console.log('Navigating to barista dashboard');
+                navigate('/barista', { replace: true });
+                break;
+              case 'operations_manager':
+                console.log('Navigating to operations dashboard');
+                navigate('/operations', { replace: true });
+                break;
+              case 'community_manager':
+                console.log('Navigating to community manager dashboard');
+                navigate('/community-manager', { replace: true });
+                break;
+              default:
+                console.log('Navigating to default receptionist dashboard');
+                navigate('/receptionist', { replace: true });
+            }
+          };
+          
+          checkAndNavigate();
+        }, 1000); // Give more time for auth context to update
       }
     } catch (error: any) {
       console.error('Login error:', error);

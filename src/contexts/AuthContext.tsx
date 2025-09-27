@@ -22,11 +22,13 @@ interface AuthContextType {
   // Combined auth status
   isAuthenticated: boolean;
   userRole: string | null;
+  authError: string | null;
   
   // Auth actions
   signOut: () => Promise<void>;
   setClientAuth: (client: ClientData) => void;
   clearClientAuth: () => void;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for existing client session first
@@ -115,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserRole = async (userId: string) => {
     try {
       console.log('🔍 Fetching user role for:', userId);
+      setAuthError(null);
       
       const { data: adminUser, error } = await supabase
         .from('admin_users')
@@ -125,16 +129,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('❌ Error fetching user role:', error);
+        setAuthError(`Role fetch error: ${error.message}`);
         setUserRole(null);
       } else if (!adminUser) {
         console.warn('⚠️ No admin user found for userId:', userId);
+        setAuthError('No admin privileges found for this user');
         setUserRole(null);
       } else {
         console.log('✅ User role fetched successfully:', adminUser);
         setUserRole(adminUser.role);
+        setAuthError(null);
       }
     } catch (error) {
       console.error('❌ Exception in fetchUserRole:', error);
+      setAuthError(`Exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUserRole(null);
     } finally {
       setIsLoading(false);
@@ -166,6 +174,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('clientData');
   };
 
+  const refreshAuth = async () => {
+    try {
+      console.log('🔄 Manually refreshing auth...');
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('❌ Refresh error:', error);
+        setAuthError(`Refresh failed: ${error.message}`);
+        return;
+      }
+      
+      if (session?.user) {
+        console.log('✅ Session refreshed, fetching role...');
+        await fetchUserRole(session.user.id);
+      }
+    } catch (error) {
+      console.error('❌ Refresh exception:', error);
+      setAuthError(`Refresh exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const isAuthenticated = !!(user || clientData);
 
   return (
@@ -176,9 +205,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       isAuthenticated,
       userRole,
+      authError,
       signOut,
       setClientAuth,
-      clearClientAuth
+      clearClientAuth,
+      refreshAuth
     }}>
       {children}
     </AuthContext.Provider>
