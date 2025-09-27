@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Receipt as ReceiptIcon, Download, Mail, Check } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import { useReceiptProcessing } from "@/hooks/useReceiptProcessing";
 import { toast } from "sonner";
 
 interface ReceiptItem {
@@ -17,6 +18,8 @@ interface ReceiptItem {
 interface ReceiptProps {
   receiptNumber?: string;
   customerName?: string;
+  customerEmail?: string;
+  userId?: string;
   items?: ReceiptItem[];
   subtotal?: number;
   discount?: number;
@@ -28,6 +31,8 @@ interface ReceiptProps {
 const Receipt = ({ 
   receiptNumber = "RCP-2024-001",
   customerName = "Demo Customer",
+  customerEmail = "",
+  userId = "",
   items = [
     { name: "Coffee - Large", quantity: 2, price: 45.00, total: 90.00 },
     { name: "Meeting Room - 1hr", quantity: 1, price: 300.00, total: 300.00 },
@@ -40,16 +45,59 @@ const Receipt = ({
   date = new Date().toLocaleDateString()
 }: ReceiptProps) => {
   const [emailSent, setEmailSent] = useState(false);
+  const { emailSending, emailReceipt, downloadReceiptPDF } = useReceiptProcessing();
 
-  const handleEmailReceipt = () => {
-    // TODO: Implement email functionality
-    setEmailSent(true);
-    setTimeout(() => setEmailSent(false), 3000);
+  const handleEmailReceipt = async () => {
+    if (!customerEmail) {
+      toast("No email address available for this customer");
+      return;
+    }
+
+    const receiptData = {
+      receiptNumber,
+      customerName,
+      items: items.map(item => ({
+        id: item.name,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        category: 'product' as const
+      })),
+      subtotal,
+      discount,
+      total,
+      paymentMethod,
+      userId
+    };
+
+    const success = await emailReceipt(receiptData, customerEmail);
+    if (success) {
+      setEmailSent(true);
+      setTimeout(() => setEmailSent(false), 3000);
+    }
   };
 
-  const handleDownload = () => {
-    // TODO: Implement PDF download functionality
-    toast("PDF download feature coming soon!");
+  const handleDownload = async () => {
+    const receiptData = {
+      receiptNumber,
+      customerName,
+      items: items.map(item => ({
+        id: item.name,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        category: 'product' as const
+      })),
+      subtotal,
+      discount,
+      total,
+      paymentMethod,
+      userId
+    };
+
+    await downloadReceiptPDF(receiptData);
   };
 
   return (
@@ -131,12 +179,17 @@ const Receipt = ({
             variant="outline"
             size="sm"
             className="flex-1"
-            disabled={emailSent}
+            disabled={emailSent || emailSending || !customerEmail}
           >
             {emailSent ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
                 Sent!
+              </>
+            ) : emailSending ? (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Sending...
               </>
             ) : (
               <>

@@ -32,105 +32,58 @@ interface Client {
 }
 
 const ClientList = () => {
-  // Mock data for client directory
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: "1",
-      client_code: "CL001",
-      first_name: "Ahmed",
-      last_name: "Hassan",
-      full_name: "Ahmed Hassan",
-      email: "ahmed.hassan@example.com",
-      phone: "+20 100 123 4567",
-      job_title: "Software Engineer",
-      how_did_you_find_us: "Google Search",
-      active: true,
-      is_active: true,
-      barcode: "CL001123456789",
-      created_at: "2024-01-15T10:30:00Z",
-      updated_at: "2024-01-15T10:30:00Z"
-    },
-    {
-      id: "2",
-      client_code: "CL002",
-      first_name: "Sarah",
-      last_name: "Mohamed",
-      full_name: "Sarah Mohamed",
-      email: "sarah.mohamed@example.com",
-      phone: "+20 101 234 5678",
-      job_title: "Product Manager",
-      how_did_you_find_us: "Referral",
-      active: false,
-      is_active: true,
-      barcode: "CL002234567890",
-      created_at: "2024-01-20T14:15:00Z",
-      updated_at: "2024-01-20T14:15:00Z"
-    },
-    {
-      id: "3",
-      client_code: "CL003",
-      first_name: "Omar",
-      last_name: "Ali",
-      full_name: "Omar Ali",
-      email: "omar.ali@example.com",
-      phone: "+20 102 345 6789",
-      job_title: "UI/UX Designer",
-      how_did_you_find_us: "Instagram",
-      active: true,
-      is_active: true,
-      barcode: "CL003345678901",
-      created_at: "2024-02-01T09:45:00Z",
-      updated_at: "2024-02-01T09:45:00Z"
-    },
-    {
-      id: "4",
-      client_code: "CL004",
-      first_name: "Fatima",
-      last_name: "Ibrahim",
-      full_name: "Fatima Ibrahim",
-      email: "fatima.ibrahim@example.com",
-      phone: "+20 103 456 7890",
-      job_title: "Marketing Specialist",
-      how_did_you_find_us: "Facebook",
-      active: true,
-      is_active: true,
-      barcode: "CL004456789012",
-      created_at: "2024-02-05T16:20:00Z",
-      updated_at: "2024-02-05T16:20:00Z"
-    },
-    {
-      id: "5",
-      client_code: "CL005",
-      first_name: "Karim",
-      last_name: "Salah",
-      full_name: "Karim Salah",
-      email: "karim.salah@example.com",
-      phone: "+20 104 567 8901",
-      job_title: "Data Analyst",
-      how_did_you_find_us: "LinkedIn",
-      active: false,
-      is_active: true,
-      barcode: "CL005567890123",
-      created_at: "2024-02-10T11:30:00Z",
-      updated_at: "2024-02-10T11:30:00Z"
-    }
-  ]);
+  const [clients, setClients] = useState<Client[]>([]);
   
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientDetails, setShowClientDetails] = useState(false);
 
-  const handleToggleClientStatus = (clientId: string, currentStatus: boolean) => {
-    setClients(prev => prev.map(client => 
-      client.id === clientId 
-        ? { ...client, active: !currentStatus }
-        : client
-    ));
-    
-    const client = clients.find(c => c.id === clientId);
-    toast.success(`${client?.full_name} ${!currentStatus ? 'checked in' : 'checked out'} successfully`);
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast.error("Failed to load clients");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ active: !currentStatus })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      setClients(prev => prev.map(client => 
+        client.id === clientId 
+          ? { ...client, active: !currentStatus }
+          : client
+      ));
+      
+      const client = clients.find(c => c.id === clientId);
+      toast.success(`${client?.full_name} ${!currentStatus ? 'checked in' : 'checked out'} successfully`);
+    } catch (error) {
+      console.error('Error updating client status:', error);
+      toast.error("Failed to update client status");
+    }
   };
 
   const filteredClients = clients.filter(client => {
