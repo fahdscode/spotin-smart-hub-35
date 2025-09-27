@@ -60,6 +60,9 @@ const ManagementLogin = () => {
         
         // Navigate based on role
         switch (adminUser.role) {
+          case 'admin':
+            navigate('/ceo');
+            break;
           case 'receptionist':
             navigate('/receptionist');
             break;
