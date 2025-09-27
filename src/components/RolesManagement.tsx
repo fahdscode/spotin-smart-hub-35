@@ -127,32 +127,34 @@ const RolesManagement = () => {
 
   const createNewUser = async (email: string, password: string, fullName: string, role: string, phone: string) => {
     try {
-      // Create user in Supabase auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-          role: role
+      // Call the Edge Function to create user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email,
+          password,
+          fullName,
+          role,
+          phone
         }
       });
 
-      if (authError) throw authError;
+      if (error) {
+        console.error('Edge function error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create user account",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Update the profile with additional details
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: fullName,
-            phone: phone,
-            role: role,
-            is_admin: role === 'admin' || role === 'ceo'
-          })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) throw profileError;
+      if (!data?.success) {
+        toast({
+          title: "Error",
+          description: data?.error || "Failed to create user account",
+          variant: "destructive",
+        });
+        return;
       }
 
       await fetchProfiles();
