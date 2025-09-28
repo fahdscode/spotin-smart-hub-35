@@ -142,7 +142,43 @@ const ReceptionistDashboard = () => {
         setCurrentUserId(null);
       }
     };
+    
+    // Fetch real active sessions from database
+    const fetchActiveSessions = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_receptionist_active_sessions');
+        if (error) throw error;
+        
+        const sessions = data || [];
+        console.log('📊 Active sessions from DB:', sessions);
+        
+        // Convert to match the expected format
+        const formattedSessions = (sessions as any[]).map((session: any) => ({
+          id: `session_${session.id}`,
+          client_id: session.id,
+          checked_in_at: session.check_in_time || new Date().toISOString(),
+          client: {
+            id: session.id,
+            full_name: session.full_name,
+            client_code: session.client_code,
+            email: session.email,
+            phone: session.phone
+          }
+        }));
+        
+        setActiveSessions(formattedSessions);
+      } catch (error) {
+        console.error('Error fetching active sessions:', error);
+        // Keep mock data as fallback
+      }
+    };
+    
     getCurrentUser();
+    fetchActiveSessions();
+    
+    // Refresh active sessions every 30 seconds
+    const interval = setInterval(fetchActiveSessions, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {
