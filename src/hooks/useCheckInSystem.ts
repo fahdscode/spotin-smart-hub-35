@@ -25,12 +25,18 @@ export const useCheckInSystem = () => {
     try {
       setProcessing(true);
       
-      const { data, error } = await supabase.rpc('toggle_client_checkin_status', {
-        p_barcode: barcode.trim(),
-        p_scanned_by_user_id: scannedByUserId || null
+      // Use edge function for reliable check-in/out operations
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          barcode: barcode.trim(),
+          scanned_by_user_id: scannedByUserId || null
+        }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`Check-in service error: ${error.message}`);
+      }
 
       const result = data as any;
       if (result?.success) {
@@ -57,9 +63,12 @@ export const useCheckInSystem = () => {
       }
     } catch (error) {
       console.error('Error processing barcode scan:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "System Error",
-        description: "Failed to process barcode scan. Please try again.",
+        title: "Check-in Error",
+        description: errorMessage.includes('Database error') 
+          ? "Database connection issue. Please try again in a moment."
+          : "Failed to process barcode scan. Please try again.",
         variant: "destructive",
       });
       return null;
@@ -72,12 +81,19 @@ export const useCheckInSystem = () => {
     try {
       setProcessing(true);
       
-      const { data, error } = await supabase.rpc('checkout_client', {
-        p_client_id: clientId,
-        p_checkout_by_user_id: checkedOutByUserId || null
+      // Use edge function for reliable checkout operations
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          action: 'checkout',
+          client_id: clientId,
+          scanned_by_user_id: checkedOutByUserId || null
+        }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function checkout error:', error);
+        throw new Error(`Checkout service error: ${error.message}`);
+      }
 
       const result = data as any;
       if (result?.success) {
@@ -96,9 +112,12 @@ export const useCheckInSystem = () => {
       }
     } catch (error) {
       console.error('Error checking out client:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "System Error",
-        description: "Failed to check out client. Please try again.",
+        title: "Checkout Error", 
+        description: errorMessage.includes('Checkout failed') 
+          ? "Database connection issue. Please try again in a moment."
+          : "Failed to check out client. Please try again.",
         variant: "destructive",
       });
       return false;
