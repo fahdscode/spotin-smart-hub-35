@@ -63,12 +63,29 @@ export const useProductAvailability = () => {
       if (productsError) throw productsError;
 
       // Also fetch products without ingredients
-      const { data: productsWithoutIngredients, error: noIngredientsError } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('is_available', true)
-        .not('id', 'in', `(${productsData?.map(p => `'${p.id}'`).join(',') || "''"})`)
-        .order('category', { ascending: true });
+      const productIds = productsData?.map(p => p.id) || [];
+      let productsWithoutIngredients = null;
+      let noIngredientsError = null;
+      
+      if (productIds.length > 0) {
+        const result = await supabase
+          .from('drinks')
+          .select('*')
+          .eq('is_available', true)
+          .not('id', 'in', `(${productIds.map(id => `'${id}'`).join(',')})`)
+          .order('category', { ascending: true });
+        productsWithoutIngredients = result.data;
+        noIngredientsError = result.error;
+      } else {
+        // If no products with ingredients, fetch all available products
+        const result = await supabase
+          .from('drinks')
+          .select('*')
+          .eq('is_available', true)
+          .order('category', { ascending: true });
+        productsWithoutIngredients = result.data;
+        noIngredientsError = result.error;
+      }
 
       if (noIngredientsError) throw noIngredientsError;
 
