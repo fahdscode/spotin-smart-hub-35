@@ -29,49 +29,15 @@ const ReceptionistDashboard = () => {
   // State declarations
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [activeSessions, setActiveSessions] = useState<any[]>([
-    {
-      id: "session_1",
-      client_id: "1",
-      checked_in_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      client: {
-        id: "1",
-        full_name: "Ahmed Hassan",
-        client_code: "CL001",
-        email: "ahmed.hassan@example.com",
-        phone: "+20 100 123 4567"
-      }
-    },
-    {
-      id: "session_2", 
-      client_id: "2",
-      checked_in_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
-      client: {
-        id: "2",
-        full_name: "Fatima Ibrahim",
-        client_code: "CL004",
-        email: "fatima.ibrahim@example.com",
-        phone: "+20 103 456 7890"
-      }
-    },
-    {
-      id: "session_3",
-      client_id: "3", 
-      checked_in_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-      client: {
-        id: "3",
-        full_name: "Omar Ali",
-        client_code: "CL003",
-        email: "omar.ali@example.com",
-        phone: "+20 102 345 6789"
-      }
-    }
-  ]);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [finalReceiptData, setFinalReceiptData] = useState<any>(null);
-  const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(3);
+  const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(0);
+  const [availableDesks, setAvailableDesks] = useState<number>(0);
+  const [roomBookings, setRoomBookings] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
 
   const quickActions = [
@@ -120,15 +86,11 @@ const ReceptionistDashboard = () => {
   ];
 
   useEffect(() => {
-    // Dashboard initialized with sample data
-    
-    // Get current user ID for tracking check-ins/outs
     const getCurrentUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error) {
           console.warn('No authenticated user found:', error.message);
-          // Set a fallback system user ID for tracking purposes
           setCurrentUserId(null);
         } else if (user) {
           console.log('✅ Authenticated user found:', user.id);
@@ -169,17 +131,77 @@ const ReceptionistDashboard = () => {
         setActiveSessions(formattedSessions);
       } catch (error) {
         console.error('Error fetching active sessions:', error);
-        // Keep mock data as fallback
+        setActiveSessions([]);
       }
     };
+
+    // Fetch daily registrations count
+    const fetchDailyRegistrations = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_receptionist_daily_registrations');
+        if (error) throw error;
+        setNewRegistrationsCount(data || 0);
+      } catch (error) {
+        console.error('Error fetching daily registrations:', error);
+        setNewRegistrationsCount(0);
+      }
+    };
+
+    // Fetch room bookings count for today
+    const fetchRoomBookings = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+          .from('reservations')
+          .select('id', { count: 'exact' })
+          .gte('start_time', `${today}T00:00:00Z`)
+          .lt('start_time', `${today}T23:59:59Z`)
+          .eq('status', 'confirmed');
+        
+        if (error) throw error;
+        setRoomBookings(data?.length || 0);
+      } catch (error) {
+        console.error('Error fetching room bookings:', error);
+        setRoomBookings(0);
+      }
+    };
+
+    // Calculate available desks (total capacity - active sessions)
+    const calculateAvailableDesks = () => {
+      const totalDesks = 50; // Assuming total desk capacity
+      const occupiedDesks = activeSessions.length;
+      setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
+    };
+
+    const initializeDashboard = async () => {
+      setLoading(true);
+      await Promise.all([
+        getCurrentUser(),
+        fetchActiveSessions(),
+        fetchDailyRegistrations(),
+        fetchRoomBookings()
+      ]);
+      setLoading(false);
+    };
+
+    initializeDashboard();
     
-    getCurrentUser();
-    fetchActiveSessions();
-    
-    // Refresh active sessions every 30 seconds
-    const interval = setInterval(fetchActiveSessions, 30000);
+    // Refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchActiveSessions();
+      fetchDailyRegistrations();
+      fetchRoomBookings();
+    }, 30000);
+
     return () => clearInterval(interval);
   }, []);
+
+  // Update available desks when active sessions change
+  useEffect(() => {
+    const totalDesks = 50; // Assuming total desk capacity
+    const occupiedDesks = activeSessions.length;
+    setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
+  }, [activeSessions]);
 
   const handleCheckOut = (sessionId: string, clientData: any) => {
     setSelectedSession({ sessionId, clientData });
@@ -245,10 +267,34 @@ const ReceptionistDashboard = () => {
 
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <MetricCard title="Active Sessions" value={activeSessions.length.toString()} change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} icon={Users} variant="success" />
-          <MetricCard title="Available Desks" value="12" change="-2" icon={CheckCircle} variant="info" />
-          <MetricCard title="Room Bookings" value="8" change="+1" icon={Calendar} variant="default" />
-          <MetricCard title="New Registrations" value={(newRegistrationsCount || 0).toString()} change={(newRegistrationsCount || 0) > 0 ? '+' + (newRegistrationsCount || 0) : '0'} icon={UserPlus} variant="success" />
+          <MetricCard 
+            title="Active Sessions" 
+            value={loading ? "..." : activeSessions.length.toString()} 
+            change={activeSessions.length > 0 ? '+' + activeSessions.length : '0'} 
+            icon={Users} 
+            variant="success" 
+          />
+          <MetricCard 
+            title="Available Desks" 
+            value={loading ? "..." : availableDesks.toString()} 
+            change={activeSessions.length > 0 ? '-' + activeSessions.length : '0'} 
+            icon={CheckCircle} 
+            variant="info" 
+          />
+          <MetricCard 
+            title="Room Bookings" 
+            value={loading ? "..." : roomBookings.toString()} 
+            change={roomBookings > 0 ? '+' + roomBookings : '0'} 
+            icon={Calendar} 
+            variant="default" 
+          />
+          <MetricCard 
+            title="New Registrations" 
+            value={loading ? "..." : newRegistrationsCount.toString()} 
+            change={newRegistrationsCount > 0 ? '+' + newRegistrationsCount : '0'} 
+            icon={UserPlus} 
+            variant="success" 
+          />
         </div>
 
         {/* Tabbed Interface for Mobile/Desktop */}
