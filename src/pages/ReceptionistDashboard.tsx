@@ -166,13 +166,6 @@ const ReceptionistDashboard = () => {
       }
     };
 
-    // Calculate available desks (total capacity - active sessions)
-    const calculateAvailableDesks = () => {
-      const totalDesks = 50; // Assuming total desk capacity
-      const occupiedDesks = activeSessions.length;
-      setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
-    };
-
     const initializeDashboard = async () => {
       setLoading(true);
       await Promise.all([
@@ -186,14 +179,36 @@ const ReceptionistDashboard = () => {
 
     initializeDashboard();
     
-    // Refresh data every 30 seconds
+    // Set up real-time subscription for client check-ins/outs
+    const channel = supabase
+      .channel('clients-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'clients',
+          filter: 'is_active=eq.true'
+        },
+        (payload) => {
+          console.log('🔔 Client status changed:', payload);
+          // Refresh active sessions when any client's active status changes
+          fetchActiveSessions();
+        }
+      )
+      .subscribe();
+
+    // Refresh data every 30 seconds as backup
     const interval = setInterval(() => {
       fetchActiveSessions();
       fetchDailyRegistrations();
       fetchRoomBookings();
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, []);
 
   // Update available desks when active sessions change
