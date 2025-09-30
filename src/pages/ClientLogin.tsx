@@ -116,7 +116,8 @@ const ClientLogin = () => {
         client_code: result.client.client_code,
         full_name: result.client.full_name,
         phone: result.client.phone,
-        email: result.client.email
+        email: result.client.email,
+        barcode: result.client.barcode
       };
       
       // Use auth context to set client authentication

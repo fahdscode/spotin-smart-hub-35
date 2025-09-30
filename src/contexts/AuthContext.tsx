@@ -8,6 +8,7 @@ interface ClientData {
   full_name: string;
   phone: string;
   email?: string;
+  barcode: string;
 }
 
 interface AuthContextType {

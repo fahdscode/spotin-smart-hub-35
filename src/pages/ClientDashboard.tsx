@@ -313,12 +313,95 @@ export default function ClientDashboard() {
     setRecentTransactions(mockTransactions);
   };
 
-  const handleCheckOut = () => {
-    // Show satisfaction popup when checking out
-    if (isCheckedIn) {
-      setShowSatisfactionPopup(true);
-      setIsCheckedIn(false);
-      setCheckInTime(null);
+  const handleCheckIn = async () => {
+    if (!clientData?.barcode) {
+      toast({
+        title: "Error",
+        description: "No barcode found. Please contact reception.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          barcode: clientData.barcode,
+          scanned_by_user_id: clientData.id
+        }
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        setIsCheckedIn(true);
+        setCheckInTime(new Date().toLocaleTimeString());
+        toast({
+          title: "Checked In Successfully",
+          description: "You can now place orders!",
+        });
+      } else {
+        toast({
+          title: "Check-in Failed",
+          description: result?.error || "Unable to check in. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Check-in error:', error);
+      toast({
+        title: "Check-in Error",
+        description: "Failed to check in. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!clientData?.id) {
+      toast({
+        title: "Error",
+        description: "Client information not found.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          action: 'checkout',
+          client_id: clientData.id,
+          scanned_by_user_id: clientData.id
+        }
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        setIsCheckedIn(false);
+        setCheckInTime(null);
+        setShowSatisfactionPopup(true);
+        toast({
+          title: "Checked Out Successfully",
+          description: "Thank you for your visit!",
+        });
+      } else {
+        toast({
+          title: "Check-out Failed",
+          description: result?.error || "Unable to check out. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Check-out error:', error);
+      toast({
+        title: "Check-out Error",
+        description: "Failed to check out. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -679,8 +762,16 @@ export default function ClientDashboard() {
                     <p className="text-sm text-green-600">Since {checkInTime}</p>
                   )}
                   {!isCheckedIn && (
-                    <p className="text-sm text-red-600">Visit reception to check in</p>
+                    <p className="text-sm text-red-600 mb-2">Tap below to check in</p>
                   )}
+                  <Button
+                    size="sm"
+                    variant={isCheckedIn ? "destructive" : "default"}
+                    onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
+                    className="mt-2"
+                  >
+                    {isCheckedIn ? 'Check Out' : 'Check In'}
+                  </Button>
                 </CardContent>
               </Card>
               <Card>
