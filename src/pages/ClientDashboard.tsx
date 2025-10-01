@@ -85,6 +85,7 @@ export default function ClientDashboard() {
     
     if (clientData?.id) {
       fetchAllData(clientData.id);
+      fetchCheckInStatus(clientData.id);
       setLoading(false);
 
       // Set up real-time subscription for client status updates
