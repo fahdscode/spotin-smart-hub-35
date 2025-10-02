@@ -59,6 +59,7 @@ export default function ClientDashboard() {
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [orderTotal, setOrderTotal] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const { processPayment } = usePaymentProcessing();
   
   // Order data
@@ -95,7 +96,7 @@ export default function ClientDashboard() {
       setLoading(false);
 
       // Set up real-time subscription for client status updates
-      const channel = supabase
+      const clientChannel = supabase
         .channel('client-status-changes')
         .on(
           'postgres_changes',
@@ -107,7 +108,6 @@ export default function ClientDashboard() {
           },
           (payload) => {
             console.log('🔄 Real-time client status update:', payload);
-            // Refresh check-in status when client record is updated
             fetchCheckInStatus(clientData.id);
           }
         )
@@ -121,15 +121,33 @@ export default function ClientDashboard() {
           },
           (payload) => {
             console.log('🔄 Real-time check-in update:', payload);
-            // Refresh check-in status when check-ins are updated
             fetchCheckInStatus(clientData.id);
           }
         )
         .subscribe();
 
-      // Cleanup subscription on unmount
+      // Set up real-time subscription for order updates
+      const ordersChannel = supabase
+        .channel('client-orders-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'session_line_items',
+            filter: `user_id=eq.${clientData.id}`
+          },
+          (payload) => {
+            console.log('🔄 Real-time order update:', payload);
+            fetchPendingOrders();
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscriptions on unmount
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(clientChannel);
+        supabase.removeChannel(ordersChannel);
       };
     }
   }, [isAuthenticated, userRole, clientData, navigate]);
@@ -156,6 +174,9 @@ export default function ClientDashboard() {
         setLastOrders(lastOrdersData as unknown as LastOrder[]);
       }
 
+      // Fetch pending orders
+      await fetchPendingOrders(clientId);
+
       // Fetch check-ins and analytics
       fetchCheckInsLast30Days(clientId);
       fetchMembershipStatus(clientId);
@@ -165,6 +186,30 @@ export default function ClientDashboard() {
       
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchPendingOrders = async (clientId?: string) => {
+    if (!clientId && !clientData?.id) return;
+    
+    const userId = clientId || clientData?.id;
+    
+    try {
+      const { data, error } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['pending', 'preparing'])
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching pending orders:', error);
+        return;
+      }
+
+      setPendingOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
     }
   };
 
@@ -589,6 +634,8 @@ export default function ClientDashboard() {
         description: `Your order has been paid and sent to the barista.`,
       });
 
+      // Refresh pending orders and show satisfaction popup
+      await fetchPendingOrders();
       setShowSatisfactionPopup(true);
       
     } catch (error) {
@@ -632,7 +679,7 @@ export default function ClientDashboard() {
         description: "Your order has been cancelled",
       });
 
-      fetchAllData(clientData?.id || '');
+      await fetchPendingOrders();
     } catch (error) {
       console.error("Error cancelling order:", error);
       toast({
@@ -964,6 +1011,45 @@ export default function ClientDashboard() {
                   <Button onClick={handlePlaceOrder} className="w-full" size="lg">
                     Place Order • {formatCurrency(getCartTotal())}
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Current Pending Orders */}
+            {pendingOrders.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Current Orders</CardTitle>
+                  <CardDescription>Orders being prepared</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {pendingOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted"
+                    >
+                      <div>
+                        <p className="font-medium">{order.item_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity: {order.quantity} • {formatCurrency(order.price * order.quantity)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={order.status === 'preparing' ? 'default' : 'secondary'}>
+                          {order.status}
+                        </Badge>
+                        {order.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCancelOrder(order.id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             )}
