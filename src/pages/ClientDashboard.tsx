@@ -10,6 +10,9 @@ import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
 import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
+import { ClientOrderHistory } from '@/components/ClientOrderHistory';
+import { PaymentDialog } from '@/components/PaymentDialog';
+import { usePaymentProcessing } from '@/hooks/usePaymentProcessing';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +57,9 @@ export default function ClientDashboard() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const { processPayment } = usePaymentProcessing();
   
   // Order data
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -519,10 +525,15 @@ export default function ClientDashboard() {
       return;
     }
 
+    const total = getCartTotal();
+    setOrderTotal(total);
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async (paymentMethod: 'cash' | 'card' | 'mobile') => {
+    if (!clientData?.id) return;
+
     try {
-      console.log('Placing order for client:', clientData.id, 'Items:', cart);
-      
-      // Validate cart items before placing order
       const validatedItems = cart.filter(item => {
         if (!item.name || item.quantity <= 0 || item.price <= 0) {
           console.warn('Invalid cart item:', item);
@@ -534,20 +545,6 @@ export default function ClientDashboard() {
       if (validatedItems.length === 0) {
         throw new Error('No valid items in cart');
       }
-
-      if (validatedItems.length !== cart.length) {
-        toast({
-          title: "Cart Validation",
-          description: `${cart.length - validatedItems.length} invalid items removed from cart.`,
-          variant: "destructive"
-        });
-      }
-      
-      console.log('Attempting to place order:', {
-        clientId: clientData.id,
-        validatedItems: validatedItems.length,
-        sampleItem: validatedItems[0]
-      });
 
       const orderPromises = validatedItems.map(item =>
         supabase.from('session_line_items').insert({
@@ -561,47 +558,87 @@ export default function ClientDashboard() {
 
       const results = await Promise.all(orderPromises);
       
-      // Check for any errors in the results
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Order placement errors:', errors);
         throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
       }
-      
-      console.log('Order placed successfully:', results);
-      
+
+      const paymentItems = validatedItems.map(item => ({
+        item_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity
+      }));
+
+      await processPayment({
+        userId: clientData.id,
+        items: paymentItems,
+        subtotal: orderTotal,
+        discount: 0,
+        total: orderTotal,
+        paymentMethod,
+        transactionType: 'order'
+      });
+
       setCart([]);
       setCurrentView('home');
       
       toast({
-        title: "Order Placed!",
-        description: `Your order with ${validatedItems.length} item${validatedItems.length > 1 ? 's' : ''} has been sent to the barista.`,
+        title: "Order Placed & Paid!",
+        description: `Your order has been paid and sent to the barista.`,
       });
 
-      // Show satisfaction popup after successful order
       setShowSatisfactionPopup(true);
       
     } catch (error) {
       console.error('Error placing order:', error);
-      
-      // Enhanced error handling for specific cases
-      let errorMessage = "Failed to place order. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Authentication error')) {
-          errorMessage = "Your session has expired. Please log in again.";
-        } else if (error.message.includes('row-level security')) {
-          errorMessage = "Authentication error. Please log in again.";
-          clearClientAuth();
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
       toast({
         title: "Order Failed",
-        description: errorMessage,
+        description: "Failed to place order. Please try again.",
         variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const { data: orderToCancel } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .eq('id', orderId)
+        .eq('status', 'pending')
+        .single();
+
+      if (!orderToCancel) {
+        toast({
+          title: "Cannot Cancel",
+          description: "Order cannot be cancelled at this time",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('session_line_items')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order Cancelled",
+        description: "Your order has been cancelled",
+      });
+
+      fetchAllData(clientData?.id || '');
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
       });
     }
   };
@@ -954,6 +991,12 @@ export default function ClientDashboard() {
                 </Card>
               ))}
             </div>
+
+            {/* Order History Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Order History</h3>
+              <ClientOrderHistory clientId={clientData?.id || ''} />
+            </div>
           </div>
         )}
 
@@ -1139,6 +1182,14 @@ export default function ClientDashboard() {
         isOpen={showSatisfactionPopup}
         onClose={() => setShowSatisfactionPopup(false)}
         clientId={clientData?.id || ''}
+      />
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        orderTotal={orderTotal}
+        onConfirmPayment={handleConfirmPayment}
       />
     </div>
   );
