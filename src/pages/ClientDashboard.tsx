@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
@@ -13,11 +14,12 @@ import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { PaymentDialog } from '@/components/PaymentDialog';
 import { usePaymentProcessing } from '@/hooks/usePaymentProcessing';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Sparkles, TrendingUp, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
 import { useAuth } from '@/contexts/AuthContext';
+import confetti from 'canvas-confetti';
 
 // Remove this interface as we'll use the one from AuthContext
 
@@ -457,6 +459,15 @@ export default function ClientDashboard() {
     }
   };
 
+  const triggerConfetti = useCallback(() => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#FFD700', '#FFA500', '#FF6B6B', '#4ECDC4', '#45B7D1']
+    });
+  }, []);
+
   const addToCart = (drink: Drink, goToCart = false) => {
     if (!isCheckedIn) {
       toast({
@@ -484,7 +495,7 @@ export default function ClientDashboard() {
     }
     
     toast({
-      title: "Added to cart",
+      title: "✨ Added to cart",
       description: `${drink.name} added to your order`
     });
 
@@ -629,14 +640,16 @@ export default function ClientDashboard() {
       setCart([]);
       setCurrentView('home');
       
+      // Trigger confetti celebration
+      triggerConfetti();
+      
       toast({
-        title: "Order Placed & Paid!",
+        title: "🎉 Order Placed & Paid!",
         description: `Your order has been paid and sent to the barista.`,
       });
 
-      // Refresh pending orders and show satisfaction popup
+      // Refresh pending orders
       await fetchPendingOrders();
-      setShowSatisfactionPopup(true);
       
     } catch (error) {
       console.error('Error placing order:', error);
@@ -702,8 +715,16 @@ export default function ClientDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="text-center space-y-4">
+          <div className="animate-bounce">
+            <Coffee className="h-16 w-16 mx-auto text-primary animate-pulse-glow" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32 mx-auto" />
+            <Skeleton className="h-3 w-24 mx-auto" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -806,18 +827,22 @@ export default function ClientDashboard() {
         {currentView === 'home' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarFallback className="text-lg">
+            <Card className="bg-gradient-primary animate-fade-in-up border-0 shadow-elegant overflow-hidden">
+              <CardContent className="pt-6 relative">
+                <div className="absolute top-0 right-0 opacity-10">
+                  <Sparkles className="h-32 w-32" />
+                </div>
+                <div className="flex items-center gap-4 relative z-10">
+                  <Avatar className="h-16 w-16 border-2 border-white/20 shadow-lg">
+                    <AvatarFallback className="text-lg bg-white/10 text-white">
                       {clientData?.full_name?.[0]}{clientData?.full_name?.split(' ')[1]?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h1 className="text-2xl font-bold">Welcome back, {clientData?.full_name?.split(' ')[0]}!</h1>
-                    <p className="text-muted-foreground">Ready to order your favorites?</p>
-                    <Badge variant="secondary" className="mt-2">
+                    <h1 className="text-2xl font-bold text-white">Welcome back, {clientData?.full_name?.split(' ')[0]}! ✨</h1>
+                    <p className="text-white/80">Ready to order your favorites?</p>
+                    <Badge variant="accent" className="mt-2">
+                      <Award className="h-3 w-3 mr-1" />
                       {membershipStatus}
                     </Badge>
                   </div>
@@ -826,50 +851,54 @@ export default function ClientDashboard() {
             </Card>
 
             {/* Client Status & Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className={isCheckedIn ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
+              <Card className={`${isCheckedIn ? "bg-gradient-success" : "bg-gradient-subtle"} border-0 hover-scale`}>
                 <CardContent className="pt-6 text-center">
-                  <div className={`h-8 w-8 mx-auto mb-2 ${isCheckedIn ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`h-12 w-12 mx-auto mb-3 ${isCheckedIn ? 'animate-pulse-glow' : ''}`}>
                     {isCheckedIn ? (
-                      <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
-                        <div className="h-4 w-4 bg-white rounded-full"></div>
+                      <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <MapPin className="h-6 w-6 text-white" />
                       </div>
                     ) : (
-                      <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
-                        <div className="h-4 w-4 bg-white rounded-full"></div>
+                      <div className="h-12 w-12 bg-muted/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <QrCode className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
                   </div>
-                  <div className={`text-lg font-bold ${isCheckedIn ? 'text-green-700' : 'text-red-700'}`}>
-                    {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                  <div className={`text-lg font-bold mb-1 ${isCheckedIn ? 'text-white' : 'text-foreground'}`}>
+                    {isCheckedIn ? '✓ Checked In' : 'Not Checked In'}
                   </div>
                   {isCheckedIn && checkInTime && (
-                    <p className="text-sm text-green-600">Since {checkInTime}</p>
+                    <p className="text-sm text-white/80 mb-2">Since {checkInTime}</p>
                   )}
                   {!isCheckedIn && (
-                    <p className="text-sm text-red-600 mb-2">Tap below to check in</p>
+                    <p className="text-sm text-muted-foreground mb-2">Check in to start ordering</p>
                   )}
                   <Button
                     size="sm"
-                    variant={isCheckedIn ? "destructive" : "default"}
+                    variant={isCheckedIn ? "destructive" : "fun"}
                     onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
                     className="mt-2"
                   >
-                    {isCheckedIn ? 'Check Out' : 'Check In'}
+                    {isCheckedIn ? 'Check Out' : 'Check In Now'}
                   </Button>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover-scale">
                 <CardContent className="pt-6 text-center">
-                  <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold">{checkInsLast30Days}</div>
+                  <div className="h-12 w-12 mx-auto mb-3 bg-gradient-accent rounded-full flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent">{checkInsLast30Days}</div>
                   <p className="text-sm text-muted-foreground">Check-ins this month</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover-scale">
                 <CardContent className="pt-6 text-center">
-                  <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold">{cart.length}</div>
+                  <div className="h-12 w-12 mx-auto mb-3 bg-primary/10 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-3xl font-bold text-primary">{cart.length}</div>
                   <p className="text-sm text-muted-foreground">Items in cart</p>
                 </CardContent>
               </Card>
@@ -878,12 +907,12 @@ export default function ClientDashboard() {
             {/* Quick Actions */}
             <div className="space-y-4">
               {!isCheckedIn && (
-                <Card className="border-orange-200 bg-orange-50">
+                <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200 animate-bounce-in">
                   <CardContent className="pt-6 text-center">
-                    <div className="text-orange-600 mb-2">
-                      <QrCode className="h-12 w-12 mx-auto" />
+                    <div className="text-orange-600 mb-3 animate-wiggle">
+                      <QrCode className="h-14 w-14 mx-auto" />
                     </div>
-                    <h3 className="text-lg font-semibold text-orange-800 mb-2">Please Check In First</h3>
+                    <h3 className="text-xl font-bold text-orange-900 mb-2">Please Check In First 👋</h3>
                     <p className="text-orange-700 mb-4">You need to check in at reception before you can place orders.</p>
                     <p className="text-sm text-orange-600">Show your QR code (in Profile tab) to the receptionist.</p>
                   </CardContent>
@@ -891,10 +920,10 @@ export default function ClientDashboard() {
               )}
 
               {isCheckedIn && cart.length === 0 && lastOrders.length > 0 && (
-                <Card className="border-primary/20">
+                <Card className="border-primary/30 bg-gradient-subtle animate-fade-in">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <RotateCcw className="h-5 w-5" />
+                      <RotateCcw className="h-5 w-5 text-primary" />
                       Reorder Last Visit
                     </CardTitle>
                     <CardDescription>
@@ -903,9 +932,9 @@ export default function ClientDashboard() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {lastOrders.slice(0, 2).map((order, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                      <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-card hover:shadow-lg transition-all hover-scale border border-border">
                         <div>
-                          <p className="font-medium">
+                          <p className="font-semibold">
                             {new Date(order.order_date).toLocaleDateString()}
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -913,6 +942,7 @@ export default function ClientDashboard() {
                           </p>
                         </div>
                         <Button 
+                          variant="fun"
                           size="sm" 
                           onClick={() => reorderLastOrder(order)}
                           className="shrink-0"
@@ -930,24 +960,33 @@ export default function ClientDashboard() {
 
               {/* Favorites */}
               {favoriteDrinks.length > 0 && (
-                <Card>
+                <Card className="animate-fade-in-up">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Heart className="h-5 w-5" />
+                      <Heart className="h-5 w-5 text-red-500 animate-pulse" />
                       Your Favorites
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {favoriteDrinks.map((drink) => (
-                        <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                          <div>
-                            <p className="font-medium">{drink.name}</p>
-                            <p className="text-sm text-muted-foreground">{formatCurrency(drink.price)}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {favoriteDrinks.map((drink, index) => (
+                        <div 
+                          key={drink.id} 
+                          className="group p-4 rounded-xl bg-gradient-subtle border border-border hover:shadow-elegant transition-all hover-scale"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <div className="flex items-center justify-center mb-3">
+                            <div className="h-12 w-12 rounded-full bg-gradient-accent flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Coffee className="h-6 w-6 text-white" />
+                            </div>
                           </div>
-                          <Button size="sm" onClick={() => addToCart(drink, true)}>
+                          <div className="text-center mb-3">
+                            <p className="font-semibold mb-1">{drink.name}</p>
+                            <p className="text-lg font-bold text-primary">{formatCurrency(drink.price)}</p>
+                          </div>
+                          <Button variant="fun" size="sm" className="w-full" onClick={() => addToCart(drink, true)}>
                             <Plus className="h-4 w-4 mr-1" />
-                            Add
+                            Add to Cart
                           </Button>
                         </div>
                       ))}
@@ -975,31 +1014,38 @@ export default function ClientDashboard() {
 
             {/* Cart Summary */}
             {cart.length > 0 && (
-              <Card className="border-primary/20">
+              <Card className="border-primary bg-gradient-primary animate-slide-in-right sticky top-4 z-10">
                 <CardHeader>
-                  <CardTitle>Your Order ({cart.length} items)</CardTitle>
-                  <CardDescription>Total: {formatCurrency(getCartTotal())}</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <ShoppingCart className="h-5 w-5" />
+                    Your Order ({cart.length} items)
+                  </CardTitle>
+                  <CardDescription className="text-white/80 text-lg font-semibold">
+                    Total: {formatCurrency(getCartTotal())}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 mb-4">
                     {cart.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                        <div className="flex-1">
+                          <p className="font-semibold text-white">{item.name}</p>
+                          <p className="text-sm text-white/70">{formatCurrency(item.price)} each</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="outline"
+                            className="h-8 w-8 p-0 bg-white/20 border-white/30 text-white hover:bg-white/30"
                             onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
+                          <span className="w-8 text-center font-bold text-white">{item.quantity}</span>
                           <Button
                             size="sm"
                             variant="outline"
+                            className="h-8 w-8 p-0 bg-white/20 border-white/30 text-white hover:bg-white/30"
                             onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
@@ -1008,7 +1054,12 @@ export default function ClientDashboard() {
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handlePlaceOrder} className="w-full" size="lg">
+                  <Button 
+                    onClick={handlePlaceOrder} 
+                    className="w-full bg-white text-primary hover:bg-white/90 shadow-glow font-bold" 
+                    size="lg"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
                     Place Order • {formatCurrency(getCartTotal())}
                   </Button>
                 </CardContent>
@@ -1056,20 +1107,41 @@ export default function ClientDashboard() {
 
             {/* Drinks Menu */}
             <div className="grid gap-4">
-              {filteredDrinks.map((drink) => (
-                <Card key={drink.id} className="hover:shadow-md transition-shadow">
+              {filteredDrinks.length === 0 && (
+                <Card className="text-center py-12 bg-gradient-subtle">
+                  <CardContent>
+                    <Coffee className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <p className="text-lg font-semibold mb-2">No drinks found</p>
+                    <p className="text-muted-foreground">Try adjusting your search</p>
+                  </CardContent>
+                </Card>
+              )}
+              {filteredDrinks.map((drink, index) => (
+                <Card 
+                  key={drink.id} 
+                  className="hover:shadow-elegant transition-all hover-scale animate-fade-in-up group"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{drink.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{drink.description}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-xl bg-gradient-accent flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Coffee className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg mb-1">{drink.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{drink.description}</p>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold">{formatCurrency(drink.price)}</span>
+                          <span className="font-bold text-lg text-primary">{formatCurrency(drink.price)}</span>
                           <Badge variant="outline">{drink.category}</Badge>
                         </div>
                       </div>
-                      <Button onClick={() => addToCart(drink)} size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
+                      <Button 
+                        onClick={() => addToCart(drink)} 
+                        variant="fun"
+                        size="lg"
+                        className="shrink-0"
+                      >
+                        <Plus className="h-5 w-5 mr-1" />
                         Add
                       </Button>
                     </div>
