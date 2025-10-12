@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -264,18 +264,18 @@ const ReceptionistDashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-subtle">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+        <div className="flex items-center justify-between gap-4 mb-6 animate-fade-in">
+          <Button variant="outline" onClick={() => navigate("/")} size="sm" className="hover-scale">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
           <LogoutButton />
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Receptionist Dashboard</h2>
+            <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">Receptionist Dashboard</h2>
             <p className="text-muted-foreground">Manage check-ins, bookings, and client accounts</p>
           </div>
         </div>
@@ -315,9 +315,12 @@ const ReceptionistDashboard = () => {
         {/* Tabbed Interface for Mobile/Desktop */}
         <div className="space-y-6">
           {/* Quick Actions - Mobile First Grid */}
-          <Card>
+          <Card className="animate-fade-in-up">
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Quick Actions
+              </CardTitle>
               <CardDescription>Frequently used receptionist functions</CardDescription>
             </CardHeader>
             <CardContent>
@@ -325,19 +328,19 @@ const ReceptionistDashboard = () => {
                 {quickActions.map((action) => (
                   <Dialog key={action.action}>
                     <DialogTrigger asChild>
-                      <Card className="hover:shadow-card transition-all duration-200 cursor-pointer group">
+                      <Card className="hover:shadow-elegant transition-all duration-300 cursor-pointer group hover-scale border-border">
                         <CardContent className="p-4">
                           <div className="flex flex-col items-center text-center gap-3">
-                            <div className={`p-3 rounded-lg ${
-                              action.variant === "success" ? "bg-success/10 text-success" :
-                              action.variant === "warning" ? "bg-warning/10 text-warning" :
-                              action.variant === "info" ? "bg-info/10 text-info" :
-                              "bg-primary/10 text-primary"
+                            <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+                              action.variant === "success" ? "bg-gradient-success text-white" :
+                              action.variant === "warning" ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white" :
+                              action.variant === "info" ? "bg-gradient-accent text-white" :
+                              "bg-gradient-primary text-white"
                             }`}>
                               <action.icon className="h-6 w-6" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-sm">{action.title}</h3>
+                              <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{action.title}</h3>
                               <p className="text-xs text-muted-foreground mt-1">{action.description}</p>
                             </div>
                           </div>
@@ -432,7 +435,7 @@ const ReceptionistDashboard = () => {
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="professional" className="w-full">
+                    <Button variant="fun" className="w-full">
                       <QrCode className="h-4 w-4 mr-2" />
                       Scan QR Code
                     </Button>

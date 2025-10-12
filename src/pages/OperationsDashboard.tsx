@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -124,17 +124,20 @@ const OperationsDashboard = () => {
   };
 
   const statusCounts = getStockStatusCounts();
-  return <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-gradient-subtle">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
+        <div className="flex items-center gap-4 mb-6 animate-fade-in">
+          <Button variant="outline" onClick={() => navigate("/")} size="sm" className="hover-scale">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Operations Manager</h2>
+            <h2 className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent flex items-center gap-2">
+              <Package className="h-8 w-8 text-primary" />
+              Operations Manager
+            </h2>
             <p className="text-muted-foreground">Stock management, inventory control, and expense tracking</p>
           </div>
         </div>
@@ -296,12 +299,12 @@ const OperationsDashboard = () => {
                   )}
 
                   <div className="border-t pt-4">
-                    <Button variant="professional" className="w-full mb-2">
-                      <Package className="h-4 w-4" />
+                    <Button variant="fun" className="w-full mb-2">
+                      <Package className="h-4 w-4 mr-2" />
                       Generate Stock Report
                     </Button>
-                    <Button variant="outline" className="w-full">
-                      <Truck className="h-4 w-4" />
+                    <Button variant="outline" className="w-full hover-scale">
+                      <Truck className="h-4 w-4 mr-2" />
                       View Pending Orders
                     </Button>
                   </div>
