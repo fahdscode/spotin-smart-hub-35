@@ -96,7 +96,8 @@ const RolesManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: string, isAdmin: boolean) => {
     try {
-      const { error } = await supabase
+      // Update profiles table
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           role: newRole,
@@ -104,7 +105,21 @@ const RolesManagement = () => {
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Update admin_users table
+      const { error: adminError } = await supabase
+        .from('admin_users')
+        .update({ 
+          role: newRole,
+          is_active: true
+        })
+        .eq('user_id', userId);
+
+      // Ignore error if user doesn't exist in admin_users (might be a client)
+      if (adminError && !adminError.message.includes('0 rows')) {
+        console.warn('Admin users update warning:', adminError);
+      }
 
       await fetchProfiles();
       

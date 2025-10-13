@@ -32,69 +32,69 @@ const CeoDashboard = () => {
 
   // State for analytics data
   const [satisfactionData, setSatisfactionData] = useState({
-    averageRating: 4.2,
-    totalFeedback: 156,
+    averageRating: 0,
+    totalFeedback: 0,
     ratingDistribution: [
-      { rating: 5, count: 78, emoji: '😁' },
-      { rating: 4, count: 45, emoji: '😊' },
-      { rating: 3, count: 21, emoji: '🙂' },
-      { rating: 2, count: 8, emoji: '😐' },
-      { rating: 1, count: 4, emoji: '😞' },
+      { rating: 5, count: 0, emoji: '😁' },
+      { rating: 4, count: 0, emoji: '😊' },
+      { rating: 3, count: 0, emoji: '🙂' },
+      { rating: 2, count: 0, emoji: '😐' },
+      { rating: 1, count: 0, emoji: '😞' },
     ]
   });
 
   const [businessMetrics, setBusinessMetrics] = useState({
-    avgOrderValue: 45.5,
-    totalOrders: 1247,
-    repeatCustomerRate: 68,
-    totalRevenue: 27500,
-    activeMembers: 147,
-    occupancyRate: 78,
-    eventsThisMonth: 23
+    avgOrderValue: 0,
+    totalOrders: 0,
+    repeatCustomerRate: 0,
+    totalRevenue: 0,
+    activeMembers: 0,
+    occupancyRate: 0,
+    eventsThisMonth: 0
   });
 
   const [demographicData, setDemographicData] = useState({
     genderDistribution: [
-      { gender: 'Male', percentage: 52, count: 76 },
-      { gender: 'Female', percentage: 45, count: 66 },
-      { gender: 'Other', percentage: 3, count: 5 }
+      { gender: 'Male', percentage: 0, count: 0 },
+      { gender: 'Female', percentage: 0, count: 0 },
+      { gender: 'Other', percentage: 0, count: 0 }
     ],
     ageGroups: [
-      { group: '18-25', percentage: 28, count: 41 },
-      { group: '26-35', percentage: 45, count: 66 },
-      { group: '36-45', percentage: 18, count: 26 },
-      { group: '46+', percentage: 9, count: 14 }
+      { group: '18-25', percentage: 0, count: 0 },
+      { group: '26-35', percentage: 0, count: 0 },
+      { group: '36-45', percentage: 0, count: 0 },
+      { group: '46+', percentage: 0, count: 0 }
     ]
   });
 
   // Chart data
   const [peakHoursData, setPeakHoursData] = useState([
-    { hour: '6AM', visitors: 5 },
-    { hour: '7AM', visitors: 12 },
-    { hour: '8AM', visitors: 25 },
-    { hour: '9AM', visitors: 45 },
-    { hour: '10AM', visitors: 38 },
-    { hour: '11AM', visitors: 52 },
-    { hour: '12PM', visitors: 65 },
-    { hour: '1PM', visitors: 58 },
-    { hour: '2PM', visitors: 72 },
-    { hour: '3PM', visitors: 68 },
-    { hour: '4PM', visitors: 55 },
-    { hour: '5PM', visitors: 42 },
-    { hour: '6PM', visitors: 35 },
-    { hour: '7PM', visitors: 28 },
-    { hour: '8PM', visitors: 18 },
-    { hour: '9PM', visitors: 12 }
+    { hour: '6AM', visitors: 0 },
+    { hour: '7AM', visitors: 0 },
+    { hour: '8AM', visitors: 0 },
+    { hour: '9AM', visitors: 0 },
+    { hour: '10AM', visitors: 0 },
+    { hour: '11AM', visitors: 0 },
+    { hour: '12PM', visitors: 0 },
+    { hour: '1PM', visitors: 0 },
+    { hour: '2PM', visitors: 0 },
+    { hour: '3PM', visitors: 0 },
+    { hour: '4PM', visitors: 0 },
+    { hour: '5PM', visitors: 0 },
+    { hour: '6PM', visitors: 0 },
+    { hour: '7PM', visitors: 0 },
+    { hour: '8PM', visitors: 0 },
+    { hour: '9PM', visitors: 0 }
   ]);
 
   const [dailyRevenueData, setDailyRevenueData] = useState([
-    { date: 'Mon', revenue: 2450, orders: 32 },
-    { date: 'Tue', revenue: 2890, orders: 38 },
-    { date: 'Wed', revenue: 3200, orders: 42 },
-    { date: 'Thu', revenue: 3650, orders: 48 },
-    { date: 'Fri', revenue: 4200, orders: 55 },
-    { date: 'Sat', revenue: 3800, orders: 51 },
-    { date: 'Sun', revenue: 2900, orders: 39 }
+    { date: 'Mon', revenue: 0, orders: 0 },
+    { date: 'Tue', revenue: 0, orders: 0 },
+    { date: 'Wed', revenue: 0, orders: 0 },
+    { date: 'Thu', revenue: 0, orders: 0 },
+    { date: 'Fri', revenue: 0, orders: 0 },
+    { date: 'Sat', revenue: 0, orders: 0 },
+    { date: 'Sun', revenue: 0, orders: 0 }
   ]);
 
   const CHART_COLORS = {
@@ -211,17 +211,17 @@ const CeoDashboard = () => {
   };
 
   const revenueBreakdown = [
-    { category: "Memberships", amount: "12,450 EGP", percentage: 45, color: "bg-primary" },
-    { category: "Room Bookings", amount: "8,200 EGP", percentage: 30, color: "bg-accent" },
-    { category: "Drinks & Food", amount: "4,100 EGP", percentage: 15, color: "bg-success" },
-    { category: "Events", amount: "2,750 EGP", percentage: 10, color: "bg-warning" },
+    { category: "Memberships", amount: "0 EGP", percentage: 0, color: "bg-primary" },
+    { category: "Room Bookings", amount: "0 EGP", percentage: 0, color: "bg-accent" },
+    { category: "Drinks & Food", amount: "0 EGP", percentage: 0, color: "bg-success" },
+    { category: "Events", amount: "0 EGP", percentage: 0, color: "bg-warning" },
   ];
 
   const roomUtilization = [
-    { room: "Meeting Room 1", utilization: 85, status: "High" },
-    { room: "Meeting Room 2", utilization: 62, status: "Medium" },
-    { room: "Conference Hall", utilization: 91, status: "High" },
-    { room: "Private Office A", utilization: 45, status: "Low" },
+    { room: "Meeting Room 1", utilization: 0, status: "Low" },
+    { room: "Meeting Room 2", utilization: 0, status: "Low" },
+    { room: "Conference Hall", utilization: 0, status: "Low" },
+    { room: "Private Office A", utilization: 0, status: "Low" },
   ];
 
   return (
