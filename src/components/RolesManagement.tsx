@@ -107,18 +107,56 @@ const RolesManagement = () => {
 
       if (profileError) throw profileError;
 
-      // Update admin_users table
-      const { error: adminError } = await supabase
-        .from('admin_users')
-        .update({ 
-          role: newRole,
-          is_active: true
-        })
-        .eq('user_id', userId);
+      // Check if this is a staff role that should be in admin_users
+      const isStaffRole = ['admin', 'ceo', 'operations_manager', 'finance_manager', 'community_manager', 'receptionist', 'barista'].includes(newRole);
 
-      // Ignore error if user doesn't exist in admin_users (might be a client)
-      if (adminError && !adminError.message.includes('0 rows')) {
-        console.warn('Admin users update warning:', adminError);
+      if (isStaffRole) {
+        // Check if user exists in admin_users
+        const { data: existingAdmin } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (existingAdmin) {
+          // Update existing admin user
+          const { error: adminError } = await supabase
+            .from('admin_users')
+            .update({ 
+              role: newRole,
+              is_active: true
+            })
+            .eq('user_id', userId);
+
+          if (adminError) throw adminError;
+        } else {
+          // Create new admin user entry
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('user_id', userId)
+            .single();
+
+          if (profileData) {
+            const { error: insertError } = await supabase
+              .from('admin_users')
+              .insert({
+                user_id: userId,
+                email: profileData.email,
+                full_name: profileData.full_name || '',
+                role: newRole,
+                is_active: true
+              });
+
+            if (insertError) throw insertError;
+          }
+        }
+      } else {
+        // Remove from admin_users if changing to client role
+        await supabase
+          .from('admin_users')
+          .delete()
+          .eq('user_id', userId);
       }
 
       await fetchProfiles();
