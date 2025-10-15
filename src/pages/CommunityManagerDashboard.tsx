@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign, Mail, Phone, CheckCircle, XCircle, AlertCircle, Target, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign, Mail, Phone, CheckCircle, XCircle, AlertCircle, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -339,41 +339,35 @@ const CommunityManagerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
-        <div className="text-center space-y-4">
-          <Calendar className="h-16 w-16 mx-auto text-primary animate-pulse-glow" />
-          <p className="text-muted-foreground">Loading events...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6 animate-fade-in">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button 
               variant="outline" 
               size="icon"
               onClick={() => navigate("/")}
-              className="hover-scale"
+              className="hover:shadow-card transition-all duration-200"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-2">
-                <Calendar className="h-8 w-8 text-primary" />
-                Community Manager Dashboard
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Community Manager Dashboard</h1>
               <p className="text-muted-foreground">Manage events and community activities</p>
             </div>
           </div>
           <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={handleNewEvent} variant="fun" className="gap-2">
+              <Button onClick={handleNewEvent} className="gap-2">
                 <Plus className="h-4 w-4" />
                 New Event
               </Button>

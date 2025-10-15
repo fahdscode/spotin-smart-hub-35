@@ -8,71 +8,63 @@ All colors MUST be HSL. Based on organic brand palette.
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 60 14% 91%;
+    --foreground: 40 97% 19%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 40 97% 19%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 40 97% 19%;
 
-    /* Vibrant SpotIN Green Primary */
-    --primary: 142 76% 36%;
+    /* SpotIN Green Primary */
+    --primary: 108 16% 41%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 142 76% 46%;
-    --primary-glow: 142 76% 56%;
+    --primary-hover: 116 14% 50%;
 
-    /* Playful Secondary */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Natural Secondary */
+    --secondary: 84 23% 80%;
+    --secondary-foreground: 40 97% 19%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 60 14% 88%;
+    --muted-foreground: 39 92% 23%;
 
-    /* Energetic Orange Accent */
-    --accent: 24 95% 53%;
+    /* Orange Accent */
+    --accent: 31 96% 52%;
     --accent-foreground: 0 0% 100%;
-    --accent-hover: 24 95% 63%;
-    --accent-glow: 24 95% 73%;
+    --accent-hover: 31 92% 43%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 142 76% 36%;
+    --border: 84 23% 80%;
+    --input: 84 23% 80%;
+    --ring: 108 16% 41%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Fun Brand Colors */
-    --success: 142 76% 36%;
+    /* SpotIN Brand Colors */
+    --success: 116 14% 50%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 199 89% 48%;
+    --warning: 31 96% 52%;
+    --warning-foreground: 40 97% 19%;
+    --info: 31 92% 43%;
     --info-foreground: 0 0% 100%;
 
-    /* Vibrant Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 56%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 73%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(199 89% 48%) 50%, hsl(24 95% 53%) 100%);
-    --gradient-fun: linear-gradient(120deg, hsl(142 76% 36%), hsl(199 89% 48%), hsl(271 76% 53%), hsl(24 95% 53%));
+    /* Brand Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(84 23% 85%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(116 14% 50%) 50%, hsl(var(--accent)) 100%);
 
-    /* Playful Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(142 76% 36% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(142 76% 36% / 0.1), 0 2px 4px -1px hsl(142 76% 36% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(142 76% 36% / 0.1), 0 4px 6px -2px hsl(142 76% 36% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(142 76% 36% / 0.1), 0 10px 10px -5px hsl(142 76% 36% / 0.04);
-    --shadow-card: 0 4px 12px hsl(142 76% 36% / 0.08);
-    --shadow-glow: 0 0 20px hsl(142 76% 56% / 0.3);
-    --shadow-accent-glow: 0 0 20px hsl(24 95% 63% / 0.3);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(var(--primary) / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    --shadow-card: 0 4px 12px hsl(var(--primary) / 0.08);
 
-    /* Smooth Animations */
+    /* Animations */
     --animation-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --animation-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --animation-spring: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --animation-bounce: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 
@@ -92,64 +84,57 @@ All colors MUST be HSL. Based on organic brand palette.
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 39 92% 8%;
+    --foreground: 60 14% 91%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 40 97% 12%;
+    --card-foreground: 60 14% 91%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 40 97% 12%;
+    --popover-foreground: 60 14% 91%;
 
-    /* Vibrant Green Primary (bright in dark) */
-    --primary: 142 76% 46%;
-    --primary-foreground: 222 47% 11%;
-    --primary-hover: 142 76% 56%;
-    --primary-glow: 142 76% 66%;
+    /* SpotIN Green Primary (brighter in dark mode) */
+    --primary: 116 14% 60%;
+    --primary-foreground: 40 97% 8%;
+    --primary-hover: 108 16% 55%;
 
-    /* Dark Mode Secondary */
-    --secondary: 217 33% 23%;
-    --secondary-foreground: 210 40% 98%;
+    /* Dark Natural Secondary */
+    --secondary: 39 92% 15%;
+    --secondary-foreground: 60 14% 91%;
 
-    --muted: 217 33% 23%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 40 97% 15%;
+    --muted-foreground: 84 23% 65%;
 
-    /* Bright Orange Accent */
-    --accent: 24 95% 63%;
-    --accent-foreground: 222 47% 11%;
-    --accent-hover: 24 95% 73%;
-    --accent-glow: 24 95% 83%;
+    /* Orange Accent (brighter in dark mode) */
+    --accent: 31 96% 62%;
+    --accent-foreground: 40 97% 8%;
+    --accent-hover: 31 96% 68%;
 
     --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 60 14% 91%;
 
-    --border: 217 33% 23%;
-    --input: 217 33% 23%;
-    --ring: 142 76% 46%;
+    --border: 40 97% 15%;
+    --input: 40 97% 15%;
+    --ring: 116 14% 60%;
 
-    /* Dark Mode Fun Colors */
-    --success: 142 76% 46%;
-    --success-foreground: 222 47% 11%;
-    --warning: 38 92% 60%;
-    --warning-foreground: 222 47% 11%;
-    --info: 199 89% 58%;
-    --info-foreground: 222 47% 11%;
+    /* SpotIN Dark Brand Colors */
+    --success: 116 14% 60%;
+    --success-foreground: 40 97% 8%;
+    --warning: 31 96% 62%;
+    --warning-foreground: 40 97% 8%;
+    --info: 31 92% 53%;
+    --info-foreground: 40 97% 8%;
 
-    /* Dark Vibrant Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 46%) 0%, hsl(142 76% 66%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(24 95% 63%) 0%, hsl(24 95% 83%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(217 33% 17%) 0%, hsl(217 33% 23%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(142 76% 46%) 0%, hsl(199 89% 58%) 50%, hsl(24 95% 63%) 100%);
-    --gradient-fun: linear-gradient(120deg, hsl(142 76% 46%), hsl(199 89% 58%), hsl(271 76% 63%), hsl(24 95% 63%));
+    /* Dark Brand Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(39 92% 15%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(116 14% 65%) 50%, hsl(var(--accent)) 100%);
 
-    /* Dark Mode Shadows with Glow */
+    /* Dark Mode Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.5);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -2px hsl(0 0% 0% / 0.2);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 10px 10px -5px hsl(0 0% 0% / 0.3);
     --shadow-card: 0 4px 12px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 20px hsl(142 76% 66% / 0.4);
-    --shadow-accent-glow: 0 0 20px hsl(24 95% 73% / 0.4);
   }
 }
 

@@ -8,7 +8,6 @@ interface ClientData {
   full_name: string;
   phone: string;
   email?: string;
-  barcode: string;
 }
 
 interface AuthContextType {
@@ -51,8 +50,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // First check for existing Supabase session (management users)
-    // Don't initialize client data yet - wait to see if there's a valid management session
+    // Check for existing client session first
+    const clientSession = localStorage.getItem('clientData');
+    if (clientSession) {
+      try {
+        const parsedClient = JSON.parse(clientSession);
+        setClientData(parsedClient);
+        setUserRole('client');
+        setIsLoading(false);
+        return; // Early return for client auth
+      } catch (error) {
+        console.error('Error parsing client session:', error);
+        localStorage.removeItem('clientData');
+      }
+    }
 
     // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -90,19 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fetchUserRole(session.user.id);
           }, 0);
         } else {
-          console.log('❌ No existing session, checking for client data...');
-          // Only check for client data if there's no management session
-          const clientSession = localStorage.getItem('clientData');
-          if (clientSession) {
-            try {
-              const parsedClient = JSON.parse(clientSession);
-              setClientData(parsedClient);
-              setUserRole('client');
-            } catch (error) {
-              console.error('Error parsing client session:', error);
-              localStorage.removeItem('clientData');
-            }
-          }
+          console.log('❌ No existing session');
           setIsLoading(false);
         }
       } catch (error) {
@@ -120,13 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔍 Fetching user role for:', userId);
       setAuthError(null);
-      
-      // Clear any existing client data when checking for management role
-      if (clientData) {
-        console.log('🔄 Clearing client data for management login');
-        setClientData(null);
-        localStorage.removeItem('clientData');
-      }
       
       const { data: adminUser, error } = await supabase
         .from('admin_users')

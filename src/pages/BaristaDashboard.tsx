@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit, XCircle, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit, XCircle } from "lucide-react";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
 import ClientProductEditor from "@/components/ClientProductEditor";
@@ -315,21 +315,18 @@ const BaristaDashboard = () => {
   const completedOrders = orders.filter(order => order.status === "completed");
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between gap-4 mb-6 animate-fade-in">
+        <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate("/")} size="sm" className="hover-scale">
+            <Button variant="ghost" onClick={() => navigate("/")} size="sm">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent flex items-center gap-2">
-                <Coffee className="h-8 w-8 text-primary" />
-                Barista Station
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground">Barista Station</h1>
               <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
             </div>
           </div>
@@ -337,41 +334,29 @@ const BaristaDashboard = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fade-in-up">
-          <Card className="bg-gradient-primary border-0 hover-scale">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-card border-primary/20">
             <CardHeader className="pb-3">
-              <CardDescription className="text-white/80">Pending Orders</CardDescription>
-              <CardTitle className="text-3xl text-white flex items-center gap-2">
-                <Clock className="h-6 w-6" />
-                {pendingOrders.length}
-              </CardTitle>
+              <CardDescription>Pending Orders</CardDescription>
+              <CardTitle className="text-2xl text-primary">{pendingOrders.length}</CardTitle>
             </CardHeader>
           </Card>
-          <Card className="bg-gradient-accent border-0 hover-scale">
+          <Card className="bg-gradient-card border-accent/20">
             <CardHeader className="pb-3">
-              <CardDescription className="text-white/80">In Preparation</CardDescription>
-              <CardTitle className="text-3xl text-white flex items-center gap-2">
-                <Coffee className="h-6 w-6" />
-                {preparingOrders.length}
-              </CardTitle>
+              <CardDescription>In Preparation</CardDescription>
+              <CardTitle className="text-2xl text-accent">{preparingOrders.length}</CardTitle>
             </CardHeader>
           </Card>
-          <Card className="bg-gradient-success border-0 hover-scale">
+          <Card className="bg-gradient-card border-success/20">
             <CardHeader className="pb-3">
-              <CardDescription className="text-white/80">Ready for Pickup</CardDescription>
-              <CardTitle className="text-3xl text-white flex items-center gap-2">
-                <CheckCircle className="h-6 w-6" />
-                {readyOrders.length}
-              </CardTitle>
+              <CardDescription>Ready for Pickup</CardDescription>
+              <CardTitle className="text-2xl text-success">{readyOrders.length}</CardTitle>
             </CardHeader>
           </Card>
-          <Card className="hover-scale">
+          <Card className="bg-gradient-card">
             <CardHeader className="pb-3">
               <CardDescription>Avg. Prep Time</CardDescription>
-              <CardTitle className="text-3xl text-primary flex items-center gap-2">
-                <TrendingUp className="h-6 w-6" />
-                4 min
-              </CardTitle>
+              <CardTitle className="text-2xl">4 min</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -431,9 +416,8 @@ const BaristaDashboard = () => {
                               <AlertDialogTrigger asChild>
                                 <Button 
                                   className="flex-1"
-                                  variant="fun"
+                                  variant="professional"
                                 >
-                                  <Sparkles className="h-4 w-4 mr-2" />
                                   Start Preparing
                                 </Button>
                               </AlertDialogTrigger>

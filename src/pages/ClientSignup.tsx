@@ -172,8 +172,7 @@ const ClientSignup = () => {
         client_code: result.client_code,
         full_name: result.full_name,
         phone: formData.phone,
-        email: formData.email || '',
-        barcode: result.barcode
+        email: formData.email || ''
       };
       
       // Use auth context to set client authentication

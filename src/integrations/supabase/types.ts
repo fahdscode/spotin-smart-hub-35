@@ -185,7 +185,7 @@ export type Database = {
           created_at: string
           id: string
           status: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           checked_in_at?: string
@@ -194,7 +194,7 @@ export type Database = {
           created_at?: string
           id?: string
           status?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           checked_in_at?: string
@@ -203,7 +203,7 @@ export type Database = {
           created_at?: string
           id?: string
           status?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
