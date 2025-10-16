@@ -65,6 +65,7 @@ const BillManagement = () => {
     notes: ''
   });
   const [lineItems, setLineItems] = useState<Omit<BillLineItem, 'id' | 'bill_id'>[]>([]);
+  const [manualTotal, setManualTotal] = useState<number | null>(null);
   const { toast } = useToast();
 
 
@@ -151,6 +152,7 @@ const BillManagement = () => {
   };
 
   const getTotalAmount = () => {
+    if (manualTotal !== null) return manualTotal;
     return lineItems.reduce((total, item) => total + item.total_price, 0);
   };
 
@@ -232,6 +234,7 @@ const BillManagement = () => {
         notes: ''
       });
       setLineItems([]);
+      setManualTotal(null);
       setIsAddingBill(false);
       setEditingBill(null);
       fetchData();
@@ -483,9 +486,27 @@ const BillManagement = () => {
                   )}
                   
                   {lineItems.length > 0 && (
-                    <div className="flex justify-end">
-                      <div className="text-lg font-semibold">
-                        Total: {getTotalAmount().toFixed(2)} EGP
+                    <div className="space-y-3">
+                      <div className="flex justify-end">
+                        <div className="text-lg font-semibold">
+                          Calculated Total: {lineItems.reduce((total, item) => total + item.total_price, 0).toFixed(2)} EGP
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="manual_total">Override Total (Optional)</Label>
+                        <Input
+                          id="manual_total"
+                          type="number"
+                          step="0.01"
+                          placeholder="Leave empty to use calculated total"
+                          value={manualTotal ?? ''}
+                          onChange={(e) => setManualTotal(e.target.value ? parseFloat(e.target.value) : null)}
+                        />
+                        {manualTotal !== null && (
+                          <div className="text-sm text-muted-foreground">
+                            Final Total: {manualTotal.toFixed(2)} EGP
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

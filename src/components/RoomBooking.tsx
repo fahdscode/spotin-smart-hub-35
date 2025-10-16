@@ -36,6 +36,9 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
   const [endTime, setEndTime] = useState<string>("");
   const [clientName, setClientName] = useState<string>("");
   const [participants, setParticipants] = useState<number>(1);
+  const [isRecurring, setIsRecurring] = useState<boolean>(false);
+  const [recurringDays, setRecurringDays] = useState<string[]>([]);
+  const [recurringEndDate, setRecurringEndDate] = useState<Date>();
 
   useEffect(() => {
     fetchRooms();
@@ -115,23 +118,58 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
         return;
       }
 
-      // Create reservation
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
+      // Create reservations (single or recurring)
+      const reservations = [];
+      
+      if (isRecurring && recurringDays.length > 0 && recurringEndDate) {
+        // Create recurring reservations
+        const currentDate = new Date(date);
+        const endDate = new Date(recurringEndDate);
+        
+        while (currentDate <= endDate) {
+          const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+          
+          if (recurringDays.includes(dayName)) {
+            const recurringStart = new Date(`${format(currentDate, 'yyyy-MM-dd')}T${startTime}:00`);
+            const recurringEnd = new Date(`${format(currentDate, 'yyyy-MM-dd')}T${endTime}:00`);
+            
+            reservations.push({
+              room_id: selectedRoom,
+              user_id: '00000000-0000-0000-0000-000000000000',
+              start_time: recurringStart.toISOString(),
+              end_time: recurringEnd.toISOString(),
+              status: 'confirmed',
+              total_amount: calculateTotal(),
+              client_name: clientName
+            });
+          }
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        // Single reservation
+        reservations.push({
           room_id: selectedRoom,
-          user_id: '00000000-0000-0000-0000-000000000000', // Placeholder - in real app would use actual user
+          user_id: '00000000-0000-0000-0000-000000000000',
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           status: 'confirmed',
-          total_amount: calculateTotal()
+          total_amount: calculateTotal(),
+          client_name: clientName
         });
+      }
+
+      const { error } = await supabase
+        .from('reservations')
+        .insert(reservations);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Room booked successfully!"
+        description: isRecurring 
+          ? `${reservations.length} recurring bookings created successfully!`
+          : "Room booked successfully!"
       });
 
       // Reset form
@@ -141,6 +179,9 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
       setEndTime("");
       setClientName("");
       setParticipants(1);
+      setIsRecurring(false);
+      setRecurringDays([]);
+      setRecurringEndDate(undefined);
 
       onBookingComplete?.();
     } catch (error) {
@@ -255,6 +296,80 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
                 onChange={(e) => setParticipants(Number(e.target.value))}
                 min="1"
               />
+            </div>
+
+            {/* Recurring Booking */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="recurring"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="recurring" className="cursor-pointer">
+                  Repeat Reservation
+                </Label>
+              </div>
+
+              {isRecurring && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Repeat on days</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                        <div key={day} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={day}
+                            checked={recurringDays.includes(day)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setRecurringDays([...recurringDays, day]);
+                              } else {
+                                setRecurringDays(recurringDays.filter(d => d !== day));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <Label htmlFor={day} className="cursor-pointer text-sm">
+                            {day}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !recurringEndDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {recurringEndDate ? format(recurringEndDate, "PPP") : <span>Pick end date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={recurringEndDate}
+                          onSelect={setRecurringEndDate}
+                          disabled={(date) => !this.date || date < new Date(this.date)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </>
+              )}
             </div>
 
             {calculateTotal() > 0 && (
