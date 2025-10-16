@@ -84,7 +84,8 @@ const MembershipPlansManagement = () => {
     perks: "",
     is_active: true,
     duration_type: 'monthly' as 'weekly' | 'monthly' | '6months' | 'annual',
-    price: 0
+    price: 0,
+    free_daily_pass: false
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,7 +147,8 @@ const MembershipPlansManagement = () => {
       perks: plan.perks.join(', '),
       is_active: plan.is_active,
       duration_type: plan.duration_type,
-      price: plan.price
+      price: plan.price,
+      free_daily_pass: (plan as any).free_daily_pass || false
     });
     setIsDialogOpen(true);
   };
@@ -178,7 +180,8 @@ const MembershipPlansManagement = () => {
       perks: "",
       is_active: true,
       duration_type: 'monthly',
-      price: 0
+      price: 0,
+      free_daily_pass: false
     });
     setEditingPlan(null);
   };
@@ -335,6 +338,18 @@ const MembershipPlansManagement = () => {
                     />
                     <Label htmlFor="is_active">Active plan</Label>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="free_daily_pass"
+                      checked={formData.free_daily_pass}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, free_daily_pass: checked }))}
+                    />
+                    <Label htmlFor="free_daily_pass">Free Daily Pass</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Members get free day-use tickets instead of paying
+                  </p>
 
                   <div className="flex gap-2 pt-4">
                     <Button type="submit" disabled={loading} className="flex-1">

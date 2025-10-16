@@ -9,6 +9,7 @@ import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
 import SatisfactionPopup from '@/components/SatisfactionPopup';
+import ClientDayUseTicketPurchase from '@/components/ClientDayUseTicketPurchase';
 import { LogoutButton } from '@/components/LogoutButton';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -701,6 +702,9 @@ export default function ClientDashboard() {
 
             {/* Quick Actions */}
             <div className="space-y-4">
+              {/* Day Use Ticket Purchase */}
+              <ClientDayUseTicketPurchase />
+
               {!isCheckedIn && (
                 <Card className="border-orange-200 bg-orange-50">
                   <CardContent className="pt-6 text-center">
