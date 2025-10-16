@@ -16,7 +16,6 @@ import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
 import ProductionMonitor from '@/components/ProductionMonitor';
-import CashierSession from '@/components/CashierSession';
 import { LogoutButton } from '@/components/LogoutButton';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
