@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
@@ -16,6 +17,7 @@ import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
 import ProductionMonitor from '@/components/ProductionMonitor';
+import CashierSession from '@/components/CashierSession';
 import { LogoutButton } from '@/components/LogoutButton';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -297,15 +299,22 @@ const ReceptionistDashboard = () => {
           />
         </div>
 
-        {/* Tabbed Interface for Mobile/Desktop */}
-        <div className="space-y-6">
-          {/* Quick Actions - Mobile First Grid */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Frequently used receptionist functions</CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Tabbed Interface */}
+        <Tabs defaultValue="actions" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="actions">Quick Actions</TabsTrigger>
+            <TabsTrigger value="cashier">Cashier Session</TabsTrigger>
+            <TabsTrigger value="clients">Clients</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="actions" className="space-y-6">
+            {/* Quick Actions - Mobile First Grid */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Frequently used receptionist functions</CardDescription>
+              </CardHeader>
+              <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {quickActions.map((action) => (
                   <Dialog key={action.action}>
@@ -479,14 +488,20 @@ const ReceptionistDashboard = () => {
               </CardContent>
             </Card>
           </div>
+          </TabsContent>
 
-          {/* Client List Component */}
-          <ClientList />
+          <TabsContent value="cashier">
+            <CashierSession />
+          </TabsContent>
 
-          {/* Barcode Debugger for Development */}
-          <div className="lg:hidden">
-            <BarcodeDebugger />
-          </div>
+          <TabsContent value="clients">
+            <ClientList />
+          </TabsContent>
+        </Tabs>
+
+        {/* Barcode Debugger for Development */}
+        <div className="lg:hidden">
+          <BarcodeDebugger />
         </div>
       </div>
 
