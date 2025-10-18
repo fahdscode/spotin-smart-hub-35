@@ -83,24 +83,26 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
     });
 
     try {
-      // Use the toggle function with proper user tracking
-      const { data: result, error } = await supabase.rpc('toggle_client_checkin_status', {
-        p_barcode: barcode,
-        p_scanned_by_user_id: scannedByUserId || null
+      // Use edge function instead of RPC for reliable check-in/out
+      const { data: result, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          barcode: barcode,
+          scanned_by_user_id: scannedByUserId || null
+        }
       });
 
       if (error) {
-        console.error('❌ RPC Error:', error);
+        console.error('❌ Edge function Error:', error);
         setDebugInfo({ error: error.message, barcode, scannedByUserId });
         toast({
           title: "System Error",
-          description: `Database error: ${error.message}`,
+          description: `Check-in service error: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      const toggleResult = result as unknown as ToggleResult;
+      const toggleResult = result as any;
       console.log('🔄 Toggle result:', toggleResult);
       setDebugInfo(toggleResult?.debug || { barcode, scannedByUserId });
       
@@ -118,10 +120,8 @@ export default function BarcodeScanner({ scannedByUserId }: BarcodeScannerProps)
       const client = toggleResult.client!;
       const action = toggleResult.action!;
       
-      // Scan successful
-      
       const scanResult: ScanResult = {
-        barcode: client.barcode, // Use the actual barcode from DB
+        barcode: client.barcode,
         userName: client.full_name,
         action: action === 'checked_in' ? 'check-in' : 'check-out',
         timestamp: new Date(),

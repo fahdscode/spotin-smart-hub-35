@@ -14,7 +14,6 @@ interface TicketSettings {
   price: number;
   description: string;
   is_active: boolean;
-  validity_hours?: number;
 }
 
 const DayUseTicketControls = () => {
@@ -22,8 +21,7 @@ const DayUseTicketControls = () => {
     name: "Day Use Pass",
     price: 25.00,
     description: "Full day access to workspace, WiFi, and common areas",
-    is_active: true,
-    validity_hours: 8
+    is_active: true
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -272,21 +270,6 @@ const DayUseTicketControls = () => {
                 onChange={(e) => setSettings(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Enter description"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Validity (Hours)</label>
-              <Input
-                type="number"
-                value={settings.validity_hours || 8}
-                onChange={(e) => setSettings(prev => ({ ...prev, validity_hours: parseInt(e.target.value) || 8 }))}
-                placeholder="Enter validity hours"
-                min="1"
-                max="24"
-              />
-              <p className="text-xs text-muted-foreground">
-                How many hours the ticket is valid after purchase
-              </p>
             </div>
 
             <div className="flex items-center justify-between">

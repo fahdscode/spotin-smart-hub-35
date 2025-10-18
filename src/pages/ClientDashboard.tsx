@@ -9,8 +9,10 @@ import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
 import SatisfactionPopup from '@/components/SatisfactionPopup';
-import ClientDayUseTicketPurchase from '@/components/ClientDayUseTicketPurchase';
 import { LogoutButton } from '@/components/LogoutButton';
+import { ClientOrderHistory } from '@/components/ClientOrderHistory';
+import { PaymentDialog } from '@/components/PaymentDialog';
+import { usePaymentProcessing } from '@/hooks/usePaymentProcessing';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +57,10 @@ export default function ClientDashboard() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const { processPayment } = usePaymentProcessing();
   
   // Order data
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -86,10 +92,11 @@ export default function ClientDashboard() {
     
     if (clientData?.id) {
       fetchAllData(clientData.id);
+      fetchCheckInStatus(clientData.id);
       setLoading(false);
 
       // Set up real-time subscription for client status updates
-      const channel = supabase
+      const clientChannel = supabase
         .channel('client-status-changes')
         .on(
           'postgres_changes',
@@ -101,7 +108,6 @@ export default function ClientDashboard() {
           },
           (payload) => {
             console.log('🔄 Real-time client status update:', payload);
-            // Refresh check-in status when client record is updated
             fetchCheckInStatus(clientData.id);
           }
         )
@@ -115,15 +121,33 @@ export default function ClientDashboard() {
           },
           (payload) => {
             console.log('🔄 Real-time check-in update:', payload);
-            // Refresh check-in status when check-ins are updated
             fetchCheckInStatus(clientData.id);
           }
         )
         .subscribe();
 
-      // Cleanup subscription on unmount
+      // Set up real-time subscription for order updates
+      const ordersChannel = supabase
+        .channel('client-orders-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'session_line_items',
+            filter: `user_id=eq.${clientData.id}`
+          },
+          (payload) => {
+            console.log('🔄 Real-time order update:', payload);
+            fetchPendingOrders();
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscriptions on unmount
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(clientChannel);
+        supabase.removeChannel(ordersChannel);
       };
     }
   }, [isAuthenticated, userRole, clientData, navigate]);
@@ -150,6 +174,9 @@ export default function ClientDashboard() {
         setLastOrders(lastOrdersData as unknown as LastOrder[]);
       }
 
+      // Fetch pending orders
+      await fetchPendingOrders(clientId);
+
       // Fetch check-ins and analytics
       fetchCheckInsLast30Days(clientId);
       fetchMembershipStatus(clientId);
@@ -159,6 +186,30 @@ export default function ClientDashboard() {
       
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchPendingOrders = async (clientId?: string) => {
+    if (!clientId && !clientData?.id) return;
+    
+    const userId = clientId || clientData?.id;
+    
+    try {
+      const { data, error } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['pending', 'preparing'])
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching pending orders:', error);
+        return;
+      }
+
+      setPendingOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
     }
   };
 
@@ -314,12 +365,95 @@ export default function ClientDashboard() {
     setRecentTransactions(mockTransactions);
   };
 
-  const handleCheckOut = () => {
-    // Show satisfaction popup when checking out
-    if (isCheckedIn) {
-      setShowSatisfactionPopup(true);
-      setIsCheckedIn(false);
-      setCheckInTime(null);
+  const handleCheckIn = async () => {
+    if (!clientData?.barcode) {
+      toast({
+        title: "Error",
+        description: "No barcode found. Please contact reception.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          barcode: clientData.barcode,
+          scanned_by_user_id: clientData.id
+        }
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        setIsCheckedIn(true);
+        setCheckInTime(new Date().toLocaleTimeString());
+        toast({
+          title: "Checked In Successfully",
+          description: "You can now place orders!",
+        });
+      } else {
+        toast({
+          title: "Check-in Failed",
+          description: result?.error || "Unable to check in. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Check-in error:', error);
+      toast({
+        title: "Check-in Error",
+        description: "Failed to check in. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!clientData?.id) {
+      toast({
+        title: "Error",
+        description: "Client information not found.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+        body: {
+          action: 'checkout',
+          client_id: clientData.id,
+          scanned_by_user_id: clientData.id
+        }
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        setIsCheckedIn(false);
+        setCheckInTime(null);
+        setShowSatisfactionPopup(true);
+        toast({
+          title: "Checked Out Successfully",
+          description: "Thank you for your visit!",
+        });
+      } else {
+        toast({
+          title: "Check-out Failed",
+          description: result?.error || "Unable to check out. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Check-out error:', error);
+      toast({
+        title: "Check-out Error",
+        description: "Failed to check out. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -436,10 +570,15 @@ export default function ClientDashboard() {
       return;
     }
 
+    const total = getCartTotal();
+    setOrderTotal(total);
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async (paymentMethod: 'cash' | 'card' | 'mobile') => {
+    if (!clientData?.id) return;
+
     try {
-      console.log('Placing order for client:', clientData.id, 'Items:', cart);
-      
-      // Validate cart items before placing order
       const validatedItems = cart.filter(item => {
         if (!item.name || item.quantity <= 0 || item.price <= 0) {
           console.warn('Invalid cart item:', item);
@@ -451,20 +590,6 @@ export default function ClientDashboard() {
       if (validatedItems.length === 0) {
         throw new Error('No valid items in cart');
       }
-
-      if (validatedItems.length !== cart.length) {
-        toast({
-          title: "Cart Validation",
-          description: `${cart.length - validatedItems.length} invalid items removed from cart.`,
-          variant: "destructive"
-        });
-      }
-      
-      console.log('Attempting to place order:', {
-        clientId: clientData.id,
-        validatedItems: validatedItems.length,
-        sampleItem: validatedItems[0]
-      });
 
       const orderPromises = validatedItems.map(item =>
         supabase.from('session_line_items').insert({
@@ -478,47 +603,89 @@ export default function ClientDashboard() {
 
       const results = await Promise.all(orderPromises);
       
-      // Check for any errors in the results
       const errors = results.filter(result => result.error);
       if (errors.length > 0) {
         console.error('Order placement errors:', errors);
         throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
       }
-      
-      console.log('Order placed successfully:', results);
-      
+
+      const paymentItems = validatedItems.map(item => ({
+        item_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity
+      }));
+
+      await processPayment({
+        userId: clientData.id,
+        items: paymentItems,
+        subtotal: orderTotal,
+        discount: 0,
+        total: orderTotal,
+        paymentMethod,
+        transactionType: 'order'
+      });
+
       setCart([]);
       setCurrentView('home');
       
       toast({
-        title: "Order Placed!",
-        description: `Your order with ${validatedItems.length} item${validatedItems.length > 1 ? 's' : ''} has been sent to the barista.`,
+        title: "Order Placed & Paid!",
+        description: `Your order has been paid and sent to the barista.`,
       });
 
-      // Show satisfaction popup after successful order
+      // Refresh pending orders and show satisfaction popup
+      await fetchPendingOrders();
       setShowSatisfactionPopup(true);
       
     } catch (error) {
       console.error('Error placing order:', error);
-      
-      // Enhanced error handling for specific cases
-      let errorMessage = "Failed to place order. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Authentication error')) {
-          errorMessage = "Your session has expired. Please log in again.";
-        } else if (error.message.includes('row-level security')) {
-          errorMessage = "Authentication error. Please log in again.";
-          clearClientAuth();
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
       toast({
         title: "Order Failed",
-        description: errorMessage,
+        description: "Failed to place order. Please try again.",
         variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const { data: orderToCancel } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .eq('id', orderId)
+        .eq('status', 'pending')
+        .single();
+
+      if (!orderToCancel) {
+        toast({
+          title: "Cannot Cancel",
+          description: "Order cannot be cancelled at this time",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('session_line_items')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order Cancelled",
+        description: "Your order has been cancelled",
+      });
+
+      await fetchPendingOrders();
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
       });
     }
   };
@@ -680,8 +847,16 @@ export default function ClientDashboard() {
                     <p className="text-sm text-green-600">Since {checkInTime}</p>
                   )}
                   {!isCheckedIn && (
-                    <p className="text-sm text-red-600">Visit reception to check in</p>
+                    <p className="text-sm text-red-600 mb-2">Tap below to check in</p>
                   )}
+                  <Button
+                    size="sm"
+                    variant={isCheckedIn ? "destructive" : "default"}
+                    onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
+                    className="mt-2"
+                  >
+                    {isCheckedIn ? 'Check Out' : 'Check In'}
+                  </Button>
                 </CardContent>
               </Card>
               <Card>
@@ -702,9 +877,6 @@ export default function ClientDashboard() {
 
             {/* Quick Actions */}
             <div className="space-y-4">
-              {/* Day Use Ticket Purchase */}
-              <ClientDayUseTicketPurchase />
-
               {!isCheckedIn && (
                 <Card className="border-orange-200 bg-orange-50">
                   <CardContent className="pt-6 text-center">
@@ -843,6 +1015,45 @@ export default function ClientDashboard() {
               </Card>
             )}
 
+            {/* Current Pending Orders */}
+            {pendingOrders.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Current Orders</CardTitle>
+                  <CardDescription>Orders being prepared</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {pendingOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted"
+                    >
+                      <div>
+                        <p className="font-medium">{order.item_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity: {order.quantity} • {formatCurrency(order.price * order.quantity)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={order.status === 'preparing' ? 'default' : 'secondary'}>
+                          {order.status}
+                        </Badge>
+                        {order.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCancelOrder(order.id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Drinks Menu */}
             <div className="grid gap-4">
               {filteredDrinks.map((drink) => (
@@ -865,6 +1076,12 @@ export default function ClientDashboard() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            {/* Order History Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Order History</h3>
+              <ClientOrderHistory clientId={clientData?.id || ''} />
             </div>
           </div>
         )}
@@ -1051,6 +1268,14 @@ export default function ClientDashboard() {
         isOpen={showSatisfactionPopup}
         onClose={() => setShowSatisfactionPopup(false)}
         clientId={clientData?.id || ''}
+      />
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        orderTotal={orderTotal}
+        onConfirmPayment={handleConfirmPayment}
       />
     </div>
   );
