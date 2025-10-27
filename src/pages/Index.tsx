@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import SpotinHeader from "@/components/SpotinHeader";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -17,9 +16,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SpotinHeader />
-      
-      <div className="container mx-auto p-6 flex items-center justify-center min-h-[80vh]">
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-12 animate-fade-in">
             <div className="mx-auto h-20 w-20 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-6">
