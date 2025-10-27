@@ -14,6 +14,15 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import OrderingCycleStatus from "@/components/OrderingCycleStatus";
+import { 
+  playNewOrder, 
+  playStartPreparing, 
+  playOrderReady, 
+  playOrderCompleted, 
+  playOrderCancelled,
+  playError,
+  playMultipleOrders
+} from "@/lib/baristaSounds";
 interface Client {
   id: string;
   client_code: string;
@@ -46,16 +55,8 @@ const BaristaDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Function to play notification sound for new orders
-  const playOrderSound = () => {
-    try {
-      const audio = new Audio('/order-sound.wav');
-      audio.volume = 0.7;
-      audio.play().catch(e => console.log('Could not play sound:', e));
-    } catch (error) {
-      console.log('Sound not available:', error);
-    }
-  };
+  // Track previous order count to detect new orders
+  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   useEffect(() => {
     fetchOrders();
 
@@ -73,7 +74,11 @@ const BaristaDashboard = () => {
       // Play sound for new orders
       if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
         console.log('New order received, playing sound');
-        playOrderSound();
+        playNewOrder();
+      } else if (payload.eventType === 'UPDATE' && payload.new?.status === 'ready') {
+        playOrderReady();
+      } else if (payload.eventType === 'UPDATE' && payload.new?.status === 'cancelled') {
+        playOrderCancelled();
       }
     }).subscribe(status => {
       console.log('Real-time subscription status:', status);
@@ -116,6 +121,14 @@ const BaristaDashboard = () => {
           notes: `Order #${order.id.slice(-8)}`
         };
       }) || [];
+      
+      // Check for multiple new orders
+      const pendingCount = formattedOrders.filter(o => o.status === 'pending').length;
+      if (pendingCount > previousOrderCount && pendingCount >= 3) {
+        playMultipleOrders();
+      }
+      setPreviousOrderCount(pendingCount);
+      
       setOrders(formattedOrders);
     } catch (error: any) {
       toast({
@@ -181,7 +194,7 @@ const BaristaDashboard = () => {
       setIsQuickAddOpen(false);
 
       // Play notification sound for new order
-      playOrderNotification();
+      playNewOrder();
       toast({
         title: "Item Added",
         description: `${itemName} added for ${selectedClient.full_name}`
@@ -205,6 +218,21 @@ const BaristaDashboard = () => {
         status: newStatus
       }).eq('id', orderId);
       if (error) throw error;
+      
+      // Play appropriate sound based on status
+      switch (newStatus) {
+        case 'preparing':
+          playStartPreparing();
+          break;
+        case 'ready':
+          playOrderReady();
+          break;
+        case 'completed':
+        case 'served':
+          playOrderCompleted();
+          break;
+      }
+      
       toast({
         title: "Order Updated",
         description: `Order status updated to ${newStatus}`
@@ -213,6 +241,7 @@ const BaristaDashboard = () => {
       // Refresh orders list
       fetchOrders();
     } catch (error: any) {
+      playError();
       toast({
         title: "Error Updating Order",
         description: error.message,
@@ -229,6 +258,10 @@ const BaristaDashboard = () => {
         status: 'cancelled'
       }).eq('id', orderId);
       if (error) throw error;
+      
+      // Play cancellation sound
+      playOrderCancelled();
+      
       toast({
         title: "Order Cancelled",
         description: "Order has been cancelled successfully"
@@ -237,27 +270,13 @@ const BaristaDashboard = () => {
       // Refresh orders list
       fetchOrders();
     } catch (error: any) {
+      playError();
       toast({
         title: "Error Cancelling Order",
         description: error.message,
         variant: "destructive"
       });
     }
-  };
-  const playOrderNotification = () => {
-    // Create audio context for notification sound
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
   };
   const getStatusColor = (status: Order["status"]) => {
     switch (status) {
