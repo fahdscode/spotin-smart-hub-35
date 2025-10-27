@@ -1,9 +1,8 @@
-import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, Star, Smile, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet, Activity, TrendingDown, ShoppingCart, Star, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +18,17 @@ import VendorManagement from "@/components/VendorManagement";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, AreaChart, Area } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from "recharts";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { useClientsData } from "@/hooks/useClientsData";
+import { formatCurrency } from "@/lib/currency";
 const CeoDashboard = () => {
   const navigate = useNavigate();
+  
+  // Use data hooks
+  const { financialData, expenseItems, loading: financeLoading } = useFinanceData();
+  const { clients, getActiveClientsCount, getTotalClientsCount, loading: clientsLoading } = useClientsData();
 
   // Date filter states
   const [dateRange, setDateRange] = useState({
@@ -160,17 +165,16 @@ const CeoDashboard = () => {
   };
   const fetchBusinessMetrics = async () => {
     try {
-      const [ordersData, clientsData, eventsData, currentCheckInsData] = await Promise.all([
+      const [ordersData, eventsData, currentCheckInsData] = await Promise.all([
         supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), 
-        supabase.from('clients').select('id, active').eq('is_active', true), 
         supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), 
         supabase.from('check_ins').select('id').eq('status', 'checked_in')
       ]);
 
       // Count currently checked-in clients (active right now)
       const activeMembers = currentCheckInsData.data?.length || 0;
-      const totalClients = clientsData.data?.length || 1;
-      const occupancyRate = activeMembers / totalClients * 100;
+      const totalClients = getTotalClientsCount() || 1;
+      const occupancyRate = totalClients > 0 ? (activeMembers / totalClients * 100) : 0;
 
       if (ordersData.data && ordersData.data.length > 0) {
         const totalRevenue = ordersData.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -452,8 +456,8 @@ const CeoDashboard = () => {
 
             {/* Enhanced Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard title="Total Revenue" value={`${businessMetrics.totalRevenue.toLocaleString()} EGP`} change="+12.5%" icon={DollarSign} variant="success" />
-              <MetricCard title="Active Members" value={businessMetrics.activeMembers.toString()} change="+8" icon={Users} variant="info" />
+              <MetricCard title="Total Revenue" value={formatCurrency(businessMetrics.totalRevenue)} change="+12.5%" icon={DollarSign} variant="success" />
+              <MetricCard title="Active Now" value={businessMetrics.activeMembers.toString()} change={`/${getTotalClientsCount()}`} icon={Activity} variant="info" />
               <MetricCard title="Occupancy Rate" value={`${businessMetrics.occupancyRate}%`} change="+5.2%" icon={Building} variant="default" />
               <MetricCard title="Events This Month" value={businessMetrics.eventsThisMonth.toString()} change="+15%" icon={Calendar} variant="success" />
             </div>
@@ -579,8 +583,8 @@ const CeoDashboard = () => {
           <TabsContent value="analytics" className="space-y-6">
             {/* Enhanced Business Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MetricCard title="Avg Order Value" value={`${businessMetrics.avgOrderValue} EGP`} change="+8.2%" icon={DollarSign} variant="success" />
-              <MetricCard title="Customer Satisfaction" value={`${satisfactionData.averageRating}/5`} change="+0.3" icon={Star} variant="info" />
+              <MetricCard title="Avg Order Value" value={formatCurrency(businessMetrics.avgOrderValue)} change="+8.2%" icon={DollarSign} variant="success" />
+              <MetricCard title="Customer Satisfaction" value={`${satisfactionData.averageRating}/5`} change="+0.3" icon={Smile} variant="info" />
               <MetricCard title="Repeat Customer Rate" value={`${businessMetrics.repeatCustomerRate}%`} change="+5%" icon={Users} variant="success" />
             </div>
 
