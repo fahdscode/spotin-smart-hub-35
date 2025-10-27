@@ -481,7 +481,7 @@ const CeoDashboard = () => {
               </Card>
 
               {/* Enhanced Live Traffic */}
-              <Card className="bg-card/50 backdrop-blur border-border/50">
+              <Card className="bg-card border-border shadow-lg">
                 <CardHeader>
                   <CardTitle>Live Traffic</CardTitle>
                   <CardDescription>Current occupancy status</CardDescription>
