@@ -23,6 +23,7 @@ import PasswordReset from "./pages/PasswordReset";
 import SuperAdminSetup from "./pages/SuperAdminSetup";
 import ManagementProfile from "./pages/ManagementProfile";
 import ManagementSettings from "./pages/ManagementSettings";
+import MarketingDashboard from "./pages/MarketingDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,12 @@ const App = () => (
                   <ManagementSettings />
                 </ProtectedRoute>
               } />
+              <Route path="/marketing" element={
+                <ProtectedRoute requiredRole={["ceo", "admin", "community_manager"]} redirectTo="/management-login">
+                  <MarketingDashboard />
+                </ProtectedRoute>
+              } />
+              
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

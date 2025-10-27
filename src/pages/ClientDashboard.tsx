@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import FloatingSocialMedia from '@/components/FloatingSocialMedia';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1354,6 +1355,9 @@ export default function ClientDashboard() {
         onClose={() => setShowSatisfactionPopup(false)}
         clientId={clientData?.id || ''}
       />
+
+      {/* Floating Social Media */}
+      <FloatingSocialMedia />
     </div>
   );
 }
