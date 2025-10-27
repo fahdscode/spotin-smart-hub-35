@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Phone, LogIn, Check, AlertCircle } from "lucide-react";
+import { Coffee, User, Phone, LogIn, Check, AlertCircle, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -181,8 +181,8 @@ const ClientLogin = () => {
             <span className="text-sm text-gray-600">Order Drinks</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <User className="h-6 w-6 text-orange-600" />
-            <span className="text-sm text-gray-600">Book Rooms</span>
+            <Calendar className="h-6 w-6 text-orange-600" />
+            <span className="text-sm text-gray-600">Events Registration</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Check className="h-6 w-6 text-yellow-600" />
