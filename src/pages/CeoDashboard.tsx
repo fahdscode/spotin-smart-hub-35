@@ -1,4 +1,4 @@
-import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, Star, Smile, PieChart, Filter, Download, RefreshCw, CalendarIcon } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, Star, Smile, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -12,6 +12,10 @@ import MetricCard from "@/components/MetricCard";
 import KPIManagement from "@/components/KPIManagement";
 import RolesManagement from "@/components/RolesManagement";
 import { LogoutButton } from "@/components/LogoutButton";
+import FinanceReports from "@/components/FinanceReports";
+import BillManagement from "@/components/BillManagement";
+import CashierSession from "@/components/CashierSession";
+import VendorManagement from "@/components/VendorManagement";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -361,9 +365,13 @@ const CeoDashboard = () => {
         </Card>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur">
+          <TabsList className="grid w-full grid-cols-5 bg-muted/50 backdrop-blur">
             <TabsTrigger value="overview" className="data-[state=active]:bg-background">
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="finance" className="data-[state=active]:bg-background">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Finance
             </TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
               <PieChart className="h-4 w-4 mr-2" />
@@ -753,6 +761,94 @@ const CeoDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="finance" className="space-y-6">
+            {/* Comprehensive Finance Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-green-700">Total Revenue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-900">{businessMetrics.totalRevenue.toLocaleString()} EGP</div>
+                  <p className="text-xs text-green-600 mt-1">Current period</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-blue-700">Active Sessions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-900">{businessMetrics.activeMembers}</div>
+                  <p className="text-xs text-blue-600 mt-1">Currently checked in</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-purple-700">Average Order</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-900">{businessMetrics.avgOrderValue} EGP</div>
+                  <p className="text-xs text-purple-600 mt-1">Per transaction</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Financial Reports */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5" />
+                  Financial Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FinanceReports />
+              </CardContent>
+            </Card>
+
+            {/* Bills & Vendors Management */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Bills Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BillManagement />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Vendor Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VendorManagement />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cashier Sessions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5" />
+                  Cashier Sessions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CashierSession />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="kpis" className="space-y-6">
