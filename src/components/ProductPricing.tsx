@@ -44,6 +44,7 @@ interface ProductIngredient {
 const ProductPricing = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [categories, setCategories] = useState<Array<{ value: string; label: string; }>>([]);
   const [ingredientSearch, setIngredientSearch] = useState<Record<string, string>>({});
   const [newProductIngredientSearch, setNewProductIngredientSearch] = useState("");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -63,16 +64,11 @@ const ProductPricing = () => {
   const [imagePreview, setImagePreview] = useState<string>("");
   const { toast } = useToast();
 
-  const categories = [
-    { value: "beverage", label: "Beverages" },
-    { value: "food", label: "Food" },
-    { value: "snack", label: "Snacks" },
-    { value: "dessert", label: "Desserts" }
-  ];
 
   useEffect(() => {
     fetchProducts();
     fetchStockItems();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -111,6 +107,37 @@ const ProductPricing = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      
+      const categoryOptions = (data || []).map(cat => ({
+        value: cat.name.toLowerCase(),
+        label: cat.name
+      }));
+      
+      setCategories(categoryOptions);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching categories",
+        description: error.message,
+        variant: "destructive",
+      });
+      // Fallback to default categories
+      setCategories([
+        { value: "beverage", label: "Beverage" },
+        { value: "food", label: "Food" },
+        { value: "snack", label: "Snack" },
+        { value: "dessert", label: "Dessert" }
+      ]);
     }
   };
 
