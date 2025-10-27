@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress";
 import SpotinHeader from "@/components/SpotinHeader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
 interface Event {
   id: string;
   title: string;
@@ -32,7 +31,6 @@ interface Event {
   image_url: string | null;
   created_at: string;
 }
-
 interface EventFormData {
   title: string;
   title_ar: string;
@@ -46,7 +44,6 @@ interface EventFormData {
   price: number;
   category: string;
 }
-
 interface EventRegistration {
   id: string;
   event_id: string;
@@ -59,7 +56,6 @@ interface EventRegistration {
   attendance_status: 'registered' | 'attended' | 'no_show' | 'cancelled';
   events?: Event;
 }
-
 interface EventAnalytics {
   total_events: number;
   total_registrations: number;
@@ -81,10 +77,11 @@ interface EventAnalytics {
     end_date: string;
   };
 }
-
 const CommunityManagerDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [analytics, setAnalytics] = useState<EventAnalytics | null>(null);
@@ -92,13 +89,18 @@ const CommunityManagerDashboard = () => {
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('all');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  
+
   // Advanced filter states
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateRangeFilter, setDateRangeFilter] = useState<{ from: string; to: string }>({ from: '', to: '' });
+  const [dateRangeFilter, setDateRangeFilter] = useState<{
+    from: string;
+    to: string;
+  }>({
+    from: '',
+    to: ''
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  
   const [eventForm, setEventForm] = useState<EventFormData>({
     title: '',
     title_ar: '',
@@ -112,20 +114,19 @@ const CommunityManagerDashboard = () => {
     price: 0,
     category: 'workshop'
   });
-
   useEffect(() => {
     fetchEvents();
     fetchRegistrations();
     fetchAnalytics();
   }, []);
-
   const fetchEvents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('event_date', { ascending: true });
-
+      const {
+        data,
+        error
+      } = await supabase.from('events').select('*').order('event_date', {
+        ascending: true
+      });
       if (error) throw error;
       setEvents(data || []);
     } catch (error) {
@@ -139,12 +140,12 @@ const CommunityManagerDashboard = () => {
       setLoading(false);
     }
   };
-
   const fetchRegistrations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('event_registrations')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('event_registrations').select(`
           *,
           events (
             title,
@@ -154,11 +155,11 @@ const CommunityManagerDashboard = () => {
             location,
             category
           )
-        `)
-        .order('registration_date', { ascending: false });
-
+        `).order('registration_date', {
+        ascending: false
+      });
       if (error) throw error;
-      setRegistrations((data as any) || []);
+      setRegistrations(data as any || []);
     } catch (error) {
       console.error('Error fetching registrations:', error);
       toast({
@@ -168,12 +169,12 @@ const CommunityManagerDashboard = () => {
       });
     }
   };
-
   const fetchAnalytics = async () => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_event_analytics');
-
+      const {
+        data,
+        error
+      } = await supabase.rpc('get_event_analytics');
       if (error) throw error;
       setAnalytics(data as unknown as EventAnalytics);
     } catch (error) {
@@ -185,16 +186,13 @@ const CommunityManagerDashboard = () => {
       });
     }
   };
-
   const handleEventSubmit = async () => {
     try {
       if (editingEvent) {
         // Update existing event
-        const { error } = await supabase
-          .from('events')
-          .update(eventForm)
-          .eq('id', editingEvent.id);
-
+        const {
+          error
+        } = await supabase.from('events').update(eventForm).eq('id', editingEvent.id);
         if (error) throw error;
         toast({
           title: "Success",
@@ -202,17 +200,15 @@ const CommunityManagerDashboard = () => {
         });
       } else {
         // Create new event
-        const { error } = await supabase
-          .from('events')
-          .insert([eventForm]);
-
+        const {
+          error
+        } = await supabase.from('events').insert([eventForm]);
         if (error) throw error;
         toast({
           title: "Success",
           description: "Event created successfully"
         });
       }
-
       setIsEventDialogOpen(false);
       setEditingEvent(null);
       resetForm();
@@ -227,7 +223,6 @@ const CommunityManagerDashboard = () => {
       });
     }
   };
-
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
     setEventForm({
@@ -245,16 +240,14 @@ const CommunityManagerDashboard = () => {
     });
     setIsEventDialogOpen(true);
   };
-
   const handleDeleteEvent = async (eventId: string) => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .update({ is_active: false })
-        .eq('id', eventId);
-
+      const {
+        error
+      } = await supabase.from('events').update({
+        is_active: false
+      }).eq('id', eventId);
       if (error) throw error;
-      
       toast({
         title: "Success",
         description: "Event deleted successfully"
@@ -270,7 +263,6 @@ const CommunityManagerDashboard = () => {
       });
     }
   };
-
   const resetForm = () => {
     setEventForm({
       title: '',
@@ -286,22 +278,19 @@ const CommunityManagerDashboard = () => {
       category: 'workshop'
     });
   };
-
   const handleNewEvent = () => {
     setEditingEvent(null);
     resetForm();
     setIsEventDialogOpen(true);
   };
-
   const updateAttendanceStatus = async (registrationId: string, status: 'registered' | 'attended' | 'no_show' | 'cancelled') => {
     try {
-      const { error } = await supabase
-        .from('event_registrations')
-        .update({ attendance_status: status })
-        .eq('id', registrationId);
-
+      const {
+        error
+      } = await supabase.from('event_registrations').update({
+        attendance_status: status
+      }).eq('id', registrationId);
       if (error) throw error;
-      
       toast({
         title: "Success",
         description: "Attendance status updated"
@@ -317,57 +306,62 @@ const CommunityManagerDashboard = () => {
       });
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'registered': return 'bg-blue-500/10 text-blue-600';
-      case 'attended': return 'bg-green-500/10 text-green-600';
-      case 'no_show': return 'bg-red-500/10 text-red-600';
-      case 'cancelled': return 'bg-gray-500/10 text-gray-600';
-      default: return 'bg-gray-500/10 text-gray-600';
+      case 'registered':
+        return 'bg-blue-500/10 text-blue-600';
+      case 'attended':
+        return 'bg-green-500/10 text-green-600';
+      case 'no_show':
+        return 'bg-red-500/10 text-red-600';
+      case 'cancelled':
+        return 'bg-gray-500/10 text-gray-600';
+      default:
+        return 'bg-gray-500/10 text-gray-600';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'registered': return <AlertCircle className="h-4 w-4" />;
-      case 'attended': return <CheckCircle className="h-4 w-4" />;
-      case 'no_show': return <XCircle className="h-4 w-4" />;
-      case 'cancelled': return <XCircle className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
+      case 'registered':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'attended':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'no_show':
+        return <XCircle className="h-4 w-4" />;
+      case 'cancelled':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
     }
   };
-
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'workshop': return 'bg-blue-500/10 text-blue-600';
-      case 'networking': return 'bg-green-500/10 text-green-600';
-      case 'social': return 'bg-purple-500/10 text-purple-600';
-      case 'training': return 'bg-orange-500/10 text-orange-600';
-      default: return 'bg-gray-500/10 text-gray-600';
+      case 'workshop':
+        return 'bg-blue-500/10 text-blue-600';
+      case 'networking':
+        return 'bg-green-500/10 text-green-600';
+      case 'social':
+        return 'bg-purple-500/10 text-purple-600';
+      case 'training':
+        return 'bg-orange-500/10 text-orange-600';
+      default:
+        return 'bg-gray-500/10 text-gray-600';
     }
   };
-
-  const filteredRegistrations = selectedEventFilter === 'all' 
-    ? registrations 
-    : registrations.filter(reg => reg.event_id === selectedEventFilter);
+  const filteredRegistrations = selectedEventFilter === 'all' ? registrations : registrations.filter(reg => reg.event_id === selectedEventFilter);
 
   // Enhanced filtering with all filters combined
   const fullyFilteredRegistrations = filteredRegistrations.filter(reg => {
     // Status filter
     if (statusFilter !== 'all' && reg.attendance_status !== statusFilter) return false;
-    
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const matchesSearch = 
-        reg.attendee_name.toLowerCase().includes(query) ||
-        reg.attendee_email.toLowerCase().includes(query) ||
-        reg.attendee_phone.includes(query) ||
-        (reg.events?.title.toLowerCase().includes(query));
+      const matchesSearch = reg.attendee_name.toLowerCase().includes(query) || reg.attendee_email.toLowerCase().includes(query) || reg.attendee_phone.includes(query) || reg.events?.title.toLowerCase().includes(query);
       if (!matchesSearch) return false;
     }
-    
+
     // Date range filter
     if (dateRangeFilter.from && reg.events?.event_date) {
       if (new Date(reg.events.event_date) < new Date(dateRangeFilter.from)) return false;
@@ -375,49 +369,33 @@ const CommunityManagerDashboard = () => {
     if (dateRangeFilter.to && reg.events?.event_date) {
       if (new Date(reg.events.event_date) > new Date(dateRangeFilter.to)) return false;
     }
-    
+
     // Category filter
     if (categoryFilter !== 'all' && reg.events?.category !== categoryFilter) return false;
-    
     return true;
   });
 
   // Export functions
   const exportToCSV = () => {
     const headers = ['Attendee Name', 'Email', 'Phone', 'Event', 'Event Date', 'Registration Date', 'Status', 'Special Requests'];
-    const rows = fullyFilteredRegistrations.map(reg => [
-      reg.attendee_name,
-      reg.attendee_email,
-      reg.attendee_phone,
-      reg.events?.title || '',
-      reg.events?.event_date || '',
-      new Date(reg.registration_date).toLocaleDateString(),
-      reg.attendance_status,
-      reg.special_requests || 'None'
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const rows = fullyFilteredRegistrations.map(reg => [reg.attendee_name, reg.attendee_email, reg.attendee_phone, reg.events?.title || '', reg.events?.event_date || '', new Date(reg.registration_date).toLocaleDateString(), reg.attendance_status, reg.special_requests || 'None']);
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], {
+      type: 'text/csv'
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `attendees-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    
     toast({
       title: "Export Successful",
       description: `Exported ${fullyFilteredRegistrations.length} attendees to CSV`
     });
   };
-
   const exportAnalyticsReport = () => {
     if (!analytics) return;
-    
     const report = `
 EVENT ANALYTICS REPORT
 Generated: ${new Date().toLocaleString()}
@@ -432,15 +410,11 @@ Average Attendance Rate: ${analytics.avg_attendance_rate}%
 
 POPULAR CATEGORIES
 ==================
-${analytics.popular_categories.map(cat => 
-  `${cat.category}: ${cat.count} events, ${cat.registrations} registrations`
-).join('\n')}
+${analytics.popular_categories.map(cat => `${cat.category}: ${cat.count} events, ${cat.registrations} registrations`).join('\n')}
 
 MONTHLY PERFORMANCE
 ===================
-${analytics.monthly_stats.map(month => 
-  `${month.month}: ${month.events} events, ${month.registrations} registrations, ${month.revenue} EGP`
-).join('\n')}
+${analytics.monthly_stats.map(month => `${month.month}: ${month.events} events, ${month.registrations} registrations, ${month.revenue} EGP`).join('\n')}
 
 ATTENDEE BREAKDOWN
 ==================
@@ -450,52 +424,42 @@ Registered: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 're
 No Show: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'no_show').length}
 Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'cancelled').length}
     `.trim();
-    
-    const blob = new Blob([report], { type: 'text/plain' });
+    const blob = new Blob([report], {
+      type: 'text/plain'
+    });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
-    
     toast({
       title: "Report Exported",
       description: "Analytics report has been downloaded"
     });
   };
-
   const clearFilters = () => {
     setStatusFilter('all');
-    setDateRangeFilter({ from: '', to: '' });
+    setDateRangeFilter({
+      from: '',
+      to: ''
+    });
     setSearchQuery('');
     setCategoryFilter('all');
     setSelectedEventFilter('all');
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => navigate("/")}
-              className="hover:shadow-card transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            
             <div>
               <h1 className="text-3xl font-bold text-foreground">Community Manager Dashboard</h1>
               <p className="text-muted-foreground">Manage events and community activities</p>
@@ -519,58 +483,47 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                 <div className="grid grid-cols-2 gap-2">
                   <div className="grid gap-2">
                     <Label htmlFor="title">Event Title (English)</Label>
-                    <Input
-                      id="title"
-                      value={eventForm.title}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter event title"
-                    />
+                    <Input id="title" value={eventForm.title} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    title: e.target.value
+                  }))} placeholder="Enter event title" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="title_ar">Event Title (Arabic)</Label>
-                    <Input
-                      id="title_ar"
-                      value={eventForm.title_ar}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, title_ar: e.target.value }))}
-                      placeholder="أدخل عنوان الفعالية"
-                      dir="rtl"
-                    />
+                    <Input id="title_ar" value={eventForm.title_ar} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    title_ar: e.target.value
+                  }))} placeholder="أدخل عنوان الفعالية" dir="rtl" />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="description">Description (English)</Label>
-                  <Textarea
-                    id="description"
-                    value={eventForm.description}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Enter event description"
-                    rows={3}
-                  />
+                  <Textarea id="description" value={eventForm.description} onChange={e => setEventForm(prev => ({
+                  ...prev,
+                  description: e.target.value
+                }))} placeholder="Enter event description" rows={3} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="description_ar">Description (Arabic)</Label>
-                  <Textarea
-                    id="description_ar"
-                    value={eventForm.description_ar}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, description_ar: e.target.value }))}
-                    placeholder="أدخل وصف الفعالية"
-                    rows={3}
-                    dir="rtl"
-                  />
+                  <Textarea id="description_ar" value={eventForm.description_ar} onChange={e => setEventForm(prev => ({
+                  ...prev,
+                  description_ar: e.target.value
+                }))} placeholder="أدخل وصف الفعالية" rows={3} dir="rtl" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="grid gap-2">
                     <Label htmlFor="event_date">Date</Label>
-                    <Input
-                      id="event_date"
-                      type="date"
-                      value={eventForm.event_date}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, event_date: e.target.value }))}
-                    />
+                    <Input id="event_date" type="date" value={eventForm.event_date} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    event_date: e.target.value
+                  }))} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select value={eventForm.category} onValueChange={(value) => setEventForm(prev => ({ ...prev, category: value }))}>
+                    <Select value={eventForm.category} onValueChange={value => setEventForm(prev => ({
+                    ...prev,
+                    category: value
+                  }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -586,51 +539,40 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                 <div className="grid grid-cols-2 gap-2">
                   <div className="grid gap-2">
                     <Label htmlFor="start_time">Start Time</Label>
-                    <Input
-                      id="start_time"
-                      type="time"
-                      value={eventForm.start_time}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, start_time: e.target.value }))}
-                    />
+                    <Input id="start_time" type="time" value={eventForm.start_time} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    start_time: e.target.value
+                  }))} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="end_time">End Time</Label>
-                    <Input
-                      id="end_time"
-                      type="time"
-                      value={eventForm.end_time}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, end_time: e.target.value }))}
-                    />
+                    <Input id="end_time" type="time" value={eventForm.end_time} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    end_time: e.target.value
+                  }))} />
                   </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={eventForm.location}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="Event location"
-                  />
+                  <Input id="location" value={eventForm.location} onChange={e => setEventForm(prev => ({
+                  ...prev,
+                  location: e.target.value
+                }))} placeholder="Event location" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="grid gap-2">
                     <Label htmlFor="capacity">Capacity</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={eventForm.capacity}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                    />
+                    <Input id="capacity" type="number" value={eventForm.capacity} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    capacity: parseInt(e.target.value) || 0
+                  }))} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="price">Price (EGP)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={eventForm.price}
-                      onChange={(e) => setEventForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                    />
+                    <Input id="price" type="number" step="0.01" value={eventForm.price} onChange={e => setEventForm(prev => ({
+                    ...prev,
+                    price: parseFloat(e.target.value) || 0
+                  }))} />
                   </div>
                 </div>
               </div>
@@ -669,10 +611,10 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
             <CardContent>
               <div className="text-2xl font-bold">
                 {events.filter(e => {
-                  const eventDate = new Date(e.event_date);
-                  const now = new Date();
-                  return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear();
-                }).length}
+                const eventDate = new Date(e.event_date);
+                const now = new Date();
+                return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear();
+              }).length}
               </div>
               <p className="text-xs text-muted-foreground">events scheduled</p>
             </CardContent>
@@ -698,7 +640,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {events.reduce((sum, event) => sum + (event.registered_attendees * event.price), 0).toFixed(0)} EGP
+                {events.reduce((sum, event) => sum + event.registered_attendees * event.price, 0).toFixed(0)} EGP
               </div>
               <p className="text-xs text-muted-foreground">from events</p>
             </CardContent>
@@ -733,8 +675,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {events.map((event) => (
-                      <TableRow key={event.id}>
+                    {events.map(event => <TableRow key={event.id}>
                         <TableCell>
                           <div>
                             <div className="font-medium">{event.title}</div>
@@ -776,24 +717,15 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditEvent(event)}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => handleEditEvent(event)}>
                               <Edit className="h-3 w-3" />
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeleteEvent(event.id)}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteEvent(event.id)}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -830,12 +762,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                     <Label>Search</Label>
                     <div className="relative">
                       <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Name, email, or phone..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8"
-                      />
+                      <Input placeholder="Name, email, or phone..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-8" />
                     </div>
                   </div>
 
@@ -848,11 +775,9 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Events</SelectItem>
-                        {events.map((event) => (
-                          <SelectItem key={event.id} value={event.id}>
+                        {events.map(event => <SelectItem key={event.id} value={event.id}>
                             {event.title}
-                          </SelectItem>
-                        ))}
+                          </SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -896,19 +821,17 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label>From Date</Label>
-                    <Input
-                      type="date"
-                      value={dateRangeFilter.from}
-                      onChange={(e) => setDateRangeFilter(prev => ({ ...prev, from: e.target.value }))}
-                    />
+                    <Input type="date" value={dateRangeFilter.from} onChange={e => setDateRangeFilter(prev => ({
+                    ...prev,
+                    from: e.target.value
+                  }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>To Date</Label>
-                    <Input
-                      type="date"
-                      value={dateRangeFilter.to}
-                      onChange={(e) => setDateRangeFilter(prev => ({ ...prev, to: e.target.value }))}
-                    />
+                    <Input type="date" value={dateRangeFilter.to} onChange={e => setDateRangeFilter(prev => ({
+                    ...prev,
+                    to: e.target.value
+                  }))} />
                   </div>
                 </div>
 
@@ -918,9 +841,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                     <span className="font-medium">
                       Showing {fullyFilteredRegistrations.length} of {registrations.length} attendees
                     </span>
-                    {(statusFilter !== 'all' || searchQuery || dateRangeFilter.from || dateRangeFilter.to || categoryFilter !== 'all' || selectedEventFilter !== 'all') && (
-                      <span className="text-muted-foreground">{registrations.length - fullyFilteredRegistrations.length} filtered out</span>
-                    )}
+                    {(statusFilter !== 'all' || searchQuery || dateRangeFilter.from || dateRangeFilter.to || categoryFilter !== 'all' || selectedEventFilter !== 'all') && <span className="text-muted-foreground">{registrations.length - fullyFilteredRegistrations.length} filtered out</span>}
                   </div>
                 </div>
               </CardContent>
@@ -946,8 +867,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fullyFilteredRegistrations.map((registration) => (
-                      <TableRow key={registration.id}>
+                    {fullyFilteredRegistrations.map(registration => <TableRow key={registration.id}>
                         <TableCell className="font-medium">{registration.attendee_name}</TableCell>
                         <TableCell>
                           <div>
@@ -988,12 +908,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Select 
-                              value={registration.attendance_status} 
-                              onValueChange={(value: 'registered' | 'attended' | 'no_show' | 'cancelled') => 
-                                updateAttendanceStatus(registration.id, value)
-                              }
-                            >
+                            <Select value={registration.attendance_status} onValueChange={(value: 'registered' | 'attended' | 'no_show' | 'cancelled') => updateAttendanceStatus(registration.id, value)}>
                               <SelectTrigger className="w-32 h-8">
                                 <SelectValue />
                               </SelectTrigger>
@@ -1006,18 +921,15 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                             </Select>
                           </div>
                         </TableCell>
-                      </TableRow>
-                    ))}
+                      </TableRow>)}
                   </TableBody>
                 </Table>
                 
-                {fullyFilteredRegistrations.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
+                {fullyFilteredRegistrations.length === 0 && <div className="text-center py-8 text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="font-medium">No attendees found</p>
                     <p className="text-sm">Try adjusting your filters</p>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1040,8 +952,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                 </div>
               </CardHeader>
               <CardContent>
-                {analytics ? (
-                  <div className="space-y-6">
+                {analytics ? <div className="space-y-6">
                     {/* Overview Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <Card>
@@ -1104,7 +1015,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                               {registrations.filter(r => r.attendance_status === 'attended').length}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {((registrations.filter(r => r.attendance_status === 'attended').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                              {(registrations.filter(r => r.attendance_status === 'attended').length / Math.max(registrations.length, 1) * 100).toFixed(1)}% of total
                             </div>
                           </div>
 
@@ -1119,7 +1030,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                               {registrations.filter(r => r.attendance_status === 'registered').length}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {((registrations.filter(r => r.attendance_status === 'registered').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                              {(registrations.filter(r => r.attendance_status === 'registered').length / Math.max(registrations.length, 1) * 100).toFixed(1)}% of total
                             </div>
                           </div>
 
@@ -1134,7 +1045,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                               {registrations.filter(r => r.attendance_status === 'no_show').length}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {((registrations.filter(r => r.attendance_status === 'no_show').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                              {(registrations.filter(r => r.attendance_status === 'no_show').length / Math.max(registrations.length, 1) * 100).toFixed(1)}% of total
                             </div>
                           </div>
 
@@ -1149,7 +1060,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                               {registrations.filter(r => r.attendance_status === 'cancelled').length}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {((registrations.filter(r => r.attendance_status === 'cancelled').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                              {(registrations.filter(r => r.attendance_status === 'cancelled').length / Math.max(registrations.length, 1) * 100).toFixed(1)}% of total
                             </div>
                           </div>
                         </div>
@@ -1163,20 +1074,15 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {analytics.popular_categories.map((category, index) => (
-                            <div key={category.category} className="space-y-2">
+                          {analytics.popular_categories.map((category, index) => <div key={category.category} className="space-y-2">
                               <div className="flex items-center justify-between text-sm">
                                 <span className="font-medium capitalize">{category.category}</span>
                                 <span className="text-muted-foreground">
                                   {category.count} events • {category.registrations} registrations
                                 </span>
                               </div>
-                              <Progress 
-                                value={(category.registrations / Math.max(...analytics.popular_categories.map(c => c.registrations))) * 100} 
-                                className="h-2"
-                              />
-                            </div>
-                          ))}
+                              <Progress value={category.registrations / Math.max(...analytics.popular_categories.map(c => c.registrations)) * 100} className="h-2" />
+                            </div>)}
                         </div>
                       </CardContent>
                     </Card>
@@ -1188,8 +1094,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {analytics.monthly_stats.slice(-6).map((month) => (
-                            <div key={month.month} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          {analytics.monthly_stats.slice(-6).map(month => <div key={month.month} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                               <div className="flex items-center gap-4">
                                 <div className="text-sm font-medium min-w-20">{month.month}</div>
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -1204,8 +1109,7 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                               <div className="text-sm font-medium">
                                 {month.revenue.toFixed(0)} EGP
                               </div>
-                            </div>
-                          ))}
+                            </div>)}
                         </div>
                       </CardContent>
                     </Card>
@@ -1217,35 +1121,27 @@ Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'can
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {['registered', 'attended', 'no_show', 'cancelled'].map((status) => {
-                            const count = registrations.filter(r => r.attendance_status === status).length;
-                            const percentage = registrations.length > 0 ? (count / registrations.length * 100).toFixed(1) : '0';
-                            
-                            return (
-                              <div key={status} className="text-center p-4 rounded-lg bg-muted/50">
+                          {['registered', 'attended', 'no_show', 'cancelled'].map(status => {
+                        const count = registrations.filter(r => r.attendance_status === status).length;
+                        const percentage = registrations.length > 0 ? (count / registrations.length * 100).toFixed(1) : '0';
+                        return <div key={status} className="text-center p-4 rounded-lg bg-muted/50">
                                 <div className="text-2xl font-bold">{count}</div>
                                 <div className="text-sm text-muted-foreground capitalize">{status.replace('_', ' ')}</div>
                                 <div className="text-xs text-muted-foreground">{percentage}%</div>
-                              </div>
-                            );
-                          })}
+                              </div>;
+                      })}
                         </div>
                       </CardContent>
                     </Card>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
+                  </div> : <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     <p className="text-muted-foreground mt-2">Loading analytics...</p>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CommunityManagerDashboard;
