@@ -18,7 +18,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, AreaChart, Area } from "recharts";
-
 const CeoDashboard = () => {
   const navigate = useNavigate();
 
@@ -34,15 +33,28 @@ const CeoDashboard = () => {
   const [satisfactionData, setSatisfactionData] = useState({
     averageRating: 0,
     totalFeedback: 0,
-    ratingDistribution: [
-      { rating: 5, count: 0, emoji: '😁' },
-      { rating: 4, count: 0, emoji: '😊' },
-      { rating: 3, count: 0, emoji: '🙂' },
-      { rating: 2, count: 0, emoji: '😐' },
-      { rating: 1, count: 0, emoji: '😞' },
-    ]
+    ratingDistribution: [{
+      rating: 5,
+      count: 0,
+      emoji: '😁'
+    }, {
+      rating: 4,
+      count: 0,
+      emoji: '😊'
+    }, {
+      rating: 3,
+      count: 0,
+      emoji: '🙂'
+    }, {
+      rating: 2,
+      count: 0,
+      emoji: '😐'
+    }, {
+      rating: 1,
+      count: 0,
+      emoji: '😞'
+    }]
   });
-
   const [businessMetrics, setBusinessMetrics] = useState({
     avgOrderValue: 0,
     totalOrders: 0,
@@ -52,10 +64,15 @@ const CeoDashboard = () => {
     occupancyRate: 0,
     eventsThisMonth: 0
   });
-
-  const [peakHoursData, setPeakHoursData] = useState<Array<{ hour: string; visitors: number }>>([]);
-  const [dailyRevenueData, setDailyRevenueData] = useState<Array<{ date: string; revenue: number; orders: number }>>([]);
-
+  const [peakHoursData, setPeakHoursData] = useState<Array<{
+    hour: string;
+    visitors: number;
+  }>>([]);
+  const [dailyRevenueData, setDailyRevenueData] = useState<Array<{
+    date: string;
+    revenue: number;
+    orders: number;
+  }>>([]);
   const CHART_COLORS = {
     primary: 'hsl(var(--primary))',
     secondary: 'hsl(var(--secondary))',
@@ -64,30 +81,21 @@ const CeoDashboard = () => {
     warning: 'hsl(38 92% 50%)',
     destructive: 'hsl(var(--destructive))'
   };
-
   useEffect(() => {
     refreshData();
   }, [dateRange]);
-
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      await Promise.all([
-        fetchSatisfactionData(),
-        fetchBusinessMetrics(),
-        fetchPeakHoursData(),
-        fetchDailyRevenueData()
-      ]);
+      await Promise.all([fetchSatisfactionData(), fetchBusinessMetrics(), fetchPeakHoursData(), fetchDailyRevenueData()]);
     } finally {
       setIsLoading(false);
     }
   };
-
   const handleQuickFilter = (filter: string) => {
     setQuickFilter(filter);
     const now = new Date();
     let from: Date;
-
     switch (filter) {
       case "7days":
         from = subDays(now, 7);
@@ -106,23 +114,26 @@ const CeoDashboard = () => {
         break;
       case "lastMonth":
         from = startOfMonth(subMonths(now, 1));
-        setDateRange({ from, to: endOfMonth(subMonths(now, 1)) });
+        setDateRange({
+          from,
+          to: endOfMonth(subMonths(now, 1))
+        });
         return;
       default:
         from = subDays(now, 30);
     }
-    setDateRange({ from, to: now });
+    setDateRange({
+      from,
+      to: now
+    });
   };
-
   const fetchSatisfactionData = async () => {
     try {
-      const { data } = await supabase
-        .from('feedback')
-        .select('rating, emoji, created_at')
-        .gte('created_at', dateRange.from.toISOString())
-        .lte('created_at', dateRange.to.toISOString())
-        .order('created_at', { ascending: false });
-
+      const {
+        data
+      } = await supabase.from('feedback').select('rating, emoji, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).order('created_at', {
+        ascending: false
+      });
       if (data && data.length > 0) {
         const avgRating = data.reduce((sum, item) => sum + item.rating, 0) / data.length;
         const distribution = [1, 2, 3, 4, 5].map(rating => ({
@@ -130,7 +141,6 @@ const CeoDashboard = () => {
           count: data.filter(item => item.rating === rating).length,
           emoji: ['😞', '😐', '🙂', '😊', '😁'][rating - 1]
         }));
-
         setSatisfactionData({
           averageRating: Number(avgRating.toFixed(1)),
           totalFeedback: data.length,
@@ -141,45 +151,18 @@ const CeoDashboard = () => {
       console.error('Error fetching satisfaction data:', error);
     }
   };
-
   const fetchBusinessMetrics = async () => {
     try {
-      const [ordersData, clientsData, eventsData, checkInsData] = await Promise.all([
-        supabase
-          .from('session_line_items')
-          .select('price, quantity, user_id, created_at')
-          .gte('created_at', dateRange.from.toISOString())
-          .lte('created_at', dateRange.to.toISOString())
-          .eq('status', 'completed'),
-        supabase
-          .from('clients')
-          .select('id, active')
-          .eq('is_active', true),
-        supabase
-          .from('events')
-          .select('id')
-          .gte('event_date', format(dateRange.from, 'yyyy-MM-dd'))
-          .lte('event_date', format(dateRange.to, 'yyyy-MM-dd'))
-          .eq('is_active', true),
-        supabase
-          .from('check_ins')
-          .select('id, status')
-          .gte('created_at', dateRange.from.toISOString())
-          .lte('created_at', dateRange.to.toISOString())
-          .eq('status', 'checked_in')
-      ]);
-
+      const [ordersData, clientsData, eventsData, checkInsData] = await Promise.all([supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), supabase.from('clients').select('id, active').eq('is_active', true), supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), supabase.from('check_ins').select('id, status').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'checked_in')]);
       if (ordersData.data && ordersData.data.length > 0) {
-        const totalRevenue = ordersData.data.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const totalRevenue = ordersData.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const avgOrder = totalRevenue / ordersData.data.length;
         const uniqueCustomers = new Set(ordersData.data.map(item => item.user_id)).size;
         const totalOrders = ordersData.data.length;
-        const repeatRate = totalOrders > uniqueCustomers ? ((totalOrders - uniqueCustomers) / totalOrders) * 100 : 0;
-
+        const repeatRate = totalOrders > uniqueCustomers ? (totalOrders - uniqueCustomers) / totalOrders * 100 : 0;
         const activeMembers = clientsData.data?.filter(c => c.active).length || 0;
         const totalClients = clientsData.data?.length || 1;
-        const occupancyRate = (activeMembers / totalClients) * 100;
-
+        const occupancyRate = activeMembers / totalClients * 100;
         setBusinessMetrics({
           avgOrderValue: Number(avgOrder.toFixed(1)),
           totalOrders,
@@ -194,24 +177,20 @@ const CeoDashboard = () => {
       // Error already logged
     }
   };
-
   const fetchPeakHoursData = async () => {
     try {
-      const { data } = await supabase
-        .from('check_ins')
-        .select('checked_in_at')
-        .gte('checked_in_at', dateRange.from.toISOString())
-        .lte('checked_in_at', dateRange.to.toISOString())
-        .eq('status', 'checked_in');
-
+      const {
+        data
+      } = await supabase.from('check_ins').select('checked_in_at').gte('checked_in_at', dateRange.from.toISOString()).lte('checked_in_at', dateRange.to.toISOString()).eq('status', 'checked_in');
       if (data) {
         const hourCounts: Record<number, number> = {};
         data.forEach(item => {
           const hour = new Date(item.checked_in_at).getHours();
           hourCounts[hour] = (hourCounts[hour] || 0) + 1;
         });
-
-        const chartData = Array.from({ length: 16 }, (_, i) => {
+        const chartData = Array.from({
+          length: 16
+        }, (_, i) => {
           const hour = i + 6;
           const ampm = hour >= 12 ? 'PM' : 'AM';
           const displayHour = hour > 12 ? hour - 12 : hour;
@@ -220,75 +199,91 @@ const CeoDashboard = () => {
             visitors: hourCounts[hour] || 0
           };
         });
-
         setPeakHoursData(chartData);
       }
     } catch (error) {
       // Error already logged
     }
   };
-
   const fetchDailyRevenueData = async () => {
     try {
-      const { data } = await supabase
-        .from('session_line_items')
-        .select('price, quantity, created_at')
-        .gte('created_at', subDays(dateRange.to, 6).toISOString())
-        .lte('created_at', dateRange.to.toISOString())
-        .eq('status', 'completed');
-
+      const {
+        data
+      } = await supabase.from('session_line_items').select('price, quantity, created_at').gte('created_at', subDays(dateRange.to, 6).toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed');
       if (data) {
-        const dailyData: Record<string, { revenue: number; orders: number }> = {};
-        
+        const dailyData: Record<string, {
+          revenue: number;
+          orders: number;
+        }> = {};
         data.forEach(item => {
           const day = format(new Date(item.created_at), 'EEE');
           if (!dailyData[day]) {
-            dailyData[day] = { revenue: 0, orders: 0 };
+            dailyData[day] = {
+              revenue: 0,
+              orders: 0
+            };
           }
           dailyData[day].revenue += item.price * item.quantity;
           dailyData[day].orders += 1;
         });
-
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const chartData = days.map(day => ({
           date: day,
           revenue: Number((dailyData[day]?.revenue || 0).toFixed(0)),
           orders: dailyData[day]?.orders || 0
         }));
-
         setDailyRevenueData(chartData);
       }
     } catch (error) {
       // Error already logged
     }
   };
-
-  const revenueBreakdown = [
-    { category: "Memberships", amount: "12,450 EGP", percentage: 45, color: "bg-primary" },
-    { category: "Room Bookings", amount: "8,200 EGP", percentage: 30, color: "bg-accent" },
-    { category: "Drinks & Food", amount: "4,100 EGP", percentage: 15, color: "bg-success" },
-    { category: "Events", amount: "2,750 EGP", percentage: 10, color: "bg-warning" },
-  ];
-
-  const roomUtilization = [
-    { room: "Meeting Room 1", utilization: 85, status: "High" },
-    { room: "Meeting Room 2", utilization: 62, status: "Medium" },
-    { room: "Conference Hall", utilization: 91, status: "High" },
-    { room: "Private Office A", utilization: 45, status: "Low" },
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+  const revenueBreakdown = [{
+    category: "Memberships",
+    amount: "12,450 EGP",
+    percentage: 45,
+    color: "bg-primary"
+  }, {
+    category: "Room Bookings",
+    amount: "8,200 EGP",
+    percentage: 30,
+    color: "bg-accent"
+  }, {
+    category: "Drinks & Food",
+    amount: "4,100 EGP",
+    percentage: 15,
+    color: "bg-success"
+  }, {
+    category: "Events",
+    amount: "2,750 EGP",
+    percentage: 10,
+    color: "bg-warning"
+  }];
+  const roomUtilization = [{
+    room: "Meeting Room 1",
+    utilization: 85,
+    status: "High"
+  }, {
+    room: "Meeting Room 2",
+    utilization: 62,
+    status: "Medium"
+  }, {
+    room: "Conference Hall",
+    utilization: 91,
+    status: "High"
+  }, {
+    room: "Private Office A",
+    utilization: 45,
+    status: "Low"
+  }];
+  return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-4 lg:p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/")} size="sm" className="hover:bg-muted">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
+            
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 CEO Dashboard
@@ -299,13 +294,7 @@ const CeoDashboard = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshData}
-              disabled={isLoading}
-              className="bg-background"
-            >
+            <Button variant="outline" size="sm" onClick={refreshData} disabled={isLoading} className="bg-background">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -334,24 +323,27 @@ const CeoDashboard = () => {
               <div className="flex flex-wrap items-center gap-2">
                 {/* Quick Filters */}
                 <div className="flex flex-wrap gap-1">
-                  {[
-                    { value: "7days", label: "7 Days" },
-                    { value: "30days", label: "30 Days" },
-                    { value: "thisMonth", label: "This Month" },
-                    { value: "lastMonth", label: "Last Month" },
-                    { value: "3months", label: "3 Months" },
-                    { value: "6months", label: "6 Months" }
-                  ].map((filter) => (
-                    <Button
-                      key={filter.value}
-                      variant={quickFilter === filter.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleQuickFilter(filter.value)}
-                      className="text-xs"
-                    >
+                  {[{
+                  value: "7days",
+                  label: "7 Days"
+                }, {
+                  value: "30days",
+                  label: "30 Days"
+                }, {
+                  value: "thisMonth",
+                  label: "This Month"
+                }, {
+                  value: "lastMonth",
+                  label: "Last Month"
+                }, {
+                  value: "3months",
+                  label: "3 Months"
+                }, {
+                  value: "6months",
+                  label: "6 Months"
+                }].map(filter => <Button key={filter.value} variant={quickFilter === filter.value ? "default" : "outline"} size="sm" onClick={() => handleQuickFilter(filter.value)} className="text-xs">
                       {filter.label}
-                    </Button>
-                  ))}
+                    </Button>)}
                 </div>
 
                 {/* Custom Date Range */}
@@ -367,21 +359,17 @@ const CeoDashboard = () => {
                       <div className="p-4 space-y-4">
                         <div>
                           <label className="text-sm font-medium">From Date</label>
-                          <CalendarComponent
-                            mode="single"
-                            selected={dateRange.from}
-                            onSelect={(date) => date && setDateRange(prev => ({ ...prev, from: date }))}
-                            className="pointer-events-auto"
-                          />
+                          <CalendarComponent mode="single" selected={dateRange.from} onSelect={date => date && setDateRange(prev => ({
+                          ...prev,
+                          from: date
+                        }))} className="pointer-events-auto" />
                         </div>
                         <div>
                           <label className="text-sm font-medium">To Date</label>
-                          <CalendarComponent
-                            mode="single"
-                            selected={dateRange.to}
-                            onSelect={(date) => date && setDateRange(prev => ({ ...prev, to: date }))}
-                            className="pointer-events-auto"
-                          />
+                          <CalendarComponent mode="single" selected={dateRange.to} onSelect={date => date && setDateRange(prev => ({
+                          ...prev,
+                          to: date
+                        }))} className="pointer-events-auto" />
                         </div>
                       </div>
                     </PopoverContent>
@@ -425,51 +413,27 @@ const CeoDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/receptionist")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/receptionist")}>
                     <Users className="h-6 w-6" />
                     <span className="text-sm">Receptionist</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/barista")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/barista")}>
                     <Coffee className="h-6 w-6" />
                     <span className="text-sm">Barista</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/community-manager")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/community-manager")}>
                     <Calendar className="h-6 w-6" />
                     <span className="text-sm">Community</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/operations")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/operations")}>
                     <Building className="h-6 w-6" />
                     <span className="text-sm">Operations</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/crm")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/crm")}>
                     <TrendingUp className="h-6 w-6" />
                     <span className="text-sm">CRM</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10"
-                    onClick={() => navigate("/client")}
-                  >
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/client")}>
                     <Star className="h-6 w-6" />
                     <span className="text-sm">Client Portal</span>
                   </Button>
@@ -479,34 +443,10 @@ const CeoDashboard = () => {
 
             {/* Enhanced Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard 
-                title="Total Revenue" 
-                value={`${businessMetrics.totalRevenue.toLocaleString()} EGP`} 
-                change="+12.5%" 
-                icon={DollarSign} 
-                variant="success" 
-              />
-              <MetricCard 
-                title="Active Members" 
-                value={businessMetrics.activeMembers.toString()} 
-                change="+8" 
-                icon={Users} 
-                variant="info" 
-              />
-              <MetricCard 
-                title="Occupancy Rate" 
-                value={`${businessMetrics.occupancyRate}%`} 
-                change="+5.2%" 
-                icon={Building} 
-                variant="default" 
-              />
-              <MetricCard 
-                title="Events This Month" 
-                value={businessMetrics.eventsThisMonth.toString()} 
-                change="+15%" 
-                icon={Calendar} 
-                variant="success" 
-              />
+              <MetricCard title="Total Revenue" value={`${businessMetrics.totalRevenue.toLocaleString()} EGP`} change="+12.5%" icon={DollarSign} variant="success" />
+              <MetricCard title="Active Members" value={businessMetrics.activeMembers.toString()} change="+8" icon={Users} variant="info" />
+              <MetricCard title="Occupancy Rate" value={`${businessMetrics.occupancyRate}%`} change="+5.2%" icon={Building} variant="default" />
+              <MetricCard title="Events This Month" value={businessMetrics.eventsThisMonth.toString()} change="+15%" icon={Calendar} variant="success" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -518,8 +458,7 @@ const CeoDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {revenueBreakdown.map((item) => (
-                      <div key={item.category} className="space-y-3">
+                    {revenueBreakdown.map(item => <div key={item.category} className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">{item.category}</span>
                           <div className="flex items-center gap-2">
@@ -530,8 +469,7 @@ const CeoDashboard = () => {
                           </div>
                         </div>
                         <Progress value={item.percentage} className="h-3" />
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -578,26 +516,18 @@ const CeoDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {roomUtilization.map((room) => (
-                      <div key={room.room} className="space-y-3">
+                    {roomUtilization.map(room => <div key={room.room} className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">{room.room}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold">{room.utilization}%</span>
-                            <Badge 
-                              variant={
-                                room.status === "High" ? "default" :
-                                room.status === "Medium" ? "secondary" : "outline"
-                              }
-                              className="text-xs"
-                            >
+                            <Badge variant={room.status === "High" ? "default" : room.status === "Medium" ? "secondary" : "outline"} className="text-xs">
                               {room.status}
                             </Badge>
                           </div>
                         </div>
                         <Progress value={room.utilization} className="h-3" />
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -651,27 +581,9 @@ const CeoDashboard = () => {
           <TabsContent value="analytics" className="space-y-6">
             {/* Enhanced Business Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MetricCard 
-                title="Avg Order Value" 
-                value={`${businessMetrics.avgOrderValue} EGP`} 
-                change="+8.2%" 
-                icon={DollarSign} 
-                variant="success" 
-              />
-              <MetricCard 
-                title="Customer Satisfaction" 
-                value={`${satisfactionData.averageRating}/5`} 
-                change="+0.3" 
-                icon={Star} 
-                variant="info" 
-              />
-              <MetricCard 
-                title="Repeat Customer Rate" 
-                value={`${businessMetrics.repeatCustomerRate}%`} 
-                change="+5%" 
-                icon={Users} 
-                variant="success" 
-              />
+              <MetricCard title="Avg Order Value" value={`${businessMetrics.avgOrderValue} EGP`} change="+8.2%" icon={DollarSign} variant="success" />
+              <MetricCard title="Customer Satisfaction" value={`${satisfactionData.averageRating}/5`} change="+0.3" icon={Star} variant="info" />
+              <MetricCard title="Repeat Customer Rate" value={`${businessMetrics.repeatCustomerRate}%`} change="+5%" icon={Users} variant="success" />
             </div>
 
             {/* Charts Section */}
@@ -692,27 +604,14 @@ const CeoDashboard = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={peakHoursData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                        <XAxis 
-                          dataKey="hour" 
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                        />
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--background))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar 
-                          dataKey="visitors" 
-                          fill={CHART_COLORS.primary}
-                          radius={[4, 4, 0, 0]}
-                        />
+                        <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <Tooltip contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }} />
+                        <Bar dataKey="visitors" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -735,34 +634,14 @@ const CeoDashboard = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={dailyRevenueData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                        />
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--background))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
-                          }}
-                          formatter={(value, name) => [
-                            name === 'revenue' ? `${value} EGP` : `${value} orders`,
-                            name === 'revenue' ? 'Revenue' : 'Orders'
-                          ]}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="revenue" 
-                          stroke={CHART_COLORS.success}
-                          fill={CHART_COLORS.success}
-                          fillOpacity={0.2}
-                          strokeWidth={2}
-                        />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <Tooltip contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }} formatter={(value, name) => [name === 'revenue' ? `${value} EGP` : `${value} orders`, name === 'revenue' ? 'Revenue' : 'Orders']} />
+                        <Area type="monotone" dataKey="revenue" stroke={CHART_COLORS.success} fill={CHART_COLORS.success} fillOpacity={0.2} strokeWidth={2} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -789,16 +668,7 @@ const CeoDashboard = () => {
                         {satisfactionData.averageRating}
                       </div>
                       <div className="flex justify-center items-center gap-1 mb-4">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star}
-                            className={`h-6 w-6 ${
-                              star <= Math.round(satisfactionData.averageRating) 
-                                ? 'text-yellow-400 fill-yellow-400' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map(star => <Star key={star} className={`h-6 w-6 ${star <= Math.round(satisfactionData.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />)}
                       </div>
                       <Badge variant="secondary" className="text-sm">
                         Excellent Rating
@@ -806,19 +676,14 @@ const CeoDashboard = () => {
                     </div>
                     
                     <div className="space-y-4">
-                      {satisfactionData.ratingDistribution.map((item) => (
-                        <div key={item.rating} className="flex items-center gap-4">
+                      {satisfactionData.ratingDistribution.map(item => <div key={item.rating} className="flex items-center gap-4">
                           <span className="text-xl">{item.emoji}</span>
                           <span className="text-sm w-6">{item.rating}</span>
                           <div className="flex-1">
-                            <Progress 
-                              value={(item.count / satisfactionData.totalFeedback) * 100} 
-                              className="h-3" 
-                            />
+                            <Progress value={item.count / satisfactionData.totalFeedback * 100} className="h-3" />
                           </div>
                           <span className="text-sm font-medium w-10 text-right">{item.count}</span>
-                        </div>
-                      ))}
+                        </div>)}
                     </div>
                   </div>
                 </CardContent>
@@ -926,8 +791,6 @@ const CeoDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CeoDashboard;
