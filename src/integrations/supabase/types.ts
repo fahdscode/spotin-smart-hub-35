@@ -1484,6 +1484,7 @@ export type Database = {
         Args: { p_ip_address?: unknown; p_phone: string }
         Returns: boolean
       }
+      check_user_is_admin: { Args: { p_user_id: string }; Returns: Json }
       checkout_client: {
         Args: { p_checkout_by_user_id?: string; p_client_id: string }
         Returns: Json

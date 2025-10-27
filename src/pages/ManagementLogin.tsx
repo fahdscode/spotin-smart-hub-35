@@ -42,23 +42,34 @@ const ManagementLogin = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Check if user is an admin/staff member
+        // Check if user is an admin/staff member using security definer function
         console.log('🔍 Checking admin privileges for user:', data.user.id);
-        const { data: adminUser, error: adminError } = await supabase
-          .from('admin_users')
-          .select('role, is_active, email')
-          .eq('user_id', data.user.id)
-          .eq('is_active', true)
-          .single();
+        const { data: adminCheck, error: adminError } = await supabase
+          .rpc('check_user_is_admin', { p_user_id: data.user.id });
 
-        console.log('Admin user query result:', { adminUser, adminError });
+        console.log('Admin check result:', { adminCheck, adminError });
 
-        if (adminError || !adminUser) {
+        if (adminError || !adminCheck || typeof adminCheck !== 'object') {
           console.log('❌ Access denied - no admin privileges');
           await supabase.auth.signOut();
           toast.error("Access denied. This account does not have management privileges.");
           return;
         }
+        
+        const checkResult = adminCheck as { is_admin: boolean; role: string; email: string };
+        
+        if (!checkResult.is_admin) {
+          console.log('❌ Access denied - not an admin user');
+          await supabase.auth.signOut();
+          toast.error("Access denied. This account does not have management privileges.");
+          return;
+        }
+        
+        const adminUser = {
+          role: checkResult.role,
+          email: checkResult.email,
+          is_active: true
+        };
 
         console.log('✅ Admin access confirmed:', adminUser.role);
 
