@@ -613,7 +613,7 @@ const FinanceDashboard = () => {
 
         {/* Reports Tabs */}
         <Tabs defaultValue="pl" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
             <TabsTrigger value="pl">P&L</TabsTrigger>
             <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
             <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -622,8 +622,8 @@ const FinanceDashboard = () => {
             <TabsTrigger value="budget">Budget</TabsTrigger>
             <TabsTrigger value="tax">Tax</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
-            <TabsTrigger value="sessions">Cashier Sessions</TabsTrigger>
-            <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
           </TabsList>
 
           {/* Profit & Loss Report */}
