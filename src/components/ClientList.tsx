@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Receipt from "@/components/Receipt";
@@ -49,6 +50,10 @@ const ClientList = () => {
   const [cancellationReason, setCancellationReason] = useState("");
   const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingClient, setDeletingClient] = useState<Client | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -340,6 +345,59 @@ const ClientList = () => {
     window.print();
   };
 
+  const handleEditClient = async () => {
+    if (!editingClient) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          first_name: editingClient.first_name,
+          last_name: editingClient.last_name,
+          full_name: `${editingClient.first_name} ${editingClient.last_name}`,
+          email: editingClient.email,
+          phone: editingClient.phone,
+          job_title: editingClient.job_title,
+          how_did_you_find_us: editingClient.how_did_you_find_us
+        })
+        .eq('id', editingClient.id);
+
+      if (error) throw error;
+
+      setClients(prev => prev.map(client => 
+        client.id === editingClient.id ? editingClient : client
+      ));
+
+      setShowEditDialog(false);
+      setEditingClient(null);
+      toast.success("Client updated successfully");
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast.error("Failed to update client");
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!deletingClient) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_active: false })
+        .eq('id', deletingClient.id);
+
+      if (error) throw error;
+
+      setClients(prev => prev.filter(client => client.id !== deletingClient.id));
+      setShowDeleteDialog(false);
+      setDeletingClient(null);
+      toast.success(`${deletingClient.full_name} deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast.error("Failed to delete client");
+    }
+  };
+
   const filteredClients = clients.filter(client => {
     const matchesSearch = 
       client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -577,9 +635,25 @@ const ClientList = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setEditingClient(client);
+                                      setShowEditDialog(true);
+                                    }}
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Client
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setDeletingClient(client);
+                                      setShowDeleteDialog(true);
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Client
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -850,6 +924,95 @@ const ClientList = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription>Update client information</DialogDescription>
+          </DialogHeader>
+          {editingClient && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-first-name">First Name</Label>
+                <Input
+                  id="edit-first-name"
+                  value={editingClient.first_name}
+                  onChange={(e) => setEditingClient({ ...editingClient, first_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-last-name">Last Name</Label>
+                <Input
+                  id="edit-last-name"
+                  value={editingClient.last_name}
+                  onChange={(e) => setEditingClient({ ...editingClient, last_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editingClient.email}
+                  onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={editingClient.phone}
+                  onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-job-title">Job Title</Label>
+                <Input
+                  id="edit-job-title"
+                  value={editingClient.job_title}
+                  onChange={(e) => setEditingClient({ ...editingClient, job_title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-how-found">How did you find us?</Label>
+                <Input
+                  id="edit-how-found"
+                  value={editingClient.how_did_you_find_us}
+                  onChange={(e) => setEditingClient({ ...editingClient, how_did_you_find_us: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditClient}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingClient?.full_name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteClient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
