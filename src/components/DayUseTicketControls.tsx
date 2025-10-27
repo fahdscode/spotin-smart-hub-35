@@ -15,6 +15,7 @@ interface TicketSettings {
   price: number;
   description: string;
   is_active: boolean;
+  includes_free_drink: boolean;
 }
 
 const DayUseTicketControls = () => {
@@ -22,7 +23,8 @@ const DayUseTicketControls = () => {
     name: "Day Use Pass",
     price: 25.00,
     description: "Full day access to workspace, WiFi, and common areas",
-    is_active: true
+    is_active: true,
+    includes_free_drink: false
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,8 @@ const DayUseTicketControls = () => {
           name: data.name,
           price: data.price,
           description: data.description || "Full day access to workspace, WiFi, and common areas",
-          is_active: data.is_available
+          is_active: data.is_available,
+          includes_free_drink: data.ingredients?.includes('free_drink') || false
         });
         setHasSettings(true);
       } else {
@@ -75,7 +78,8 @@ const DayUseTicketControls = () => {
             name: settings.name,
             price: settings.price,
             description: settings.description,
-            is_available: settings.is_active
+            is_available: settings.is_active,
+            ingredients: settings.includes_free_drink ? ['free_drink'] : []
           })
           .eq('id', settings.id);
 
@@ -93,7 +97,8 @@ const DayUseTicketControls = () => {
             price: settings.price,
             description: settings.description,
             category: 'day_use_ticket',
-            is_available: settings.is_active
+            is_available: settings.is_active,
+            ingredients: settings.includes_free_drink ? ['free_drink'] : []
           })
           .select()
           .single();
@@ -215,9 +220,14 @@ const DayUseTicketControls = () => {
         {!isEditing ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold">{settings.name}</h3>
                 <p className="text-sm text-muted-foreground">{settings.description}</p>
+                {settings.includes_free_drink && (
+                  <Badge variant="secondary" className="mt-2">
+                    Includes Free Drink
+                  </Badge>
+                )}
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-primary flex items-center gap-1">
@@ -299,6 +309,17 @@ const DayUseTicketControls = () => {
               <Switch 
                 checked={settings.is_active} 
                 onCheckedChange={(checked) => setSettings(prev => ({ ...prev, is_active: checked }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium">Include Free Drink</span>
+                <p className="text-xs text-muted-foreground">Customers get one complimentary drink</p>
+              </div>
+              <Switch 
+                checked={settings.includes_free_drink} 
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, includes_free_drink: checked }))}
               />
             </div>
 
