@@ -104,6 +104,14 @@ export default function ClientDashboard() {
           },
           (payload) => {
             console.log('🔄 Real-time client status update:', payload);
+            const newStatus = payload.new.active;
+            const oldStatus = payload.old?.active;
+            
+            // Show satisfaction popup when client checks out
+            if (oldStatus === true && newStatus === false) {
+              setShowSatisfactionPopup(true);
+            }
+            
             fetchCheckInStatus(clientData.id);
           }
         )
@@ -544,7 +552,7 @@ export default function ClientDashboard() {
       });
 
       await fetchPendingOrders();
-      setShowSatisfactionPopup(true);
+      
       
     } catch (error) {
       console.error('Error placing order:', error);
