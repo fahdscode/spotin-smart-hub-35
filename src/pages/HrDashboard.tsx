@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, DollarSign, UserCheck, TrendingUp } from "lucide-react";
 import PayrollManagement from "@/components/PayrollManagement";
+import EmployeeRecords from "@/components/EmployeeRecords";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -101,17 +102,7 @@ export default function HrDashboard() {
           </TabsContent>
 
           <TabsContent value="employees">
-            <Card>
-              <CardHeader>
-                <CardTitle>Employee Records</CardTitle>
-                <CardDescription>
-                  View and manage employee information and records
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Employee management features coming soon...</p>
-              </CardContent>
-            </Card>
+            <EmployeeRecords />
           </TabsContent>
         </Tabs>
       </div>
