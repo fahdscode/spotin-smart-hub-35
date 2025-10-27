@@ -27,6 +27,7 @@ import SuperAdminSetup from "./pages/SuperAdminSetup";
 import ManagementProfile from "./pages/ManagementProfile";
 import ManagementSettings from "./pages/ManagementSettings";
 import MarketingDashboard from "./pages/MarketingDashboard";
+import HrDashboard from "./pages/HrDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -111,6 +112,11 @@ const App = () => (
               <Route path="/marketing" element={
                 <ProtectedRoute requiredRole={["ceo", "admin", "community_manager"]} redirectTo="/management-login">
                   <MarketingDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/hr" element={
+                <ProtectedRoute requiredRole={["hr_manager", "ceo", "admin"]} redirectTo="/management-login">
+                  <HrDashboard />
                 </ProtectedRoute>
               } />
               
