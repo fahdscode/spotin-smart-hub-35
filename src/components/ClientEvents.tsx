@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, MapPin, Users, DollarSign, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocalizedFields } from "@/hooks/useLocalizedFields";
 
 interface Event {
   id: string;
@@ -40,6 +42,8 @@ interface ClientEventsProps {
 
 const ClientEvents = ({ clientData }: ClientEventsProps) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
+  const { isArabic } = useLocalizedFields();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -70,8 +74,8 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
-        title: "Error",
-        description: "Failed to load events",
+        title: t('common.error'),
+        description: t('clientEvents.failedToLoad'),
         variant: "destructive"
       });
     } finally {
@@ -97,8 +101,8 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
     // Check if event is full
     if (selectedEvent.registered_attendees >= selectedEvent.capacity) {
       toast({
-        title: "Event Full",
-        description: "This event has reached its capacity.",
+        title: t('clientEvents.eventFull'),
+        description: t('clientEvents.eventFullDesc'),
         variant: "destructive"
       });
       return;
@@ -120,8 +124,8 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
       if (error) throw error;
 
       toast({
-        title: "Registration Successful!",
-        description: `You're registered for ${selectedEvent.title}. We'll send you a confirmation email.`,
+        title: t('clientEvents.registrationSuccess'),
+        description: t('clientEvents.registrationSuccessDesc', { title: isArabic && (selectedEvent as any).title_ar ? (selectedEvent as any).title_ar : selectedEvent.title }),
       });
 
       setIsRegistrationOpen(false);
@@ -129,8 +133,8 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
     } catch (error) {
       console.error('Error registering for event:', error);
       toast({
-        title: "Registration Failed",
-        description: "Failed to register for event. Please try again.",
+        title: t('clientEvents.registrationFailed'),
+        description: t('clientEvents.registrationFailedDesc'),
         variant: "destructive"
       });
     }
@@ -170,17 +174,17 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Upcoming Events</h2>
-        <Badge variant="outline">{events.length} events available</Badge>
+        <h2 className="text-2xl font-bold">{t('clientEvents.upcomingEvents')}</h2>
+        <Badge variant="outline">{events.length} {t('clientEvents.eventsAvailable')}</Badge>
       </div>
 
       {events.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
             <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No Upcoming Events</h3>
+            <h3 className="text-lg font-medium mb-2">{t('clientEvents.noEvents')}</h3>
             <p className="text-muted-foreground">
-              Check back soon for exciting community events and workshops!
+              {t('clientEvents.checkBackSoon')}
             </p>
           </CardContent>
         </Card>
@@ -193,18 +197,22 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
                   <div className="flex-1 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-xl font-semibold">{event.title}</h3>
-                        <p className="text-muted-foreground mt-1">{event.description}</p>
+                        <h3 className="text-xl font-semibold">
+                          {isArabic && (event as any).title_ar ? (event as any).title_ar : event.title}
+                        </h3>
+                        <p className="text-muted-foreground mt-1">
+                          {isArabic && (event as any).description_ar ? (event as any).description_ar : event.description}
+                        </p>
                       </div>
                       <div className="flex gap-2">
                         <Badge className={getCategoryColor(event.category)}>
                           {event.category}
                         </Badge>
                         {isEventToday(event.event_date) && (
-                          <Badge variant="destructive">Today</Badge>
+                          <Badge variant="destructive">{t('clientEvents.today')}</Badge>
                         )}
                         {isEventSoon(event.event_date) && !isEventToday(event.event_date) && (
-                          <Badge variant="secondary">Soon</Badge>
+                          <Badge variant="secondary">{t('clientEvents.soon')}</Badge>
                         )}
                       </div>
                     </div>
@@ -220,11 +228,11 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.location || 'TBD'}</span>
+                        <span>{event.location || t('clientEvents.tbd')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.registered_attendees}/{event.capacity} registered</span>
+                        <span>{event.registered_attendees}/{event.capacity} {t('clientEvents.registered')}</span>
                       </div>
                     </div>
 
@@ -232,7 +240,7 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {event.price > 0 ? `${event.price} EGP` : 'Free'}
+                          {event.price > 0 ? `${event.price} ${t('common.currency')}` : t('clientEvents.free')}
                         </span>
                       </div>
                       <Button
@@ -240,7 +248,7 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
                         disabled={event.registered_attendees >= event.capacity}
                         variant={event.registered_attendees >= event.capacity ? "secondary" : "default"}
                       >
-                        {event.registered_attendees >= event.capacity ? 'Event Full' : 'Register Now'}
+                        {event.registered_attendees >= event.capacity ? t('clientEvents.eventFull') : t('clientEvents.registerNow')}
                       </Button>
                     </div>
                   </div>
@@ -255,9 +263,9 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
       <Dialog open={isRegistrationOpen} onOpenChange={setIsRegistrationOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Register for Event</DialogTitle>
+            <DialogTitle>{t('clientEvents.registerForEvent')}</DialogTitle>
             <DialogDescription>
-              {selectedEvent?.title}
+              {selectedEvent && (isArabic && (selectedEvent as any).title_ar ? (selectedEvent as any).title_ar : selectedEvent?.title)}
             </DialogDescription>
           </DialogHeader>
           
@@ -274,55 +282,55 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4" />
-                  <span>{selectedEvent.location || 'Location TBD'}</span>
+                  <span>{selectedEvent.location || t('clientEvents.locationTBD')}</span>
                 </div>
                 {selectedEvent.price > 0 && (
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <DollarSign className="h-4 w-4" />
-                    <span>{selectedEvent.price} EGP</span>
+                    <span>{selectedEvent.price} {t('common.currency')}</span>
                   </div>
                 )}
               </div>
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="attendee_name">Full Name</Label>
+              <Label htmlFor="attendee_name">{t('clientEvents.fullName')}</Label>
               <Input
                 id="attendee_name"
                 value={registrationForm.attendee_name}
                 onChange={(e) => setRegistrationForm(prev => ({ ...prev, attendee_name: e.target.value }))}
-                placeholder="Your full name"
+                placeholder={t('clientEvents.yourFullName')}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="attendee_email">Email</Label>
+              <Label htmlFor="attendee_email">{t('clientEvents.email')}</Label>
               <Input
                 id="attendee_email"
                 type="email"
                 value={registrationForm.attendee_email}
                 onChange={(e) => setRegistrationForm(prev => ({ ...prev, attendee_email: e.target.value }))}
-                placeholder="Your email address"
+                placeholder={t('clientEvents.yourEmail')}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="attendee_phone">Phone</Label>
+              <Label htmlFor="attendee_phone">{t('clientEvents.phone')}</Label>
               <Input
                 id="attendee_phone"
                 value={registrationForm.attendee_phone}
                 onChange={(e) => setRegistrationForm(prev => ({ ...prev, attendee_phone: e.target.value }))}
-                placeholder="Your phone number"
+                placeholder={t('clientEvents.yourPhone')}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="special_requests">Special Requests (Optional)</Label>
+              <Label htmlFor="special_requests">{t('clientEvents.specialRequests')}</Label>
               <Textarea
                 id="special_requests"
                 value={registrationForm.special_requests}
                 onChange={(e) => setRegistrationForm(prev => ({ ...prev, special_requests: e.target.value }))}
-                placeholder="Any special requirements or dietary restrictions?"
+                placeholder={t('clientEvents.specialRequestsPlaceholder')}
                 rows={3}
               />
             </div>
@@ -330,10 +338,10 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRegistrationOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={submitRegistration}>
-              Confirm Registration
+              {t('clientEvents.confirmRegistration')}
             </Button>
           </DialogFooter>
         </DialogContent>
