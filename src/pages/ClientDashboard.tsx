@@ -918,14 +918,20 @@ export default function ClientDashboard() {
             {/* Quick Actions */}
             <div className="space-y-4">
               {!isCheckedIn && (
-                <Card className="border-orange-200 bg-orange-50">
+                <Card className="border-accent/20 bg-accent/5">
                   <CardContent className="pt-6 text-center">
-                    <div className="text-orange-600 mb-2">
-                      <QrCode className="h-12 w-12 mx-auto" />
+                    <div className="mb-4">
+                      <BarcodeCard 
+                        clientCode={clientData?.client_code}
+                        barcode={clientData?.barcode}
+                        userName={clientData?.full_name}
+                        userEmail={clientData?.email}
+                        compact={true}
+                      />
                     </div>
-                    <h3 className="text-lg font-semibold text-orange-800 mb-2">Please Check In First</h3>
-                    <p className="text-orange-700 mb-4">You need to check in at reception before you can place orders.</p>
-                    <p className="text-sm text-orange-600">Show your QR code (in Profile tab) to the receptionist.</p>
+                    <h3 className="text-lg font-semibold mb-2">Please Check In First</h3>
+                    <p className="text-muted-foreground mb-4">You need to check in at reception before you can place orders.</p>
+                    <p className="text-sm text-muted-foreground">Show your QR code above to the receptionist.</p>
                   </CardContent>
                 </Card>
               )}
