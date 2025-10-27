@@ -926,38 +926,6 @@ export default function ClientDashboard() {
               )}
 
 
-              {/* Categories Section */}
-              {categories.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      Browse by Category
-                    </CardTitle>
-                    <CardDescription>
-                      Explore our menu categories
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {categories.map((category) => (
-                        <Button
-                          key={category.id}
-                          variant="outline"
-                          className="h-auto flex-col items-start p-4 hover:bg-primary/5 hover:border-primary"
-                          onClick={() => {
-                            setCurrentView('order');
-                            setSearchQuery(category.name.toLowerCase());
-                          }}
-                        >
-                          <div className="font-semibold text-base">{category.name}</div>
-                          <div className="text-sm text-muted-foreground">{category.count} items</div>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Best Selling Products */}
               {bestSellingProducts.length > 0 && (
