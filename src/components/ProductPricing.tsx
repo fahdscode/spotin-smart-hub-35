@@ -50,9 +50,11 @@ const ProductPricing = () => {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
+    name_ar: "",
     price: 0,
     category: "beverage",
     description: "",
+    description_ar: "",
     is_available: true,
     prep_time: "",
     ingredients: [] as ProductIngredient[]
@@ -248,9 +250,11 @@ const ProductPricing = () => {
         .from('drinks')
         .insert([{
           name: newProduct.name,
+          name_ar: newProduct.name_ar || null,
           price: newProduct.price,
           category: newProduct.category,
           description: newProduct.description || null,
+          description_ar: newProduct.description_ar || null,
           is_available: newProduct.is_available,
           image_url: imageUrl,
           prep_time: newProduct.prep_time || null
@@ -277,9 +281,11 @@ const ProductPricing = () => {
       setProducts([...products, data[0]]);
       setNewProduct({
         name: "",
+        name_ar: "",
         price: 0,
         category: "beverage",
         description: "",
+        description_ar: "",
         is_available: true,
         prep_time: "",
         ingredients: []
@@ -439,12 +445,22 @@ const ProductPricing = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="productName">Product Name</Label>
+                    <Label htmlFor="productName">Product Name (English)</Label>
                     <Input
                       id="productName"
                       value={newProduct.name}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="e.g., Premium Coffee"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="productNameAr">Product Name (Arabic)</Label>
+                    <Input
+                      id="productNameAr"
+                      value={newProduct.name_ar}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, name_ar: e.target.value }))}
+                      placeholder="مثال: قهوة مميزة"
+                      dir="rtl"
                     />
                   </div>
                   <div>
@@ -501,13 +517,24 @@ const ProductPricing = () => {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="productDescription">Description</Label>
+                  <Label htmlFor="productDescription">Description (English)</Label>
                   <Textarea
                     id="productDescription"
                     value={newProduct.description}
                     onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Product description..."
                     rows={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="productDescriptionAr">Description (Arabic)</Label>
+                  <Textarea
+                    id="productDescriptionAr"
+                    value={newProduct.description_ar}
+                    onChange={(e) => setNewProduct(prev => ({ ...prev, description_ar: e.target.value }))}
+                    placeholder="وصف المنتج..."
+                    rows={2}
+                    dir="rtl"
                   />
                 </div>
                 

@@ -35,7 +35,9 @@ interface Event {
 
 interface EventFormData {
   title: string;
+  title_ar: string;
   description: string;
+  description_ar: string;
   event_date: string;
   start_time: string;
   end_time: string;
@@ -92,7 +94,9 @@ const CommunityManagerDashboard = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [eventForm, setEventForm] = useState<EventFormData>({
     title: '',
+    title_ar: '',
     description: '',
+    description_ar: '',
     event_date: '',
     start_time: '',
     end_time: '',
@@ -221,7 +225,9 @@ const CommunityManagerDashboard = () => {
     setEditingEvent(event);
     setEventForm({
       title: event.title,
+      title_ar: (event as any).title_ar || '',
       description: event.description || '',
+      description_ar: (event as any).description_ar || '',
       event_date: event.event_date,
       start_time: event.start_time,
       end_time: event.end_time,
@@ -261,7 +267,9 @@ const CommunityManagerDashboard = () => {
   const resetForm = () => {
     setEventForm({
       title: '',
+      title_ar: '',
       description: '',
+      description_ar: '',
       event_date: '',
       start_time: '',
       end_time: '',
@@ -380,22 +388,46 @@ const CommunityManagerDashboard = () => {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="title">Event Title</Label>
-                  <Input
-                    id="title"
-                    value={eventForm.title}
-                    onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter event title"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Event Title (English)</Label>
+                    <Input
+                      id="title"
+                      value={eventForm.title}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Enter event title"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="title_ar">Event Title (Arabic)</Label>
+                    <Input
+                      id="title_ar"
+                      value={eventForm.title_ar}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, title_ar: e.target.value }))}
+                      placeholder="أدخل عنوان الفعالية"
+                      dir="rtl"
+                    />
+                  </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description (English)</Label>
                   <Textarea
                     id="description"
                     value={eventForm.description}
                     onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Enter event description"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description_ar">Description (Arabic)</Label>
+                  <Textarea
+                    id="description_ar"
+                    value={eventForm.description_ar}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, description_ar: e.target.value }))}
+                    placeholder="أدخل وصف الفعالية"
+                    rows={3}
+                    dir="rtl"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">

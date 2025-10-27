@@ -631,6 +631,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          description_ar: string | null
           end_time: string
           event_date: string
           id: string
@@ -641,6 +642,7 @@ export type Database = {
           registered_attendees: number
           start_time: string
           title: string
+          title_ar: string | null
           updated_at: string
         }
         Insert: {
@@ -648,6 +650,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           end_time: string
           event_date: string
           id?: string
@@ -658,6 +661,7 @@ export type Database = {
           registered_attendees?: number
           start_time: string
           title: string
+          title_ar?: string | null
           updated_at?: string
         }
         Update: {
@@ -665,6 +669,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           end_time?: string
           event_date?: string
           id?: string
@@ -675,6 +680,7 @@ export type Database = {
           registered_attendees?: number
           start_time?: string
           title?: string
+          title_ar?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1138,33 +1144,39 @@ export type Database = {
           capacity: number
           created_at: string
           description: string | null
+          description_ar: string | null
           hourly_rate: number
           id: string
           image_url: string | null
           is_available: boolean
           name: string
+          name_ar: string | null
         }
         Insert: {
           amenities?: string[] | null
           capacity?: number
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           hourly_rate?: number
           id?: string
           image_url?: string | null
           is_available?: boolean
           name: string
+          name_ar?: string | null
         }
         Update: {
           amenities?: string[] | null
           capacity?: number
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           hourly_rate?: number
           id?: string
           image_url?: string | null
           is_available?: boolean
           name?: string
+          name_ar?: string | null
         }
         Relationships: []
       }

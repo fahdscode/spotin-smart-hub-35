@@ -35,7 +35,9 @@ const RoomsManagement = () => {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    name_ar: "",
     description: "",
+    description_ar: "",
     capacity: 1,
     hourly_rate: 0,
     is_available: true,
@@ -77,7 +79,9 @@ const RoomsManagement = () => {
       
       const roomData = {
         name: formData.name,
+        name_ar: formData.name_ar || null,
         description: formData.description || null,
+        description_ar: formData.description_ar || null,
         capacity: formData.capacity,
         hourly_rate: formData.hourly_rate,
         is_available: formData.is_available,
@@ -128,7 +132,9 @@ const RoomsManagement = () => {
     setEditingRoom(room);
     setFormData({
       name: room.name,
+      name_ar: (room as any).name_ar || "",
       description: room.description || "",
+      description_ar: (room as any).description_ar || "",
       capacity: room.capacity,
       hourly_rate: room.hourly_rate,
       is_available: room.is_available,
@@ -167,7 +173,9 @@ const RoomsManagement = () => {
   const resetForm = () => {
     setFormData({
       name: "",
+      name_ar: "",
       description: "",
+      description_ar: "",
       capacity: 1,
       hourly_rate: 0,
       is_available: true,
@@ -210,25 +218,49 @@ const RoomsManagement = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Room Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Conference Room A"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Room Name (English)</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Conference Room A"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="name_ar">Room Name (Arabic)</Label>
+                      <Input
+                        id="name_ar"
+                        value={formData.name_ar}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name_ar: e.target.value }))}
+                        placeholder="مثال: قاعة الاجتماعات أ"
+                        dir="rtl"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">Description (English)</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Room description and features"
                       rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description_ar">Description (Arabic)</Label>
+                    <Textarea
+                      id="description_ar"
+                      value={formData.description_ar}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description_ar: e.target.value }))}
+                      placeholder="وصف القاعة والمميزات"
+                      rows={3}
+                      dir="rtl"
                     />
                   </div>
 
