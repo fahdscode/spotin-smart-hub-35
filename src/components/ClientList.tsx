@@ -98,27 +98,43 @@ const ClientList = () => {
           .eq('is_active', true)
           .maybeSingle();
 
-        // Fetch orders ONLY from the current session (between check-in and now)
+        // Fetch orders from the current session
         let receiptItems: any[] = [];
         
+        // Determine the time range for orders
+        let startTime: string;
         if (checkInTime) {
-          // Only fetch orders created after the check-in time
-          const { data: orders } = await supabase
-            .from('session_line_items')
-            .select('*')
-            .eq('user_id', clientId)
-            .in('status', ['pending', 'completed', 'served', 'ready'])
-            .gte('created_at', checkInTime)
-            .lte('created_at', new Date().toISOString())
-            .order('created_at', { ascending: true });
-
-          receiptItems = orders?.map(order => ({
-            name: order.item_name,
-            quantity: order.quantity,
-            price: order.price,
-            total: order.price * order.quantity
-          })) || [];
+          // If we have a check-in time, use it
+          startTime = checkInTime;
+        } else {
+          // If no check-in time, get orders from when client became active (updated_at)
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('updated_at')
+            .eq('id', clientId)
+            .single();
+          
+          startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
         }
+
+        // Fetch all orders in the session time range
+        const { data: orders } = await supabase
+          .from('session_line_items')
+          .select('*')
+          .eq('user_id', clientId)
+          .in('status', ['pending', 'completed', 'served', 'ready'])
+          .gte('created_at', startTime)
+          .lte('created_at', new Date().toISOString())
+          .order('created_at', { ascending: true });
+
+        console.log('📦 Orders found for checkout:', orders);
+
+        receiptItems = orders?.map(order => ({
+          name: order.item_name,
+          quantity: order.quantity,
+          price: order.price,
+          total: order.price * order.quantity
+        })) || [];
 
         const duration = checkInTime 
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
