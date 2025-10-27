@@ -953,6 +953,134 @@ export type Database = {
           },
         ]
       }
+      payroll: {
+        Row: {
+          bank_account: string | null
+          base_salary: number
+          bonuses: number | null
+          created_at: string
+          deductions: number | null
+          department: string | null
+          employee_id: string | null
+          employee_name: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          net_salary: number | null
+          notes: string | null
+          payment_frequency: string
+          position: string
+          start_date: string
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_account?: string | null
+          base_salary?: number
+          bonuses?: number | null
+          created_at?: string
+          deductions?: number | null
+          department?: string | null
+          employee_id?: string | null
+          employee_name: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          net_salary?: number | null
+          notes?: string | null
+          payment_frequency?: string
+          position: string
+          start_date?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_account?: string | null
+          base_salary?: number
+          bonuses?: number | null
+          created_at?: string
+          deductions?: number | null
+          department?: string | null
+          employee_id?: string | null
+          employee_name?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          net_salary?: number | null
+          notes?: string | null
+          payment_frequency?: string
+          position?: string
+          start_date?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payroll_transactions: {
+        Row: {
+          base_amount: number
+          bonuses: number | null
+          created_at: string
+          deductions: number | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string
+          payroll_id: string
+          period_end: string
+          period_start: string
+          processed_by: string | null
+          total_amount: number
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          base_amount: number
+          bonuses?: number | null
+          created_at?: string
+          deductions?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          payroll_id: string
+          period_end: string
+          period_start: string
+          processed_by?: string | null
+          total_amount: number
+          transaction_date?: string
+          updated_at?: string
+        }
+        Update: {
+          base_amount?: number
+          bonuses?: number | null
+          created_at?: string
+          deductions?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          payroll_id?: string
+          period_end?: string
+          period_start?: string
+          processed_by?: string | null
+          total_amount?: number
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_transactions_payroll_id_fkey"
+            columns: ["payroll_id"]
+            isOneToOne: false
+            referencedRelation: "payroll"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_ingredients: {
         Row: {
           created_at: string

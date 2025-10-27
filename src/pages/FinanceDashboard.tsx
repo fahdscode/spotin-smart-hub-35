@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User, CalendarIcon, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import SpotinHeader from '@/components/SpotinHeader';
 import { LogoutButton } from '@/components/LogoutButton';
+import PayrollManagement from '@/components/PayrollManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
@@ -763,7 +764,7 @@ const FinanceDashboard = () => {
 
         {/* Reports Tabs */}
         <Tabs defaultValue="pl" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-11">
             <TabsTrigger value="pl">P&L</TabsTrigger>
             <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
             <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -774,6 +775,10 @@ const FinanceDashboard = () => {
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="payroll">
+              <Users className="h-4 w-4 mr-2" />
+              Payroll
+            </TabsTrigger>
           </TabsList>
 
           {/* Profit & Loss Report */}
@@ -1633,6 +1638,11 @@ const FinanceDashboard = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Payroll Tab */}
+        <TabsContent value="payroll">
+          <PayrollManagement />
+        </TabsContent>
       </div>
     </div>
   );
