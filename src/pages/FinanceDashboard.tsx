@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +26,7 @@ const FinanceDashboard = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [cashierSessions, setCashierSessions] = useState<any[]>([]);
   
   // Form state for new expense
   const [newExpense, setNewExpense] = useState({
@@ -107,7 +108,8 @@ const FinanceDashboard = () => {
         fetchBudgetData(monthStart),
         fetchCashFlowData(),
         fetchVendorPayments(monthStart, monthEnd),
-        fetchTransactions(monthStart, monthEnd)
+        fetchTransactions(monthStart, monthEnd),
+        fetchCashierSessions(monthStart, monthEnd)
       ]);
     } catch (error) {
       console.error('Error fetching financial data:', error);
@@ -269,6 +271,19 @@ const FinanceDashboard = () => {
 
     if (bills) {
       setVendorPayments(bills);
+    }
+  };
+
+  const fetchCashierSessions = async (start: Date, end: Date) => {
+    const { data: sessions } = await supabase
+      .from('cashier_sessions')
+      .select('*')
+      .gte('start_time', start.toISOString())
+      .lte('start_time', end.toISOString())
+      .order('start_time', { ascending: false });
+
+    if (sessions) {
+      setCashierSessions(sessions);
     }
   };
 
@@ -513,7 +528,7 @@ const FinanceDashboard = () => {
 
         {/* Reports Tabs */}
         <Tabs defaultValue="pl" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9">
             <TabsTrigger value="pl">P&L</TabsTrigger>
             <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
             <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -522,6 +537,7 @@ const FinanceDashboard = () => {
             <TabsTrigger value="budget">Budget</TabsTrigger>
             <TabsTrigger value="tax">Tax</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
+            <TabsTrigger value="sessions">Cashier Sessions</TabsTrigger>
             <TabsTrigger value="transactions">All Transactions</TabsTrigger>
           </TabsList>
 
@@ -963,6 +979,127 @@ const FinanceDashboard = () => {
                             {bill.status}
                           </div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Cashier Sessions Tab */}
+          <TabsContent value="sessions" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Cashier Sessions</CardTitle>
+                    <CardDescription>Staff session tracking for {format(new Date(selectedMonth), 'MMMM yyyy')}</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => exportReport('Cashier Sessions')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {cashierSessions.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No cashier sessions for this month</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {cashierSessions.map((session: any) => (
+                      <div key={session.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded-lg">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{session.staff_name}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(session.start_time), 'MMM dd, yyyy • hh:mm a')}
+                                {session.end_time && (
+                                  <> → {format(new Date(session.end_time), 'hh:mm a')}</>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {session.is_active ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/20">
+                                <div className="h-2 w-2 rounded-full bg-green-600 animate-pulse" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800">
+                                Closed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Financial Summary */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3 pt-3 border-t">
+                          <div className="text-center p-2 bg-muted/50 rounded">
+                            <div className="text-xs text-muted-foreground mb-1">Opening</div>
+                            <div className="font-semibold text-sm">{formatCurrency(session.opening_cash)}</div>
+                          </div>
+                          <div className="text-center p-2 bg-green-50 dark:bg-green-900/10 rounded">
+                            <div className="text-xs text-muted-foreground mb-1">Cash</div>
+                            <div className="font-semibold text-sm text-green-600">{formatCurrency(session.cash_sales)}</div>
+                          </div>
+                          <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/10 rounded">
+                            <div className="text-xs text-muted-foreground mb-1">Visa</div>
+                            <div className="font-semibold text-sm text-blue-600">{formatCurrency(session.card_sales)}</div>
+                          </div>
+                          <div className="text-center p-2 bg-purple-50 dark:bg-purple-900/10 rounded">
+                            <div className="text-xs text-muted-foreground mb-1">Transfer</div>
+                            <div className="font-semibold text-sm text-purple-600">{formatCurrency(session.bank_transfer_sales || 0)}</div>
+                          </div>
+                          <div className="text-center p-2 bg-orange-50 dark:bg-orange-900/10 rounded">
+                            <div className="text-xs text-muted-foreground mb-1">Hot Desk</div>
+                            <div className="font-semibold text-sm text-orange-600">{formatCurrency(session.hot_desk_sales || 0)}</div>
+                          </div>
+                        </div>
+
+                        {/* Total Sales */}
+                        <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                          <span className="font-semibold">Total Sales</span>
+                          <span className="text-lg font-bold text-primary">{formatCurrency(session.total_sales)}</span>
+                        </div>
+
+                        {/* Closing Info */}
+                        {!session.is_active && (
+                          <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <div className="text-muted-foreground">Expected</div>
+                              <div className="font-semibold">{formatCurrency(session.expected_cash || 0)}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Closing</div>
+                              <div className="font-semibold">{formatCurrency(session.closing_cash || 0)}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Difference</div>
+                              <div className={`font-semibold ${
+                                (session.cash_difference || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {session.cash_difference >= 0 ? '+' : ''}{formatCurrency(session.cash_difference || 0)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {session.notes && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="text-xs text-muted-foreground mb-1">Notes:</div>
+                            <div className="text-sm">{session.notes}</div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
