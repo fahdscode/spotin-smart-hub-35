@@ -271,7 +271,7 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
 
         return {
           room_id: selectedRoom,
-          user_id: selectedClient.id,
+          client_id: selectedClient.id,
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           status: 'confirmed',

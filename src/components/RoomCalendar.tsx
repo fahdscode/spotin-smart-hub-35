@@ -23,12 +23,13 @@ interface Room {
 interface Reservation {
   id: string;
   room_id: string;
-  user_id: string;
+  client_id: string;
   start_time: string;
   end_time: string;
   status: string;
   total_amount: number;
   created_at: string;
+  client_name?: string;
   room?: Room;
 }
 

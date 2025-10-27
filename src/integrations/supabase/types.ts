@@ -920,6 +920,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          client_id: string
           client_name: string | null
           created_at: string
           end_time: string
@@ -928,9 +929,9 @@ export type Database = {
           start_time: string
           status: string
           total_amount: number
-          user_id: string
         }
         Insert: {
+          client_id: string
           client_name?: string | null
           created_at?: string
           end_time: string
@@ -939,9 +940,9 @@ export type Database = {
           start_time: string
           status?: string
           total_amount: number
-          user_id: string
         }
         Update: {
+          client_id?: string
           client_name?: string | null
           created_at?: string
           end_time?: string
@@ -950,9 +951,15 @@ export type Database = {
           start_time?: string
           status?: string
           total_amount?: number
-          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reservations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservations_room_id_fkey"
             columns: ["room_id"]
