@@ -36,6 +36,8 @@ const ReceptionistDashboard = () => {
   const [roomBookings, setRoomBookings] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
+  const [hasActiveCashierSession, setHasActiveCashierSession] = useState<boolean>(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   const quickActions = [
     { 
@@ -163,18 +165,46 @@ const ReceptionistDashboard = () => {
       }
     };
 
+    // Check for active cashier session
+    const checkCashierSession = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cashier_sessions')
+          .select('id')
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (error) throw error;
+        setHasActiveCashierSession(!!data);
+        setCheckingSession(false);
+      } catch (error) {
+        console.error('Error checking cashier session:', error);
+        setHasActiveCashierSession(false);
+        setCheckingSession(false);
+      }
+    };
+
     const initializeDashboard = async () => {
       setLoading(true);
       await Promise.all([
         getCurrentUser(),
         fetchActiveSessions(),
         fetchDailyRegistrations(),
-        fetchRoomBookings()
+        fetchRoomBookings(),
+        checkCashierSession()
       ]);
       setLoading(false);
     };
 
     initializeDashboard();
+    
+    // Listen for cashier session changes
+    const handleCashierSessionChange = () => {
+      console.log('🔄 Cashier session changed, rechecking...');
+      checkCashierSession();
+    };
+    
+    window.addEventListener('cashier-session-changed', handleCashierSessionChange);
     
     // Listen for client status changes from BarcodeScanner
     const handleClientStatusChange = () => {
@@ -212,6 +242,7 @@ const ReceptionistDashboard = () => {
 
     return () => {
       window.removeEventListener('client-status-changed', handleClientStatusChange);
+      window.removeEventListener('cashier-session-changed', handleCashierSessionChange);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
@@ -286,6 +317,20 @@ const ReceptionistDashboard = () => {
           </TabsList>
 
           <TabsContent value="actions" className="space-y-6">
+            {!hasActiveCashierSession && !checkingSession && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="h-6 w-6 text-destructive" />
+                    <div>
+                      <h3 className="font-semibold text-destructive">No Active Cashier Session</h3>
+                      <p className="text-sm text-muted-foreground">Please start a cashier session in the "Cashier Session" tab before performing any actions.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -296,7 +341,7 @@ const ReceptionistDashboard = () => {
                   {quickActions.map((action) => (
                     <Dialog key={action.action}>
                       <DialogTrigger asChild>
-                        <Card className="hover:shadow-card transition-all duration-200 cursor-pointer group">
+                        <Card className={`hover:shadow-card transition-all duration-200 cursor-pointer group ${!hasActiveCashierSession ? 'opacity-50 pointer-events-none' : ''}`}>
                           <CardContent className="p-4">
                             <div className="flex flex-col items-center text-center gap-3">
                               <div className={`p-3 rounded-lg ${
@@ -406,11 +451,12 @@ const ReceptionistDashboard = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
+                      disabled={!hasActiveCashierSession}
                     />
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="professional" className="w-full">
+                      <Button variant="professional" className="w-full" disabled={!hasActiveCashierSession}>
                         <QrCode className="h-4 w-4 mr-2" />
                         Scan QR Code
                       </Button>
@@ -462,7 +508,20 @@ const ReceptionistDashboard = () => {
           </TabsContent>
 
           <TabsContent value="clients" className="space-y-6">
-            <ClientList />
+            {!hasActiveCashierSession && !checkingSession && (
+              <Card className="border-destructive bg-destructive/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="h-6 w-6 text-destructive" />
+                    <div>
+                      <h3 className="font-semibold text-destructive">No Active Cashier Session</h3>
+                      <p className="text-sm text-muted-foreground">Please start a cashier session before managing clients.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {hasActiveCashierSession && <ClientList />}
           </TabsContent>
 
           <TabsContent value="cashier" className="space-y-6">

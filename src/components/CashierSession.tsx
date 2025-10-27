@@ -158,6 +158,9 @@ const CashierSession = () => {
         title: "Session Started",
         description: `Opening cash: ${formatCurrency(openingAmount)}`,
       });
+      
+      // Notify dashboard about session change
+      window.dispatchEvent(new Event('cashier-session-changed'));
     } catch (error) {
       console.error('Error starting session:', error);
       toast({
@@ -208,6 +211,9 @@ const CashierSession = () => {
       setShowEndDialog(false);
       setClosingCash('');
       setNotes('');
+      
+      // Notify dashboard about session change
+      window.dispatchEvent(new Event('cashier-session-changed'));
     } catch (error) {
       console.error('Error ending session:', error);
       toast({
