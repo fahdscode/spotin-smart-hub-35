@@ -26,7 +26,7 @@ const Index = () => {
               Welcome to SpotIn
             </h1>
             <h2 className="text-4xl font-bold text-foreground mb-4" dir="rtl">
-              أهلاً بك في سبوت إن
+              أهلاً بيك في سبوت إن
             </h2>
             <p className="text-xl text-muted-foreground">
               Choose your preferred language / اختر لغتك المفضلة
