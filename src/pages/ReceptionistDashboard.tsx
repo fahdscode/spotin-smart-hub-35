@@ -9,7 +9,6 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
-import EditableReceipt from "@/components/EditableReceipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
@@ -32,10 +31,6 @@ const ReceptionistDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<any>(null);
-  const [finalReceiptData, setFinalReceiptData] = useState<any>(null);
   const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(0);
   const [availableDesks, setAvailableDesks] = useState<number>(0);
   const [roomBookings, setRoomBookings] = useState<number>(0);
@@ -228,50 +223,6 @@ const ReceptionistDashboard = () => {
     const occupiedDesks = activeSessions.length;
     setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
   }, [activeSessions]);
-
-  const handleCheckOut = (sessionId: string, clientData: { id: string; clientName: string }) => {
-    setSelectedSession({ sessionId, clientData });
-    setShowCheckoutConfirmation(true);
-  };
-
-  const calculateSessionDuration = (checkedInAt: string) => {
-    const checkedInTime = new Date(checkedInAt);
-    const currentTime = new Date();
-    const durationInHours = Math.ceil((currentTime.getTime() - checkedInTime.getTime()) / (1000 * 60 * 60));
-    return Math.max(1, durationInHours); // Minimum 1 hour
-  };
-
-  const calculateSessionCost = (duration: number) => {
-    return duration * 300; // 300 EGP per hour
-  };
-
-  const confirmCheckout = (items: Array<{ id: string; name: string; price: number; quantity: number }>, total: number, paymentMethod: string) => {
-    // Remove session from active sessions
-    setActiveSessions(prev => prev.filter(session => session.id !== selectedSession.sessionId));
-    
-    // Store receipt data
-    setFinalReceiptData({
-      customerName: selectedSession.clientData.client?.full_name || 'Client',
-      receiptNumber: `RCP-${Date.now()}`,
-      items: items,
-      total: total,
-      paymentMethod: paymentMethod,
-      date: new Date().toLocaleDateString()
-    });
-    
-    setShowCheckoutConfirmation(false);
-    setShowReceipt(true);
-    
-    toast({
-      title: "Payment Successful",
-      description: `${selectedSession.clientData.client?.full_name || 'Client'} checked out successfully`,
-    });
-  };
-
-  const cancelCheckout = () => {
-    setShowCheckoutConfirmation(false);
-    setSelectedSession(null);
-  };
 
 
   return (
@@ -494,14 +445,6 @@ const ReceptionistDashboard = () => {
                             </div>
                             <p className="text-xs text-muted-foreground truncate">{session.client?.email || session.client?.phone || 'No contact'}</p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCheckOut(session.id, session)}
-                            className="ml-2"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))
                     ) : (
@@ -532,52 +475,6 @@ const ReceptionistDashboard = () => {
           <BarcodeDebugger />
         </div>
       </div>
-
-      {/* Checkout Confirmation Dialog */}
-      <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Checkout Confirmation</DialogTitle>
-            <DialogDescription>
-              Review and edit the receipt before processing payment
-            </DialogDescription>
-          </DialogHeader>
-          {selectedSession && (
-            <EditableReceipt
-              receiptNumber={`RCP-${Date.now()}`}
-              customerName={selectedSession.clientData.client?.full_name || 'Client'}
-              sessionDuration={calculateSessionDuration(selectedSession.clientData.checked_in_at)}
-              sessionCost={calculateSessionCost(calculateSessionDuration(selectedSession.clientData.checked_in_at))}
-              onConfirm={confirmCheckout}
-              onCancel={cancelCheckout}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Final Receipt Dialog */}
-      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Payment Receipt</DialogTitle>
-          </DialogHeader>
-          {finalReceiptData ? (
-            <Receipt 
-              customerName={finalReceiptData.customerName}
-              receiptNumber={finalReceiptData.receiptNumber}
-              items={finalReceiptData.items}
-              total={finalReceiptData.total}
-              paymentMethod={finalReceiptData.paymentMethod}
-              date={finalReceiptData.date}
-            />
-          ) : (
-            <Receipt 
-              customerName="Demo Customer"
-              receiptNumber={`RCP-${Date.now()}`}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
