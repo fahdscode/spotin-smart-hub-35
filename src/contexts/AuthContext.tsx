@@ -54,10 +54,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
 
+    // Restore client session from localStorage immediately
+    const clientSession = localStorage.getItem('clientData');
+    if (clientSession) {
+      try {
+        const parsedClient = JSON.parse(clientSession);
+        setClientData(parsedClient);
+        setUserRole('client');
+      } catch (error) {
+        console.error('Error parsing client session:', error);
+        localStorage.removeItem('clientData');
+      }
+    }
+
     // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
+        
+        console.log('Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -70,7 +85,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }, 0);
         } else {
-          setUserRole(null);
+          // Only clear management role, keep client data
+          if (userRole !== 'client') {
+            setUserRole(null);
+          }
           setIsLoading(false);
         }
       }
@@ -93,20 +111,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }, 0);
         } else {
-          // Only check for client data if there's no management session
-          const clientSession = localStorage.getItem('clientData');
-          if (clientSession) {
-            try {
-              const parsedClient = JSON.parse(clientSession);
-              if (isMounted) {
-                setClientData(parsedClient);
-                setUserRole('client');
-              }
-            } catch (error) {
-              console.error('Error parsing client session:', error);
-              localStorage.removeItem('clientData');
-            }
-          }
           setIsLoading(false);
         }
       } catch (error) {
@@ -119,9 +123,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getSession();
 
+    // Prevent back button from clearing auth
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      // Session is maintained, just update the route
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 

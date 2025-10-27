@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePreventAccidentalLogout } from '@/hooks/usePreventAccidentalLogout';
 import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, DollarSign, UserCheck, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,9 @@ import { Badge } from '@/components/ui/badge';
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Prevent accidental logout
+  usePreventAccidentalLogout();
   
   // State declarations
   const [searchQuery, setSearchQuery] = useState("");

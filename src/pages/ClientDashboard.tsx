@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import FloatingSocialMedia from '@/components/FloatingSocialMedia';
 import { useNavigate } from 'react-router-dom';
+import { usePreventAccidentalLogout } from '@/hooks/usePreventAccidentalLogout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +55,9 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientData, isAuthenticated, userRole, clearClientAuth } = useAuth();
+  
+  // Prevent accidental logout from back/refresh buttons
+  usePreventAccidentalLogout();
   
   // Core state
   const [cart, setCart] = useState<CartItem[]>([]);
