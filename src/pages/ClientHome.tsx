@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import { Coffee, Calendar, Users, LogIn, UserPlus, DoorOpen } from "lucide-react";
+import { Coffee, Calendar, LogIn, UserPlus, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SpotinHeader from "@/components/SpotinHeader";
@@ -14,11 +14,6 @@ const ClientHome = () => {
       icon: Coffee,
       title: t('clientHome.features.drinks'),
       description: t('clientHome.features.drinksDesc'),
-    },
-    {
-      icon: Users,
-      title: t('clientHome.features.rooms'),
-      description: t('clientHome.features.roomsDesc'),
     },
     {
       icon: Calendar,
@@ -46,7 +41,7 @@ const ClientHome = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {features.map((feature, index) => (
             <Card key={index} className="border-2 hover:shadow-lg transition-all duration-300">
               <CardHeader className="text-center">
