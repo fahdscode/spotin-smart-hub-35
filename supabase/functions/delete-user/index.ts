@@ -94,15 +94,31 @@ serve(async (req) => {
       .delete()
       .eq('user_id', userId);
 
-    // Delete the user from auth
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    // Delete from profiles table
+    await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('user_id', userId);
 
-    if (deleteError) {
-      console.error('Error deleting user:', deleteError);
-      return new Response(
-        JSON.stringify({ error: deleteError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Try to delete the user from auth (may not exist for all profiles)
+    try {
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      // Only throw error if it's not "user not found"
+      if (deleteError && deleteError.status !== 404) {
+        console.error('Error deleting user from auth:', deleteError);
+        throw deleteError;
+      }
+      
+      // If user not found in auth, it's okay - profile was still deleted
+      if (deleteError && deleteError.status === 404) {
+        console.log('User not found in auth.users, but profile was deleted successfully');
+      }
+    } catch (authDeleteError: any) {
+      // If it's not a "user not found" error, throw it
+      if (authDeleteError.status !== 404) {
+        throw authDeleteError;
+      }
     }
 
     // Log the deletion event
