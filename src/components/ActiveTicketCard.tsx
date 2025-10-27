@@ -147,17 +147,11 @@ export const ActiveTicketCard = ({ clientId }: ActiveTicketCardProps) => {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+        <div className="pt-2 border-t">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Checked In</p>
             <p className="text-sm font-medium">
               {new Date(ticketData.checked_in_at).toLocaleTimeString()}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Expires At</p>
-            <p className="text-sm font-medium">
-              {new Date(ticketData.expiry_date).toLocaleTimeString()}
             </p>
           </div>
         </div>

@@ -101,23 +101,12 @@ export const TicketExpiryCountdown = ({
           }
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Time Remaining</span>
-            <span className={`font-semibold ${
-              isExpired ? 'text-destructive' : 
-              urgencyLevel === 'critical' ? 'text-red-500' :
-              urgencyLevel === 'warning' ? 'text-orange-500' :
-              'text-green-600'
-            }`}>
-              {timeLeft}
-            </span>
-          </div>
-          <Progress 
-            value={progressPercent} 
-            className="h-2"
-          />
+      <CardContent>
+        <div className="pt-2">
+          <p className="text-xs text-muted-foreground mb-1">Checked In</p>
+          <p className="text-sm font-medium">
+            {purchaseTime.toLocaleTimeString()}
+          </p>
         </div>
 
         {urgencyLevel === 'critical' && !isExpired && (
