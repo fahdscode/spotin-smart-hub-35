@@ -46,7 +46,7 @@ const Index = () => {
               <CardContent className="text-center pb-12">
                 <Button 
                   size="lg"
-                  className="w-full bg-accent hover:bg-accent-hover text-white h-14 text-lg"
+                  className="w-full bg-primary hover:bg-primary-hover text-white h-14 text-lg"
                 >
                   Continue in English
                 </Button>
