@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, DollarSign } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, DollarSign, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import EditableReceipt from "@/components/EditableReceipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
+import { QuickRegistration } from "@/components/QuickRegistration";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
 import ProductionMonitor from '@/components/ProductionMonitor';
@@ -48,6 +49,13 @@ const ReceptionistDashboard = () => {
       icon: QrCode, 
       action: "checkin",
       variant: "success" as const
+    },
+    { 
+      title: "Quick Registration", 
+      description: "Register new client", 
+      icon: UserCheck, 
+      action: "register",
+      variant: "default" as const
     },
     { 
       title: "Room Booking", 
@@ -367,6 +375,22 @@ const ReceptionistDashboard = () => {
                           <div className="space-y-6">
                             <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                           </div>
+                        </DialogContent>
+                      )}
+                      {action.action === "register" && (
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+                          <DialogHeader>
+                            <DialogTitle>Quick Client Registration</DialogTitle>
+                            <DialogDescription>
+                              Register a new client quickly with essential information
+                            </DialogDescription>
+                          </DialogHeader>
+                          <QuickRegistration onSuccess={() => {
+                            toast({
+                              title: "Success",
+                              description: "Client registered successfully"
+                            });
+                          }} />
                         </DialogContent>
                       )}
                       {action.action === "booking" && (
