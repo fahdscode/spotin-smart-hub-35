@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Briefcase, Calendar } from "lucide-react";
+import { User, Mail, Briefcase, Calendar, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SpotinHeader from "@/components/SpotinHeader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +45,14 @@ const ManagementProfile = () => {
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6 max-w-4xl">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Back</span>
+        </button>
+        
         <Card>
           <CardHeader>
             <CardTitle>Employee Profile</CardTitle>
