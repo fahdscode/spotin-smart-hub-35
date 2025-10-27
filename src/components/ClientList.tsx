@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Receipt from "@/components/Receipt";
+import { formatCurrency } from "@/lib/currency";
 
 interface Client {
   id: string;
@@ -41,6 +42,8 @@ const ClientList = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
+  const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
 
   useEffect(() => {
@@ -68,8 +71,10 @@ const ClientList = () => {
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
-      // If checking out, fetch session details first
+      // If checking out, show confirmation first
       if (currentStatus) {
+        setPendingCheckoutClient(clientId);
+        
         const client = clients.find(c => c.id === clientId);
         
         // Get current check-in session time first
@@ -155,8 +160,13 @@ const ClientList = () => {
           checkInTime: checkInTime ? new Date(checkInTime).toLocaleTimeString() : '',
           duration: duration
         });
+
+        // Show confirmation dialog
+        setShowCheckoutConfirmation(true);
+        return;
       }
 
+      // For check-in, proceed directly
       const { error } = await supabase
         .from('clients')
         .update({ active: !currentStatus })
@@ -171,17 +181,44 @@ const ClientList = () => {
       ));
       
       const client = clients.find(c => c.id === clientId);
-      
-      // Show receipt dialog if checking out
-      if (currentStatus) {
-        setShowReceipt(true);
-      }
-      
-      toast.success(`${client?.full_name} ${!currentStatus ? 'checked in' : 'checked out'} successfully`);
+      toast.success(`${client?.full_name} checked in successfully`);
     } catch (error) {
       console.error('Error updating client status:', error);
       toast.error("Failed to update client status");
     }
+  };
+
+  const confirmCheckout = async () => {
+    if (!pendingCheckoutClient) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ active: false })
+        .eq('id', pendingCheckoutClient);
+
+      if (error) throw error;
+
+      setClients(prev => prev.map(client => 
+        client.id === pendingCheckoutClient 
+          ? { ...client, active: false }
+          : client
+      ));
+      
+      const client = clients.find(c => c.id === pendingCheckoutClient);
+      
+      setShowCheckoutConfirmation(false);
+      setShowReceipt(true);
+      
+      toast.success(`${client?.full_name} checked out successfully`);
+    } catch (error) {
+      console.error('Error checking out client:', error);
+      toast.error("Failed to checkout client");
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const filteredClients = clients.filter(client => {
@@ -533,11 +570,98 @@ const ClientList = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Checkout Confirmation Dialog */}
+      <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Checkout Confirmation</DialogTitle>
+            <DialogDescription>
+              Review the checkout summary before proceeding
+            </DialogDescription>
+          </DialogHeader>
+          {receiptData && (
+            <div className="space-y-6">
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Customer:</span>
+                  <span>{receiptData.customerName}</span>
+                </div>
+                {receiptData.checkInTime && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Check-in Time:</span>
+                    <span>{receiptData.checkInTime}</span>
+                  </div>
+                )}
+                {receiptData.duration > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Duration:</span>
+                    <span>{receiptData.duration} minutes</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-3">
+                  <h3 className="font-semibold">Items</h3>
+                </div>
+                <div className="divide-y">
+                  {receiptData.items.map((item: any, index: number) => (
+                    <div key={index} className="p-3 flex justify-between items-center">
+                      <div className="flex-1">
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatCurrency(item.total)}</p>
+                        <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(receiptData.subtotal)}</span>
+                  </div>
+                  {receiptData.discount > 0 && (
+                    <div className="flex justify-between text-success">
+                      <span>Discount:</span>
+                      <span>-{formatCurrency(receiptData.discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(receiptData.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCheckoutConfirmation(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmCheckout}>
+              Confirm Checkout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Receipt Dialog */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Checkout Receipt</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Checkout Receipt</span>
+              <Button onClick={handlePrint} size="sm" variant="outline">
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </DialogTitle>
           </DialogHeader>
           {receiptData && (
             <Receipt
