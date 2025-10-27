@@ -1,0 +1,85 @@
+{
+  "languageSelection": {
+    "title": "Welcome to SpotIn",
+    "subtitle": "Choose your preferred language",
+    "english": "English",
+    "arabic": "العربية"
+  },
+  "clientHome": {
+    "title": "SpotIn Coworking Space",
+    "subtitle": "Your complete coworking experience",
+    "features": {
+      "drinks": "Order Drinks & Snacks",
+      "drinksDesc": "Quick and easy ordering from our cafe",
+      "rooms": "Book Meeting Rooms",
+      "roomsDesc": "Reserve spaces for your meetings",
+      "events": "Join Events",
+      "eventsDesc": "Connect with our community",
+      "checkin": "Quick Check-in",
+      "checkinDesc": "Easy access management"
+    },
+    "login": "Login",
+    "signup": "Create Account",
+    "newMember": "New member?"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "phone": "Phone Number",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "forgotPassword": "Forgot Password?",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginButton": "Sign In",
+    "signupButton": "Create Account",
+    "loggingIn": "Signing in...",
+    "signingUp": "Creating account...",
+    "loginSuccess": "Welcome back!",
+    "signupSuccess": "Account created successfully!"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "quickActions": "Quick Actions",
+    "orderDrinks": "Order Drinks",
+    "bookRoom": "Book Room",
+    "viewEvents": "View Events",
+    "checkIn": "Check In",
+    "myOrders": "My Orders",
+    "myBookings": "My Bookings",
+    "myEvents": "My Events",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile Information",
+    "notifications": "Notifications",
+    "security": "Security",
+    "language": "Language",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "emailNotifications": "Email Notifications",
+    "orderNotifications": "Order Updates",
+    "eventNotifications": "Event Reminders",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "deleteAccount": "Delete Account",
+    "dangerZone": "Danger Zone"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "close": "Close",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "currency": "EGP"
+  }
+}

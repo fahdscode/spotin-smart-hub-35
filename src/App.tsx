@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
+import ClientHome from "./pages/ClientHome";
 import ClientLogin from "./pages/ClientLogin";
 import ManagementLogin from "./pages/ManagementLogin";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
@@ -34,13 +36,15 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="spotin-ui-theme">
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/client-login" element={<ClientLogin />} />
+          <LanguageProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/client-home" element={<ClientHome />} />
+                <Route path="/client-login" element={<ClientLogin />} />
               <Route path="/management-login" element={<ManagementLogin />} />
               <Route path="/client-signup" element={<ClientSignup />} />
               <Route path="/password-reset" element={<PasswordReset />} />
@@ -113,9 +117,10 @@ const App = () => (
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+              </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </LanguageProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

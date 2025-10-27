@@ -1,163 +1,81 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Users, Shield, Coffee, Calendar, TrendingUp, Package, UserCheck, LogIn, Crown } from "lucide-react";
+import { useTranslation } from 'react-i18next';
+import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SpotinHeader from "@/components/SpotinHeader";
-import { AuthDebugger } from "@/components/AuthDebugger";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [showAdminSetup, setShowAdminSetup] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
-  const [showDebugger, setShowDebugger] = useState(false);
-  const { isAuthenticated, userRole } = useAuth();
+  const { i18n } = useTranslation();
 
-  useEffect(() => {
-    const checkAdminExists = async () => {
-      try {
-        const { data, error } = await supabase.rpc('check_admin_exists');
-
-        if (error) {
-          console.error('Error checking for admin:', error);
-          setShowAdminSetup(true);
-        } else {
-          setShowAdminSetup(!data);
-        }
-      } catch (error) {
-        console.error('Error checking admin:', error);
-        setShowAdminSetup(true);
-      } finally {
-        setCheckingAdmin(false);
-      }
-    };
-
-    checkAdminExists();
-  }, []);
+  const selectLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('preferredLanguage', lang);
+    navigate('/client-home');
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <SpotinHeader />
       
-      <div className="container mx-auto p-6">
-        {/* Debug Toggle - only show if authenticated */}
-        {isAuthenticated && (
-          <div className="mb-4 text-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowDebugger(!showDebugger)}
-            >
-              {showDebugger ? "Hide" : "Show"} Auth Debug
-            </Button>
-          </div>
-        )}
-        
-        {showDebugger && <AuthDebugger />}
-        <div className="text-center mb-12 animate-fade-in">
-          <h2 className="text-4xl font-bold text-foreground mb-4">
-            SpotIn Coworking Management
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Complete coworking space management system with separate portals for clients and staff.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Client Portal */}
-          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-orange-50 hover:shadow-lg transition-all duration-300">
-            <CardHeader className="text-center">
-              <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
-                <Coffee className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl text-green-700">Client Portal</CardTitle>
-              <CardDescription className="text-green-600">
-                Friendly interface for coworking space members
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2 text-sm text-green-600">
-                <li className="flex items-center gap-2">
-                  <Coffee className="h-4 w-4" />
-                  Order drinks and snacks
-                </li>
-                <li className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Book meeting rooms
-                </li>
-                <li className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Register for events
-                </li>
-              </ul>
-              <Button 
-                onClick={() => navigate("/client-login")}
-                className="w-full bg-gradient-to-r from-green-500 to-orange-500 hover:from-green-600 hover:to-orange-600 text-white"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Client Login
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Management Portal */}
-          <Card className="border-2 border-blue-200 bg-gradient-to-br from-slate-50 to-blue-50 hover:shadow-lg transition-all duration-300">
-            <CardHeader className="text-center">
-              <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-slate-600 rounded-full flex items-center justify-center mb-4">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl text-blue-700">Management Portal</CardTitle>
-              <CardDescription className="text-blue-600">
-                Professional dashboard for staff and operations
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2 text-sm text-blue-600">
-                <li className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Analytics & Reports
-                </li>
-                <li className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Operations Management
-                </li>
-                <li className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4" />
-                  CRM & Customer Relations
-                </li>
-              </ul>
-              <Button 
-                onClick={() => navigate("/management-login")}
-                className="w-full bg-gradient-to-r from-blue-600 to-slate-600 hover:from-blue-700 hover:to-slate-700 text-white"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Staff Login
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {!checkingAdmin && showAdminSetup && (
-          <div className="text-center mt-12">
-            <div className="bg-gradient-to-r from-destructive/10 to-primary/10 backdrop-blur-sm rounded-lg p-6 max-w-lg mx-auto border border-destructive/20 shadow-lg">
-              <Crown className="w-8 h-8 mx-auto mb-3 text-destructive" />
-              <h3 className="text-lg font-semibold text-destructive mb-2">System Setup Required</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                No admin accounts found. Create the first super admin to manage the system.
-              </p>
-              <Button 
-                onClick={() => navigate("/super-admin-setup")}
-                variant="destructive" 
-                className="w-full"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Create Super Admin Account
-              </Button>
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-[80vh]">
+        <div className="w-full max-w-4xl">
+          <div className="text-center mb-12 animate-fade-in">
+            <div className="mx-auto h-20 w-20 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-6">
+              <Languages className="h-10 w-10 text-white" />
             </div>
+            <h1 className="text-5xl font-bold text-foreground mb-4">
+              Welcome to SpotIn
+            </h1>
+            <h2 className="text-4xl font-bold text-foreground mb-4" dir="rtl">
+              أهلاً بك في سبوت إن
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Choose your preferred language / اختر لغتك المفضلة
+            </p>
           </div>
-        )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* English */}
+            <Card 
+              className="border-2 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105 bg-gradient-to-br from-blue-50 to-slate-50"
+              onClick={() => selectLanguage('en')}
+            >
+              <CardHeader className="text-center pb-8 pt-12">
+                <div className="text-6xl mb-6">🇬🇧</div>
+                <CardTitle className="text-3xl font-bold">English</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center pb-12">
+                <Button 
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-slate-600 hover:from-blue-700 hover:to-slate-700 text-white h-14 text-lg"
+                >
+                  Continue in English
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Arabic */}
+            <Card 
+              className="border-2 hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105 bg-gradient-to-br from-green-50 to-orange-50"
+              onClick={() => selectLanguage('ar')}
+            >
+              <CardHeader className="text-center pb-8 pt-12" dir="rtl">
+                <div className="text-6xl mb-6">🇪🇬</div>
+                <CardTitle className="text-3xl font-bold">العربية</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center pb-12" dir="rtl">
+                <Button 
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-green-500 to-orange-500 hover:from-green-600 hover:to-orange-600 text-white h-14 text-lg"
+                >
+                  استمر بالعربية
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

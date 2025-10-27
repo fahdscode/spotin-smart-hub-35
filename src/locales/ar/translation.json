@@ -1,0 +1,85 @@
+{
+  "languageSelection": {
+    "title": "أهلاً بك في سبوت إن",
+    "subtitle": "اختر لغتك المفضلة",
+    "english": "English",
+    "arabic": "العربية"
+  },
+  "clientHome": {
+    "title": "سبوت إن - مساحة العمل المشترك",
+    "subtitle": "تجربتك الكاملة في مساحة العمل المشترك",
+    "features": {
+      "drinks": "اطلب مشروبات وسناكس",
+      "drinksDesc": "طلب سريع وسهل من الكافيه",
+      "rooms": "احجز قاعة اجتماعات",
+      "roomsDesc": "احجز المكان المناسب لاجتماعاتك",
+      "events": "شارك في الفعاليات",
+      "eventsDesc": "تواصل مع مجتمعنا",
+      "checkin": "تسجيل دخول سريع",
+      "checkinDesc": "إدارة سهلة للدخول والخروج"
+    },
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "newMember": "عضو جديد؟"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "phone": "رقم الموبايل",
+    "password": "كلمة السر",
+    "confirmPassword": "تأكيد كلمة السر",
+    "fullName": "الاسم بالكامل",
+    "email": "البريد الإلكتروني",
+    "forgotPassword": "نسيت كلمة السر؟",
+    "dontHaveAccount": "مالكش حساب؟",
+    "alreadyHaveAccount": "عندك حساب؟",
+    "loginButton": "دخول",
+    "signupButton": "إنشاء حساب",
+    "loggingIn": "جاري تسجيل الدخول...",
+    "signingUp": "جاري إنشاء الحساب...",
+    "loginSuccess": "أهلاً بيك تاني!",
+    "signupSuccess": "تم إنشاء الحساب بنجاح!"
+  },
+  "dashboard": {
+    "welcome": "أهلاً",
+    "quickActions": "إجراءات سريعة",
+    "orderDrinks": "اطلب مشروبات",
+    "bookRoom": "احجز قاعة",
+    "viewEvents": "شوف الفعاليات",
+    "checkIn": "تسجيل دخول",
+    "myOrders": "طلباتي",
+    "myBookings": "حجوزاتي",
+    "myEvents": "فعالياتي",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "profile": "البيانات الشخصية",
+    "notifications": "الإشعارات",
+    "security": "الأمان",
+    "language": "اللغة",
+    "save": "حفظ التغييرات",
+    "cancel": "إلغاء",
+    "emailNotifications": "إشعارات البريد الإلكتروني",
+    "orderNotifications": "تحديثات الطلبات",
+    "eventNotifications": "تذكير بالفعاليات",
+    "changePassword": "تغيير كلمة السر",
+    "currentPassword": "كلمة السر الحالية",
+    "newPassword": "كلمة السر الجديدة",
+    "deleteAccount": "حذف الحساب",
+    "dangerZone": "منطقة خطرة"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجح",
+    "close": "إغلاق",
+    "continue": "استمرار",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "currency": "جنيه"
+  }
+}
