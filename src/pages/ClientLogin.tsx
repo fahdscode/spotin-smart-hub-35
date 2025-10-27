@@ -238,8 +238,8 @@ const ClientLogin = () => {
             </form>
 
             <div className="mt-6 pt-4 border-t text-center space-y-2">
-              <a href="/client-signup" className="text-sm text-primary hover:text-primary-hover transition-colors font-medium">
-                {t('auth.dontHaveAccount')} {t('auth.signup')} →
+              <a href="/client-signup" className="text-sm text-primary hover:text-primary-hover transition-colors font-medium block">
+                {t('auth.dontHaveAccount')}
               </a>
               <br />
               <a href="/password-reset" className="text-sm text-accent hover:text-accent-hover transition-colors">
