@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Ticket, Settings, DollarSign, Plus } from "lucide-react";
+import { Ticket, Settings, DollarSign, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { TicketExpiryCountdown } from "./TicketExpiryCountdown";
 
 interface TicketSettings {
   id?: string;
@@ -25,6 +26,8 @@ const DayUseTicketControls = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [hasSettings, setHasSettings] = useState(false);
   const { toast } = useToast();
 
@@ -63,9 +66,9 @@ const DayUseTicketControls = () => {
   };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
       if (hasSettings && settings.id) {
-        // Update existing ticket
         const { error } = await supabase
           .from('drinks')
           .update({
@@ -83,7 +86,6 @@ const DayUseTicketControls = () => {
           description: "Day use ticket settings have been updated successfully.",
         });
       } else {
-        // Create new ticket entry in drinks table
         const { data, error } = await supabase
           .from('drinks')
           .insert({
@@ -109,12 +111,13 @@ const DayUseTicketControls = () => {
 
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving ticket settings:', error);
       toast({
         title: "Error",
         description: "Failed to save ticket settings. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -126,6 +129,7 @@ const DayUseTicketControls = () => {
   const handleActiveToggle = async (checked: boolean) => {
     if (!hasSettings || !settings.id) return;
 
+    setToggling(true);
     try {
       const { error } = await supabase
         .from('drinks')
@@ -141,20 +145,22 @@ const DayUseTicketControls = () => {
         description: `Day use ticket sales have been ${checked ? 'enabled' : 'disabled'}.`,
       });
     } catch (error) {
-      console.error('Error updating ticket status:', error);
       toast({
         title: "Error",
         description: "Failed to update ticket status. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setToggling(false);
     }
   };
 
   if (loading) {
     return (
       <Card className="w-full">
-        <CardContent className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <CardContent className="flex flex-col items-center justify-center h-32 gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading ticket settings...</p>
         </CardContent>
       </Card>
     );
@@ -227,7 +233,23 @@ const DayUseTicketControls = () => {
               <Switch 
                 checked={settings.is_active} 
                 onCheckedChange={handleActiveToggle}
-                disabled={!hasSettings}
+                disabled={!hasSettings || toggling}
+              />
+            </div>
+
+            {/* Countdown Timer Example */}
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-3">Example: How countdown appears for clients</p>
+              <TicketExpiryCountdown 
+                purchaseTime={new Date(Date.now() - 20 * 60 * 60 * 1000)} // 20 hours ago
+                expiryHours={24}
+                onExpired={() => {
+                  toast({
+                    title: "Example Ticket Expired",
+                    description: "This is just a demo countdown.",
+                    variant: "destructive"
+                  });
+                }}
               />
             </div>
 
@@ -281,10 +303,17 @@ const DayUseTicketControls = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} className="flex-1">
-                {hasSettings ? 'Save Changes' : 'Create Ticket'}
+              <Button onClick={handleSave} className="flex-1" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {hasSettings ? 'Saving...' : 'Creating...'}
+                  </>
+                ) : (
+                  hasSettings ? 'Save Changes' : 'Create Ticket'
+                )}
               </Button>
-              <Button onClick={handleCancel} variant="outline" className="flex-1">
+              <Button onClick={handleCancel} variant="outline" className="flex-1" disabled={saving}>
                 Cancel
               </Button>
             </div>
