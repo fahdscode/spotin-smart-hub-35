@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,9 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
   const [endTime, setEndTime] = useState<string>("");
   const [clientName, setClientName] = useState<string>("");
   const [participants, setParticipants] = useState<number>(1);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<string[]>([]);
+  const [recurringEndDate, setRecurringEndDate] = useState<Date>();
 
   useEffect(() => {
     fetchRooms();
@@ -90,48 +94,82 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
       return;
     }
 
+    if (isRecurring && (recurringDays.length === 0 || !recurringEndDate)) {
+      toast({
+        title: "Error",
+        description: "Please select recurring days and end date",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const startDateTime = new Date(`${format(date, 'yyyy-MM-dd')}T${startTime}:00`);
-      const endDateTime = new Date(`${format(date, 'yyyy-MM-dd')}T${endTime}:00`);
+      const datesToBook: Date[] = [];
       
-      // Check for conflicts
-      const { data: existingReservations, error: checkError } = await supabase
-        .from('reservations')
-        .select('*')
-        .eq('room_id', selectedRoom)
-        .eq('status', 'confirmed')
-        .or(`and(start_time.lte.${startDateTime.toISOString()},end_time.gte.${startDateTime.toISOString()}),and(start_time.lte.${endDateTime.toISOString()},end_time.gte.${endDateTime.toISOString()}),and(start_time.gte.${startDateTime.toISOString()},end_time.lte.${endDateTime.toISOString()})`);
-
-      if (checkError) throw checkError;
-
-      if (existingReservations && existingReservations.length > 0) {
-        toast({
-          title: "Booking Conflict",
-          description: "This room is already booked for the selected time",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
+      if (isRecurring && recurringEndDate) {
+        // Generate all dates based on selected weekdays
+        let currentDate = new Date(date);
+        const endDate = new Date(recurringEndDate);
+        
+        while (currentDate <= endDate) {
+          const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+          if (recurringDays.includes(dayName)) {
+            datesToBook.push(new Date(currentDate));
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        datesToBook.push(date);
       }
 
-      // Create reservation
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
+      const reservations = datesToBook.map(bookingDate => {
+        const startDateTime = new Date(`${format(bookingDate, 'yyyy-MM-dd')}T${startTime}:00`);
+        const endDateTime = new Date(`${format(bookingDate, 'yyyy-MM-dd')}T${endTime}:00`);
+        
+        return {
           room_id: selectedRoom,
-          user_id: '00000000-0000-0000-0000-000000000000', // Placeholder - in real app would use actual user
+          user_id: '00000000-0000-0000-0000-000000000000',
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           status: 'confirmed',
-          total_amount: calculateTotal()
-        });
+          total_amount: calculateTotal(),
+          client_name: clientName
+        };
+      });
+
+      // Check for conflicts across all dates
+      for (const reservation of reservations) {
+        const { data: conflicts } = await supabase
+          .from('reservations')
+          .select('*')
+          .eq('room_id', selectedRoom)
+          .eq('status', 'confirmed')
+          .or(`and(start_time.lte.${reservation.start_time},end_time.gte.${reservation.start_time}),and(start_time.lte.${reservation.end_time},end_time.gte.${reservation.end_time})`);
+
+        if (conflicts && conflicts.length > 0) {
+          toast({
+            title: "Booking Conflict",
+            description: `Room is already booked on ${format(new Date(reservation.start_time), 'PPP')}`,
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Create all reservations
+      const { error } = await supabase
+        .from('reservations')
+        .insert(reservations);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Room booked successfully!"
+        description: isRecurring 
+          ? `Created ${reservations.length} recurring bookings` 
+          : "Room booked successfully!"
       });
 
       // Reset form
@@ -141,6 +179,9 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
       setEndTime("");
       setClientName("");
       setParticipants(1);
+      setIsRecurring(false);
+      setRecurringDays([]);
+      setRecurringEndDate(undefined);
 
       onBookingComplete?.();
     } catch (error) {
@@ -255,6 +296,77 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
                 onChange={(e) => setParticipants(Number(e.target.value))}
                 min="1"
               />
+            </div>
+
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="recurring" className="cursor-pointer">Recurring Booking</Label>
+                <input
+                  id="recurring"
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="rounded"
+                />
+              </div>
+              
+              {isRecurring && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm mb-2 block">Repeat On</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            setRecurringDays(prev => 
+                              prev.includes(day) 
+                                ? prev.filter(d => d !== day)
+                                : [...prev, day]
+                            );
+                          }}
+                          className={`px-2 py-1 text-xs rounded ${
+                            recurringDays.includes(day)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted hover:bg-muted/80'
+                          }`}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !recurringEndDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {recurringEndDate ? format(recurringEndDate, "PPP") : <span>Pick end date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={recurringEndDate}
+                          onSelect={setRecurringEndDate}
+                          disabled={(date) => date < new Date() || (date && date < date)}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
             </div>
 
             {calculateTotal() > 0 && (

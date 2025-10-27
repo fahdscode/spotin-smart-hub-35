@@ -65,6 +65,8 @@ const BillManagement = () => {
     notes: ''
   });
   const [lineItems, setLineItems] = useState<Omit<BillLineItem, 'id' | 'bill_id'>[]>([]);
+  const [manualTotal, setManualTotal] = useState<string>('');
+  const [useManualTotal, setUseManualTotal] = useState(false);
   const { toast } = useToast();
 
 
@@ -151,6 +153,9 @@ const BillManagement = () => {
   };
 
   const getTotalAmount = () => {
+    if (useManualTotal && manualTotal) {
+      return parseFloat(manualTotal) || 0;
+    }
     return lineItems.reduce((total, item) => total + item.total_price, 0);
   };
 
@@ -479,14 +484,45 @@ const BillManagement = () => {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
+                  </div>
                   )}
                   
                   {lineItems.length > 0 && (
-                    <div className="flex justify-end">
-                      <div className="text-lg font-semibold">
-                        Total: {getTotalAmount().toFixed(2)} EGP
+                    <div className="space-y-3">
+                      <div className="flex justify-end">
+                        <div className="text-lg font-semibold">
+                          Calculated Total: {lineItems.reduce((t, i) => t + i.total_price, 0).toFixed(2)} EGP
+                        </div>
                       </div>
+                      <div className="flex items-center gap-4">
+                        <Label className="flex items-center gap-2">
+                          <input 
+                            type="checkbox" 
+                            checked={useManualTotal}
+                            onChange={(e) => setUseManualTotal(e.target.checked)}
+                            className="rounded"
+                          />
+                          Override total manually
+                        </Label>
+                        {useManualTotal && (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={manualTotal}
+                            onChange={(e) => setManualTotal(e.target.value)}
+                            placeholder="Enter manual total"
+                            className="w-48"
+                          />
+                        )}
+                      </div>
+                      {useManualTotal && manualTotal && (
+                        <div className="flex justify-end">
+                          <div className="text-xl font-bold text-primary">
+                            Final Total: {parseFloat(manualTotal).toFixed(2)} EGP
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
