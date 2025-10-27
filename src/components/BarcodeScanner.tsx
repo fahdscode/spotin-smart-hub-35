@@ -219,10 +219,10 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ticket className="h-5 w-5" />
-              Assign Day Use Ticket
+              Assign Ticket
             </DialogTitle>
             <DialogDescription>
-              Select a ticket option for the client or skip to check in without a ticket
+              Choose a ticket type for the client or skip to check in without a ticket
             </DialogDescription>
           </DialogHeader>
           {pendingCheckInClient && (
