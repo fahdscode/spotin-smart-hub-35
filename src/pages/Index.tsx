@@ -65,7 +65,7 @@ const Index = () => {
               <CardContent className="text-center pb-12" dir="rtl">
                 <Button 
                   size="lg"
-                  className="w-full bg-gradient-to-r from-green-500 to-orange-500 hover:from-green-600 hover:to-orange-600 text-white h-14 text-lg"
+                  className="w-full bg-accent hover:bg-accent-hover text-white h-14 text-lg"
                 >
                   استمر بالعربية
                 </Button>
