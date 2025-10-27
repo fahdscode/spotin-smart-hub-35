@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ const ClientList = () => {
   const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [checkoutOnCancel, setCheckoutOnCancel] = useState(false);
   const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -381,15 +383,38 @@ const ClientList = () => {
         if (error) throw error;
       }
 
+      // If checkout option is selected, checkout the client
+      if (checkoutOnCancel && pendingCheckoutClient) {
+        const { error: checkoutError } = await supabase
+          .from('clients')
+          .update({ active: false })
+          .eq('id', pendingCheckoutClient);
+
+        if (checkoutError) {
+          console.error('Error checking out client:', checkoutError);
+          toast.error("Receipt cancelled but failed to checkout client");
+        } else {
+          // Update local state
+          setClients(prev => prev.map(c => 
+            c.id === pendingCheckoutClient 
+              ? { ...c, active: false }
+              : c
+          ));
+          
+          toast.success(`Receipt cancelled and ${client?.full_name} checked out. Reason: ${cancellationReason}`);
+        }
+      } else {
+        toast.success(`Receipt cancelled for ${client?.full_name}. Reason: ${cancellationReason}`);
+      }
+
       // Close dialogs and reset state
       setShowCancelDialog(false);
       setShowCheckoutConfirmation(false);
       setShowReceipt(false);
       setCancellationReason("");
+      setCheckoutOnCancel(false);
       setPendingCheckoutClient(null);
       setReceiptData(null);
-      
-      toast.success(`Checkout cancelled for ${client?.full_name}. Reason: ${cancellationReason}`);
     } catch (error) {
       console.error('Error cancelling receipt:', error);
       toast.error("Failed to cancel receipt");
@@ -1019,11 +1044,32 @@ const ClientList = () => {
                 rows={4}
               />
             </div>
+            
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg border">
+              <Checkbox
+                id="checkout-on-cancel"
+                checked={checkoutOnCancel}
+                onCheckedChange={(checked) => setCheckoutOnCancel(checked as boolean)}
+              />
+              <div className="flex-1">
+                <label
+                  htmlFor="checkout-on-cancel"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4 text-destructive" />
+                  Also checkout this client
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  The client will be marked as checked out along with the cancelled receipt
+                </p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowCancelDialog(false);
               setCancellationReason("");
+              setCheckoutOnCancel(false);
             }}>
               Back
             </Button>
