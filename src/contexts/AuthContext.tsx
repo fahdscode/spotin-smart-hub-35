@@ -182,22 +182,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setAuthError(null);
       
-      const { data: adminUser, error } = await supabase
-        .from('admin_users')
-        .select('role, is_active, email')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
+      // Use security definer function to bypass RLS when checking admin status
+      const { data: adminCheck, error } = await supabase
+        .rpc('check_user_is_admin', { p_user_id: userId });
       
       if (error) {
         setAuthError(`Role fetch error: ${error.message}`);
         setUserRole(null);
-      } else if (!adminUser) {
-        setAuthError('No admin privileges found for this user');
+      } else if (!adminCheck || typeof adminCheck !== 'object') {
+        setAuthError('Invalid admin check response');
         setUserRole(null);
       } else {
-        setUserRole(adminUser.role);
-        setAuthError(null);
+        const checkResult = adminCheck as { is_admin: boolean; role: string };
+        if (!checkResult.is_admin) {
+          setAuthError('No admin privileges found for this user');
+          setUserRole(null);
+        } else {
+          setUserRole(checkResult.role);
+          setAuthError(null);
+        }
       }
     } catch (error) {
       setAuthError(`Exception: ${error instanceof Error ? error.message : 'Unknown error'}`);
