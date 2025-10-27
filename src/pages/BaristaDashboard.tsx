@@ -619,7 +619,7 @@ const BaristaDashboard = () => {
                 />
                 
                 <Button 
-                  variant="professional" 
+                  variant="default" 
                   className="w-full"
                   disabled={!selectedClient}
                   onClick={() => setIsQuickAddOpen(true)}
