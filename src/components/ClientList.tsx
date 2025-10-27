@@ -239,29 +239,31 @@ const ClientList = () => {
     if (!pendingCheckoutClient || !receiptData) return;
 
     try {
-      // Create the receipt in the database
-      const { data: savedReceipt, error: receiptError } = await supabase
-        .from('receipts')
-        .insert({
-          receipt_number: receiptData.receiptNumber,
-          user_id: receiptData.userId,
-          total_amount: receiptData.total,
-          amount: receiptData.total,
-          payment_method: receiptData.paymentMethod,
-          transaction_type: 'checkout',
-          line_items: receiptData.items,
-          status: 'completed'
-        })
-        .select()
-        .single();
+      // Only create receipt if there are items or total > 0
+      if (receiptData.items.length > 0 || receiptData.total > 0) {
+        const { data: savedReceipt, error: receiptError } = await supabase
+          .from('receipts')
+          .insert({
+            receipt_number: receiptData.receiptNumber,
+            user_id: receiptData.userId,
+            total_amount: receiptData.total,
+            amount: receiptData.total,
+            payment_method: receiptData.paymentMethod,
+            transaction_type: 'checkout',
+            line_items: receiptData.items,
+            status: 'completed'
+          })
+          .select()
+          .single();
 
-      if (receiptError) throw receiptError;
+        if (receiptError) throw receiptError;
 
-      // Update receipt data with the saved receipt ID
-      setReceiptData(prev => ({
-        ...prev,
-        receiptId: savedReceipt.id
-      }));
+        // Update receipt data with the saved receipt ID
+        setReceiptData(prev => ({
+          ...prev,
+          receiptId: savedReceipt.id
+        }));
+      }
 
       // Checkout the client
       const { error } = await supabase
@@ -280,9 +282,17 @@ const ClientList = () => {
       const client = clients.find(c => c.id === pendingCheckoutClient);
       
       setShowCheckoutConfirmation(false);
-      setShowReceipt(true);
       
-      toast.success(`${client?.full_name} checked out successfully`);
+      // Only show receipt if there's something to show
+      if (receiptData.items.length > 0 || receiptData.total > 0) {
+        setShowReceipt(true);
+      }
+      
+      const message = receiptData.total === 0 
+        ? `${client?.full_name} checked out successfully (no charges)`
+        : `${client?.full_name} checked out successfully`;
+      
+      toast.success(message);
     } catch (error) {
       console.error('Error checking out client:', error);
       toast.error("Failed to checkout client");
