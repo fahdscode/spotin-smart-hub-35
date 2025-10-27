@@ -522,11 +522,13 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          description_ar: string | null
           id: string
           image_url: string | null
           ingredients: string[] | null
           is_available: boolean
           name: string
+          name_ar: string | null
           prep_time_minutes: number | null
           price: number
           ticket_type: string | null
@@ -536,11 +538,13 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           id?: string
           image_url?: string | null
           ingredients?: string[] | null
           is_available?: boolean
           name: string
+          name_ar?: string | null
           prep_time_minutes?: number | null
           price: number
           ticket_type?: string | null
@@ -550,11 +554,13 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           id?: string
           image_url?: string | null
           ingredients?: string[] | null
           is_available?: boolean
           name?: string
+          name_ar?: string | null
           prep_time_minutes?: number | null
           price?: number
           ticket_type?: string | null
@@ -829,36 +835,42 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          description_ar: string | null
           discount_percentage: number
           duration_months: number
           id: string
           is_active: boolean
           perks: string[] | null
           plan_name: string
+          plan_name_ar: string | null
           price: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           discount_percentage?: number
           duration_months?: number
           id?: string
           is_active?: boolean
           perks?: string[] | null
           plan_name: string
+          plan_name_ar?: string | null
           price?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          description_ar?: string | null
           discount_percentage?: number
           duration_months?: number
           id?: string
           is_active?: boolean
           perks?: string[] | null
           plan_name?: string
+          plan_name_ar?: string | null
           price?: number
           updated_at?: string
         }
