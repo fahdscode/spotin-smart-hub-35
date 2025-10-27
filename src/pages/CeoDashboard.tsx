@@ -97,6 +97,9 @@ const CeoDashboard = () => {
     const now = new Date();
     let from: Date;
     switch (filter) {
+      case "today":
+        from = new Date(now.setHours(0, 0, 0, 0));
+        break;
       case "7days":
         from = subDays(now, 7);
         break;
@@ -324,6 +327,9 @@ const CeoDashboard = () => {
                 {/* Quick Filters */}
                 <div className="flex flex-wrap gap-1">
                   {[{
+                  value: "today",
+                  label: "Today"
+                }, {
                   value: "7days",
                   label: "7 Days"
                 }, {
