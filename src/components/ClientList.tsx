@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import Receipt from "@/components/Receipt";
 
 interface Client {
   id: string;
@@ -39,6 +40,8 @@ const ClientList = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientDetails, setShowClientDetails] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   useEffect(() => {
     fetchClients();
@@ -65,6 +68,57 @@ const ClientList = () => {
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
+      // If checking out, fetch session details first
+      if (currentStatus) {
+        const client = clients.find(c => c.id === clientId);
+        
+        // Fetch any pending orders for this client
+        const { data: orders } = await supabase
+          .from('session_line_items')
+          .select('*')
+          .eq('user_id', clientId)
+          .in('status', ['pending', 'completed', 'served']);
+
+        // Get check-in time
+        const { data: checkInData } = await supabase
+          .from('check_ins')
+          .select('checked_in_at')
+          .eq('client_id', clientId)
+          .eq('status', 'checked_in')
+          .is('checked_out_at', null)
+          .order('checked_in_at', { ascending: false })
+          .limit(1);
+
+        const checkInTime = checkInData?.[0]?.checked_in_at;
+        const duration = checkInTime 
+          ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
+          : 0;
+
+        // Calculate total from orders
+        const orderTotal = orders?.reduce((sum, order) => sum + (order.price * order.quantity), 0) || 0;
+        
+        // Prepare receipt data
+        setReceiptData({
+          receiptNumber: `RCP-${Date.now()}`,
+          customerName: client?.full_name || 'Client',
+          customerEmail: client?.email || '',
+          userId: clientId,
+          items: orders?.map(order => ({
+            name: order.item_name,
+            quantity: order.quantity,
+            price: order.price,
+            total: order.price * order.quantity
+          })) || [],
+          subtotal: orderTotal,
+          discount: 0,
+          total: orderTotal,
+          paymentMethod: 'Cash',
+          date: new Date().toLocaleDateString(),
+          checkInTime: checkInTime ? new Date(checkInTime).toLocaleTimeString() : '',
+          duration: duration
+        });
+      }
+
       const { error } = await supabase
         .from('clients')
         .update({ active: !currentStatus })
@@ -79,6 +133,12 @@ const ClientList = () => {
       ));
       
       const client = clients.find(c => c.id === clientId);
+      
+      // Show receipt dialog if checking out
+      if (currentStatus) {
+        setShowReceipt(true);
+      }
+      
       toast.success(`${client?.full_name} ${!currentStatus ? 'checked in' : 'checked out'} successfully`);
     } catch (error) {
       console.error('Error updating client status:', error);
@@ -431,6 +491,29 @@ const ClientList = () => {
                 </div>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Dialog */}
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Checkout Receipt</DialogTitle>
+          </DialogHeader>
+          {receiptData && (
+            <Receipt
+              receiptNumber={receiptData.receiptNumber}
+              customerName={receiptData.customerName}
+              customerEmail={receiptData.customerEmail}
+              userId={receiptData.userId}
+              items={receiptData.items}
+              subtotal={receiptData.subtotal}
+              discount={receiptData.discount}
+              total={receiptData.total}
+              paymentMethod={receiptData.paymentMethod}
+              date={receiptData.date}
+            />
           )}
         </DialogContent>
       </Dialog>
