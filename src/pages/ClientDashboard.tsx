@@ -1498,10 +1498,7 @@ export default function ClientDashboard() {
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={() => toast({
-                        title: "Feature Coming Soon",
-                        description: "This feature will be available in the next update"
-                      })}
+                      onClick={() => navigate('/client-settings')}
                     >
                       <User className="h-4 w-4 mr-2" />
                       Edit Profile
@@ -1509,10 +1506,7 @@ export default function ClientDashboard() {
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={() => toast({
-                        title: "Feature Coming Soon",
-                        description: "This feature will be available in the next update"
-                      })}
+                      onClick={() => navigate('/client-settings')}
                     >
                       <Package className="h-4 w-4 mr-2" />
                       Manage Preferences
