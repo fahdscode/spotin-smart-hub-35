@@ -35,5 +35,10 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
       toast.error("Error logging out");
     }
   };
-  return;
+  return (
+    <Button variant={variant} size={size} className={className} onClick={handleLogout}>
+      <LogOut className="mr-2 h-4 w-4" />
+      Logout
+    </Button>
+  );
 };

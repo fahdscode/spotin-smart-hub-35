@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
 import CairoClock from "@/components/CairoClock";
 import spotinLogo from "@/assets/spotin-logo.png";
 
@@ -10,6 +11,8 @@ interface SpotinHeaderProps {
   showClock?: boolean;
 }
 const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
+  const navigate = useNavigate();
+  
   return <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
       <div className="container flex items-center justify-between mx-0 px-0">
         <div className="flex items-center gap-3">
@@ -39,7 +42,7 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/client-dashboard')}>
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
