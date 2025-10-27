@@ -94,7 +94,26 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {userRole !== 'client' && (
+              {userRole === 'client' ? (
+                <>
+                  <DropdownMenuItem onClick={() => {
+                    navigate('/client');
+                    // Trigger profile view - we'll use URL hash
+                    setTimeout(() => {
+                      const event = new CustomEvent('navigate-to-profile');
+                      window.dispatchEvent(event);
+                    }, 100);
+                  }}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/client-settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : (
                 <>
                   <DropdownMenuItem onClick={() => navigate('/management-profile')}>
                     <User className="mr-2 h-4 w-4" />

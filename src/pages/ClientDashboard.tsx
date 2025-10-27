@@ -92,6 +92,16 @@ export default function ClientDashboard() {
   // Satisfaction popup
   const [showSatisfactionPopup, setShowSatisfactionPopup] = useState<boolean>(false);
 
+  // Listen for profile navigation event
+  useEffect(() => {
+    const handleNavigateToProfile = () => {
+      setCurrentView('profile');
+    };
+    
+    window.addEventListener('navigate-to-profile', handleNavigateToProfile);
+    return () => window.removeEventListener('navigate-to-profile', handleNavigateToProfile);
+  }, []);
+
   useEffect(() => {
     // Wait for auth to fully load before making navigation decisions
     if (authLoading) {

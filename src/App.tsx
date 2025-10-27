@@ -19,6 +19,7 @@ import CrmDashboard from "./pages/CrmDashboard";
 import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import ClientSignup from "./pages/ClientSignup";
+import ClientSettings from "./pages/ClientSettings";
 import PasswordReset from "./pages/PasswordReset";
 import SuperAdminSetup from "./pages/SuperAdminSetup";
 import ManagementProfile from "./pages/ManagementProfile";
@@ -49,6 +50,11 @@ const App = () => (
               <Route path="/client" element={
                 <ProtectedRoute requiredRole="client" redirectTo="/client-login">
                   <ClientDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/client-settings" element={
+                <ProtectedRoute requiredRole="client" redirectTo="/client-login">
+                  <ClientSettings />
                 </ProtectedRoute>
               } />
               
