@@ -72,7 +72,7 @@ export const useProductAvailability = () => {
           .from('drinks')
           .select('*')
           .eq('is_available', true)
-          .not('id', 'in', `(${productIds.map(id => `'${id}'`).join(',')})`)
+          .not('id', 'in', `(${productIds.join(',')})`)
           .order('category', { ascending: true });
         productsWithoutIngredients = result.data;
         noIngredientsError = result.error;
