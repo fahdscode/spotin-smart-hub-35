@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign, Mail, Phone, CheckCircle, XCircle, AlertCircle, Target } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Edit, Trash2, Users, Clock, MapPin, DollarSign, Mail, Phone, CheckCircle, XCircle, AlertCircle, Target, Download, Filter, Search, FileText, FileSpreadsheet, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,6 +92,13 @@ const CommunityManagerDashboard = () => {
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('all');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  
+  // Advanced filter states
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ from: string; to: string }>({ from: '', to: '' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  
   const [eventForm, setEventForm] = useState<EventFormData>({
     title: '',
     title_ar: '',
@@ -344,6 +351,127 @@ const CommunityManagerDashboard = () => {
   const filteredRegistrations = selectedEventFilter === 'all' 
     ? registrations 
     : registrations.filter(reg => reg.event_id === selectedEventFilter);
+
+  // Enhanced filtering with all filters combined
+  const fullyFilteredRegistrations = filteredRegistrations.filter(reg => {
+    // Status filter
+    if (statusFilter !== 'all' && reg.attendance_status !== statusFilter) return false;
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        reg.attendee_name.toLowerCase().includes(query) ||
+        reg.attendee_email.toLowerCase().includes(query) ||
+        reg.attendee_phone.includes(query) ||
+        (reg.events?.title.toLowerCase().includes(query));
+      if (!matchesSearch) return false;
+    }
+    
+    // Date range filter
+    if (dateRangeFilter.from && reg.events?.event_date) {
+      if (new Date(reg.events.event_date) < new Date(dateRangeFilter.from)) return false;
+    }
+    if (dateRangeFilter.to && reg.events?.event_date) {
+      if (new Date(reg.events.event_date) > new Date(dateRangeFilter.to)) return false;
+    }
+    
+    // Category filter
+    if (categoryFilter !== 'all' && reg.events?.category !== categoryFilter) return false;
+    
+    return true;
+  });
+
+  // Export functions
+  const exportToCSV = () => {
+    const headers = ['Attendee Name', 'Email', 'Phone', 'Event', 'Event Date', 'Registration Date', 'Status', 'Special Requests'];
+    const rows = fullyFilteredRegistrations.map(reg => [
+      reg.attendee_name,
+      reg.attendee_email,
+      reg.attendee_phone,
+      reg.events?.title || '',
+      reg.events?.event_date || '',
+      new Date(reg.registration_date).toLocaleDateString(),
+      reg.attendance_status,
+      reg.special_requests || 'None'
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendees-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export Successful",
+      description: `Exported ${fullyFilteredRegistrations.length} attendees to CSV`
+    });
+  };
+
+  const exportAnalyticsReport = () => {
+    if (!analytics) return;
+    
+    const report = `
+EVENT ANALYTICS REPORT
+Generated: ${new Date().toLocaleString()}
+Period: ${analytics.date_range.start_date} to ${analytics.date_range.end_date}
+
+OVERVIEW
+========
+Total Events: ${analytics.total_events}
+Total Registrations: ${analytics.total_registrations}
+Total Revenue: ${analytics.total_revenue.toFixed(2)} EGP
+Average Attendance Rate: ${analytics.avg_attendance_rate}%
+
+POPULAR CATEGORIES
+==================
+${analytics.popular_categories.map(cat => 
+  `${cat.category}: ${cat.count} events, ${cat.registrations} registrations`
+).join('\n')}
+
+MONTHLY PERFORMANCE
+===================
+${analytics.monthly_stats.map(month => 
+  `${month.month}: ${month.events} events, ${month.registrations} registrations, ${month.revenue} EGP`
+).join('\n')}
+
+ATTENDEE BREAKDOWN
+==================
+${fullyFilteredRegistrations.length} Total Registrations
+Attended: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'attended').length}
+Registered: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'registered').length}
+No Show: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'no_show').length}
+Cancelled: ${fullyFilteredRegistrations.filter(r => r.attendance_status === 'cancelled').length}
+    `.trim();
+    
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Report Exported",
+      description: "Analytics report has been downloaded"
+    });
+  };
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setDateRangeFilter({ from: '', to: '' });
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setSelectedEventFilter('all');
+  };
 
   if (loading) {
     return (
@@ -673,27 +801,136 @@ const CommunityManagerDashboard = () => {
           </TabsContent>
 
           <TabsContent value="attendees" className="space-y-4">
+            {/* Advanced Filters Card */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Event Attendees</CardTitle>
-                    <CardDescription>Manage event registrations and attendee lists</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Advanced Filters
+                    </CardTitle>
+                    <CardDescription>Filter attendees by multiple criteria</CardDescription>
                   </div>
-                  <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>
-                    <SelectTrigger className="w-64">
-                      <SelectValue placeholder="Filter by event" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Events</SelectItem>
-                      {events.map((event) => (
-                        <SelectItem key={event.id} value={event.id}>
-                          {event.title} - {new Date(event.event_date).toLocaleDateString()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      Clear All
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Export CSV
+                    </Button>
+                  </div>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Search */}
+                  <div className="space-y-2">
+                    <Label>Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Name, email, or phone..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Event Filter */}
+                  <div className="space-y-2">
+                    <Label>Event</Label>
+                    <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Events" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Events</SelectItem>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id}>
+                            {event.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="registered">Registered</SelectItem>
+                        <SelectItem value="attended">Attended</SelectItem>
+                        <SelectItem value="no_show">No Show</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="workshop">Workshop</SelectItem>
+                        <SelectItem value="networking">Networking</SelectItem>
+                        <SelectItem value="social">Social</SelectItem>
+                        <SelectItem value="training">Training</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Date Range Filter */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>From Date</Label>
+                    <Input
+                      type="date"
+                      value={dateRangeFilter.from}
+                      onChange={(e) => setDateRangeFilter(prev => ({ ...prev, from: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To Date</Label>
+                    <Input
+                      type="date"
+                      value={dateRangeFilter.to}
+                      onChange={(e) => setDateRangeFilter(prev => ({ ...prev, to: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Filter Summary */}
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">
+                      Showing {fullyFilteredRegistrations.length} of {registrations.length} attendees
+                    </span>
+                    {(statusFilter !== 'all' || searchQuery || dateRangeFilter.from || dateRangeFilter.to || categoryFilter !== 'all' || selectedEventFilter !== 'all') && (
+                      <span className="text-muted-foreground">{registrations.length - fullyFilteredRegistrations.length} filtered out</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Attendees Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Attendee Management</CardTitle>
+                <CardDescription>Track and manage event registrations</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -709,7 +946,7 @@ const CommunityManagerDashboard = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRegistrations.map((registration) => (
+                    {fullyFilteredRegistrations.map((registration) => (
                       <TableRow key={registration.id}>
                         <TableCell className="font-medium">{registration.attendee_name}</TableCell>
                         <TableCell>
@@ -774,9 +1011,11 @@ const CommunityManagerDashboard = () => {
                   </TableBody>
                 </Table>
                 
-                {filteredRegistrations.length === 0 && (
+                {fullyFilteredRegistrations.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    No registrations found for the selected filter.
+                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="font-medium">No attendees found</p>
+                    <p className="text-sm">Try adjusting your filters</p>
                   </div>
                 )}
               </CardContent>
@@ -786,8 +1025,19 @@ const CommunityManagerDashboard = () => {
           <TabsContent value="analytics" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Event Analytics</CardTitle>
-                <CardDescription>Event performance and attendance metrics</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Event Analytics
+                    </CardTitle>
+                    <CardDescription>Event performance and attendance metrics</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={exportAnalyticsReport} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Export Report
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {analytics ? (
@@ -834,6 +1084,77 @@ const CommunityManagerDashboard = () => {
                         </CardContent>
                       </Card>
                     </div>
+
+                    {/* Attendee Status Breakdown */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Attendee Status Breakdown</CardTitle>
+                        <CardDescription>Current status of all registrations</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-2 p-4 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="text-sm font-medium">Attended</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-green-600">
+                              {registrations.filter(r => r.attendance_status === 'attended').length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {((registrations.filter(r => r.attendance_status === 'attended').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 p-4 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium">Registered</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-blue-600">
+                              {registrations.filter(r => r.attendance_status === 'registered').length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {((registrations.filter(r => r.attendance_status === 'registered').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 p-4 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-red-600" />
+                                <span className="text-sm font-medium">No Show</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-red-600">
+                              {registrations.filter(r => r.attendance_status === 'no_show').length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {((registrations.filter(r => r.attendance_status === 'no_show').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 p-4 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-gray-600" />
+                                <span className="text-sm font-medium">Cancelled</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-gray-600">
+                              {registrations.filter(r => r.attendance_status === 'cancelled').length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {((registrations.filter(r => r.attendance_status === 'cancelled').length / Math.max(registrations.length, 1)) * 100).toFixed(1)}% of total
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Popular Categories */}
                     <Card>
