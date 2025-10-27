@@ -845,6 +845,7 @@ export type Database = {
           discount_percentage: number
           duration_months: number
           id: string
+          includes_free_pass: boolean
           is_active: boolean
           perks: string[] | null
           plan_name: string
@@ -859,6 +860,7 @@ export type Database = {
           discount_percentage?: number
           duration_months?: number
           id?: string
+          includes_free_pass?: boolean
           is_active?: boolean
           perks?: string[] | null
           plan_name: string
@@ -873,6 +875,7 @@ export type Database = {
           discount_percentage?: number
           duration_months?: number
           id?: string
+          includes_free_pass?: boolean
           is_active?: boolean
           perks?: string[] | null
           plan_name?: string

@@ -21,6 +21,7 @@ interface MembershipPlan {
   is_active: boolean;
   duration_months: number;
   price: number;
+  includes_free_pass?: boolean;
   created_at: string;
 }
 
@@ -40,7 +41,8 @@ const MembershipPlansManagement = () => {
     perks: "",
     is_active: true,
     duration_months: 1,
-    price: 0
+    price: 0,
+    includes_free_pass: false
   });
 
   useEffect(() => {
@@ -80,7 +82,8 @@ const MembershipPlansManagement = () => {
         perks: perksArray,
         is_active: formData.is_active,
         duration_months: formData.duration_months,
-        price: formData.price
+        price: formData.price,
+        includes_free_pass: formData.includes_free_pass
       };
 
       if (editingPlan) {
@@ -131,7 +134,8 @@ const MembershipPlansManagement = () => {
       perks: plan.perks.join(', '),
       is_active: plan.is_active,
       duration_months: plan.duration_months,
-      price: plan.price
+      price: plan.price,
+      includes_free_pass: plan.includes_free_pass || false
     });
     setIsDialogOpen(true);
   };
@@ -170,7 +174,8 @@ const MembershipPlansManagement = () => {
       perks: "",
       is_active: true,
       duration_months: 1,
-      price: 0
+      price: 0,
+      includes_free_pass: false
     });
     setEditingPlan(null);
   };
@@ -319,6 +324,15 @@ const MembershipPlansManagement = () => {
 
                   <div className="flex items-center space-x-2">
                     <Switch
+                      id="includes_free_pass"
+                      checked={formData.includes_free_pass}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, includes_free_pass: checked }))}
+                    />
+                    <Label htmlFor="includes_free_pass">Includes Free Pass (if disabled, only discount applies)</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
                       id="is_active"
                       checked={formData.is_active}
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
@@ -371,6 +385,11 @@ const MembershipPlansManagement = () => {
                           <Badge variant="outline">
                             {plan.discount_percentage}% off
                           </Badge>
+                          {plan.includes_free_pass && (
+                            <Badge variant="default" className="bg-green-500">
+                              Free Pass
+                            </Badge>
+                          )}
                         </div>
                         
                         <p className="text-muted-foreground mb-3">{plan.description}</p>
