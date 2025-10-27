@@ -303,8 +303,158 @@ const FinanceDashboard = () => {
   };
 
   const exportReport = (reportType: string) => {
-    toast.success(`Exporting ${reportType} report...`);
-    // Implementation for export functionality
+    try {
+      let csvContent = '';
+      let filename = '';
+      const currentDate = format(new Date(), 'yyyy-MM-dd');
+
+      switch (reportType) {
+        case 'P&L':
+          filename = `PL_Statement_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Profit & Loss Statement\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'INCOME\n';
+          csvContent += 'Category,Amount\n';
+          incomeBreakdown.forEach(item => {
+            csvContent += `"${item.name}",${item.value}\n`;
+          });
+          csvContent += `Total Income,${metrics.totalIncome}\n\n`;
+          csvContent += 'EXPENSES\n';
+          csvContent += 'Category,Amount\n';
+          expenseBreakdown.forEach(item => {
+            csvContent += `"${item.name}",${item.value}\n`;
+          });
+          csvContent += `Total Expenses,${metrics.totalExpenses}\n\n`;
+          csvContent += `Net Profit,${metrics.netProfit}\n`;
+          csvContent += `Profit Margin,${metrics.profitMargin.toFixed(2)}%\n`;
+          break;
+
+        case 'Cash Flow':
+          filename = `Cash_Flow_${currentDate}.csv`;
+          csvContent = 'Cash Flow Statement\n';
+          csvContent += 'Period,Income,Expenses,Net Cash Flow\n';
+          cashFlowData.forEach(item => {
+            csvContent += `"${item.month}",${item.income},${item.expenses},${item.netCashFlow}\n`;
+          });
+          break;
+
+        case 'Balance Sheet':
+          filename = `Balance_Sheet_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Balance Sheet\n';
+          csvContent += `As of: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'ASSETS\n';
+          csvContent += 'Account,Amount\n';
+          csvContent += `Cash & Bank,${metrics.cashFlow}\n`;
+          csvContent += 'Accounts Receivable,0\n';
+          csvContent += 'Inventory,0\n';
+          csvContent += `Total Assets,${metrics.cashFlow}\n\n`;
+          csvContent += 'LIABILITIES\n';
+          csvContent += 'Account,Amount\n';
+          csvContent += `Accounts Payable,${metrics.unpaidBills}\n`;
+          csvContent += 'Loans,0\n';
+          csvContent += `Total Liabilities,${metrics.unpaidBills}\n\n`;
+          csvContent += `Equity,${metrics.cashFlow - metrics.unpaidBills}\n`;
+          break;
+
+        case 'Revenue':
+          filename = `Revenue_Breakdown_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Revenue Breakdown\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Category,Amount,Percentage\n';
+          incomeBreakdown.forEach(item => {
+            const percentage = ((item.value / metrics.totalIncome) * 100).toFixed(2);
+            csvContent += `"${item.name}",${item.value},${percentage}%\n`;
+          });
+          csvContent += `\nTotal Revenue,${metrics.totalIncome},100%\n`;
+          break;
+
+        case 'Expenses':
+          filename = `Expense_Breakdown_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Expense Breakdown\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Category,Amount,Percentage\n';
+          expenseBreakdown.forEach(item => {
+            const percentage = ((item.value / metrics.totalExpenses) * 100).toFixed(2);
+            csvContent += `"${item.name}",${item.value},${percentage}%\n`;
+          });
+          csvContent += `\nTotal Expenses,${metrics.totalExpenses},100%\n`;
+          break;
+
+        case 'Budget':
+          filename = `Budget_Comparison_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Budget Comparison\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Category,Type,Planned,Actual,Variance\n';
+          budgetComparison.forEach(item => {
+            csvContent += `"${item.category}","${item.type}",${item.planned},${item.actual},${item.variance}\n`;
+          });
+          break;
+
+        case 'Tax':
+          filename = `Tax_Report_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Tax Report\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Tax Type,Base Amount,Rate,Tax Amount\n';
+          csvContent += `VAT,${metrics.totalIncome},14%,${metrics.totalIncome * 0.14}\n`;
+          csvContent += `Income Tax,${metrics.netProfit},22.5%,${metrics.netProfit * 0.225}\n`;
+          csvContent += `\nTotal Tax Liability,,${metrics.totalIncome * 0.14 + metrics.netProfit * 0.225}\n`;
+          break;
+
+        case 'Vendors':
+          filename = `Vendor_Payments_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Vendor Payments\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Vendor,Bill Number,Date,Amount,Status,Notes\n';
+          vendorPayments.forEach((bill: any) => {
+            const notes = bill.notes?.replace(/"/g, '""') || '';
+            csvContent += `"${bill.vendors?.name || 'Unknown'}","${bill.bill_number}","${format(new Date(bill.created_at), 'MMM dd, yyyy')}",${bill.amount},"${bill.status}","${notes}"\n`;
+          });
+          break;
+
+        case 'Cashier Sessions':
+          filename = `Cashier_Sessions_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'Cashier Sessions\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Staff,Start Time,End Time,Opening Cash,Cash Sales,Card Sales,Bank Transfer,Hot Desk,Total Sales,Expected Cash,Closing Cash,Difference,Status,Notes\n';
+          cashierSessions.forEach((session: any) => {
+            const notes = session.notes?.replace(/"/g, '""') || '';
+            const endTime = session.end_time ? format(new Date(session.end_time), 'MMM dd, yyyy hh:mm a') : 'N/A';
+            csvContent += `"${session.staff_name}","${format(new Date(session.start_time), 'MMM dd, yyyy hh:mm a')}","${endTime}",${session.opening_cash},${session.cash_sales},${session.card_sales},${session.bank_transfer_sales || 0},${session.hot_desk_sales || 0},${session.total_sales},${session.expected_cash || 0},${session.closing_cash || 0},${session.cash_difference || 0},"${session.is_active ? 'Active' : 'Closed'}","${notes}"\n`;
+          });
+          break;
+
+        case 'Transactions':
+          filename = `All_Transactions_${selectedMonth}_${currentDate}.csv`;
+          csvContent = 'All Transactions\n';
+          csvContent += `Period: ${format(new Date(selectedMonth), 'MMMM yyyy')}\n\n`;
+          csvContent += 'Date,Type,Category,Amount,Payment Method,Vendor,Description,Reference Number\n';
+          transactions.forEach((txn: any) => {
+            const description = txn.description?.replace(/"/g, '""') || '';
+            csvContent += `"${format(new Date(txn.transaction_date), 'MMM dd, yyyy')}","${txn.transaction_type}","${txn.category}",${txn.amount},"${txn.payment_method}","${txn.vendors?.name || ''}","${description}","${txn.reference_number || ''}"\n`;
+          });
+          break;
+
+        default:
+          toast.error('Unknown report type');
+          return;
+      }
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`${reportType} report exported successfully`);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      toast.error('Failed to export report');
+    }
   };
 
   const handleAddExpense = async () => {
