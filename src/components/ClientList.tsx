@@ -158,7 +158,11 @@ const ClientList = () => {
           paymentMethod: 'Cash',
           date: new Date().toLocaleDateString(),
           checkInTime: checkInTime ? new Date(checkInTime).toLocaleTimeString() : '',
-          duration: duration
+          duration: duration,
+          membership: membership ? {
+            plan_name: membership.plan_name,
+            discount_percentage: membership.discount_percentage
+          } : null
         });
 
         // Show confirmation dialog
@@ -586,6 +590,14 @@ const ClientList = () => {
                   <span className="font-semibold">Customer:</span>
                   <span>{receiptData.customerName}</span>
                 </div>
+                {receiptData.membership && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Membership:</span>
+                    <Badge variant="default" className="ml-2">
+                      {receiptData.membership.plan_name} ({receiptData.membership.discount_percentage}% discount)
+                    </Badge>
+                  </div>
+                )}
                 {receiptData.checkInTime && (
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Check-in Time:</span>
