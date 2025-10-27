@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Save, X, Trash2, Folder } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Category {
   id: string;
@@ -17,12 +18,8 @@ interface Category {
 }
 
 const ProductCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([
-    { id: "1", name: "Beverages", description: "Hot and cold drinks", icon: "☕", color: "bg-blue-100 text-blue-800", products_count: 12 },
-    { id: "2", name: "Food", description: "Main meals and dishes", icon: "🍽️", color: "bg-green-100 text-green-800", products_count: 8 },
-    { id: "3", name: "Snacks", description: "Light bites and quick snacks", icon: "🥨", color: "bg-yellow-100 text-yellow-800", products_count: 15 },
-    { id: "4", name: "Desserts", description: "Sweet treats and pastries", icon: "🧁", color: "bg-pink-100 text-pink-800", products_count: 6 }
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState({
@@ -33,6 +30,10 @@ const ProductCategories = () => {
   });
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const colorOptions = [
     "bg-blue-100 text-blue-800",
@@ -45,7 +46,28 @@ const ProductCategories = () => {
     "bg-orange-100 text-orange-800"
   ];
 
-  const handleAddCategory = () => {
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching categories",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
     if (!newCategory.name) {
       toast({
         title: "Validation Error",
@@ -55,38 +77,66 @@ const ProductCategories = () => {
       return;
     }
 
-    const category: Category = {
-      id: Date.now().toString(),
-      name: newCategory.name,
-      description: newCategory.description || undefined,
-      icon: newCategory.icon || "📁",
-      color: newCategory.color,
-      products_count: 0
-    };
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{
+          name: newCategory.name,
+          description: newCategory.description || null,
+          icon: newCategory.icon || "📁",
+          color: newCategory.color,
+          products_count: 0
+        }])
+        .select()
+        .single();
 
-    setCategories([...categories, category]);
-    setNewCategory({ name: "", description: "", icon: "", color: "bg-purple-100 text-purple-800" });
-    setIsAddingCategory(false);
+      if (error) throw error;
 
-    toast({
-      title: "Category Added",
-      description: `${newCategory.name} category has been created successfully`,
-    });
+      setCategories([...categories, data]);
+      setNewCategory({ name: "", description: "", icon: "", color: "bg-purple-100 text-purple-800" });
+      setIsAddingCategory(false);
+
+      toast({
+        title: "Category Added",
+        description: `${newCategory.name} category has been created successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error adding category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateCategory = (categoryId: string, updates: Partial<Category>) => {
-    setCategories(categories.map(cat => 
-      cat.id === categoryId ? { ...cat, ...updates } : cat
-    ));
-    setEditingCategory(null);
+  const handleUpdateCategory = async (categoryId: string, updates: Partial<Category>) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', categoryId);
 
-    toast({
-      title: "Category Updated",
-      description: "Category has been updated successfully",
-    });
+      if (error) throw error;
+
+      setCategories(categories.map(cat => 
+        cat.id === categoryId ? { ...cat, ...updates } : cat
+      ));
+      setEditingCategory(null);
+
+      toast({
+        title: "Category Updated",
+        description: "Category has been updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
     
     if (category && category.products_count && category.products_count > 0) {
@@ -98,12 +148,27 @@ const ProductCategories = () => {
       return;
     }
 
-    setCategories(categories.filter(cat => cat.id !== categoryId));
-    
-    toast({
-      title: "Category Deleted",
-      description: `${category?.name} category has been deleted`,
-    });
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+
+      setCategories(categories.filter(cat => cat.id !== categoryId));
+      
+      toast({
+        title: "Category Deleted",
+        description: `${category?.name} category has been deleted`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
