@@ -94,15 +94,19 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => navigate('/management-profile')}>
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/management-settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {userRole !== 'client' && (
+                <>
+                  <DropdownMenuItem onClick={() => navigate('/management-profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/management-settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                 Sign Out
               </DropdownMenuItem>
