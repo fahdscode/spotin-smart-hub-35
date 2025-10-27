@@ -98,20 +98,26 @@ const ClientList = () => {
           .eq('is_active', true)
           .maybeSingle();
 
-        // Fetch only orders from the current session (after check-in time)
-        const { data: orders } = await supabase
+        // Fetch orders from the current session
+        let ordersQuery = supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
-          .in('status', ['pending', 'completed', 'served'])
-          .gte('created_at', checkInTime || new Date().toISOString())
+          .in('status', ['pending', 'completed', 'served', 'ready'])
           .order('created_at', { ascending: true });
+
+        // Only filter by check-in time if we have a valid check-in time
+        if (checkInTime) {
+          ordersQuery = ordersQuery.gte('created_at', checkInTime);
+        }
+
+        const { data: orders } = await ordersQuery;
 
         const duration = checkInTime 
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
 
-        // Prepare receipt items
+        // Prepare receipt items from all orders (including from before if no check-in time)
         let receiptItems = orders?.map(order => ({
           name: order.item_name,
           quantity: order.quantity,
