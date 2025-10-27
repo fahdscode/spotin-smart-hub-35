@@ -11,9 +11,7 @@ import ClientEvents from '@/components/ClientEvents';
 import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
-import { PaymentDialog } from '@/components/PaymentDialog';
 import { ActiveTicketCard } from '@/components/ActiveTicketCard';
-import { usePaymentProcessing } from '@/hooks/usePaymentProcessing';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,10 +56,7 @@ export default function ClientDashboard() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [orderTotal, setOrderTotal] = useState(0);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
-  const { processPayment } = usePaymentProcessing();
   
   // Order data
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -571,13 +566,6 @@ export default function ClientDashboard() {
       return;
     }
 
-    const total = getCartTotal();
-    setOrderTotal(total);
-    setShowPaymentDialog(true);
-  };
-
-  const handleConfirmPayment = async (paymentMethod: 'cash' | 'card' | 'mobile') => {
-    if (!clientData?.id) return;
 
     try {
       const validatedItems = cart.filter(item => {
@@ -610,32 +598,14 @@ export default function ClientDashboard() {
         throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
       }
 
-      const paymentItems = validatedItems.map(item => ({
-        item_name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity
-      }));
-
-      await processPayment({
-        userId: clientData.id,
-        items: paymentItems,
-        subtotal: orderTotal,
-        discount: 0,
-        total: orderTotal,
-        paymentMethod,
-        transactionType: 'order'
-      });
-
       setCart([]);
       setCurrentView('home');
       
       toast({
-        title: "Order Placed & Paid!",
-        description: `Your order has been paid and sent to the barista.`,
+        title: "Order Placed Successfully",
+        description: "Your order has been sent to the barista. Payment will be collected at checkout.",
       });
 
-      // Refresh pending orders and show satisfaction popup
       await fetchPendingOrders();
       setShowSatisfactionPopup(true);
       
@@ -643,10 +613,9 @@ export default function ClientDashboard() {
       console.error('Error placing order:', error);
       toast({
         title: "Order Failed",
-        description: "Failed to place order. Please try again.",
+        description: error instanceof Error ? error.message : "Could not place order. Please try again.",
         variant: "destructive"
       });
-      throw error;
     }
   };
 
@@ -1272,14 +1241,6 @@ export default function ClientDashboard() {
         isOpen={showSatisfactionPopup}
         onClose={() => setShowSatisfactionPopup(false)}
         clientId={clientData?.id || ''}
-      />
-
-      {/* Payment Dialog */}
-      <PaymentDialog
-        open={showPaymentDialog}
-        onOpenChange={setShowPaymentDialog}
-        orderTotal={orderTotal}
-        onConfirmPayment={handleConfirmPayment}
       />
     </div>
   );
