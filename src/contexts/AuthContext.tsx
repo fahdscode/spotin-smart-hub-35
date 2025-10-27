@@ -50,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [roleFetchInProgress, setRoleFetchInProgress] = useState(false);
-  const [authKey, setAuthKey] = useState(0); // Force re-initialization trigger
 
   useEffect(() => {
     let isMounted = true;
@@ -161,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [authKey]); // Re-run when authKey changes
+  }, []); // Run once on mount
 
   const fetchUserRole = async (userId: string) => {
     // CRITICAL: Don't fetch management role if client session exists
@@ -211,54 +210,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     console.log('🚪 Signing out...');
     
-    if (user) {
-      await supabase.auth.signOut();
-    }
-    
+    // Clear client data if exists
     if (clientData) {
       localStorage.removeItem('clientData');
       setClientData(null);
     }
     
+    // Sign out Supabase session if exists
+    if (user) {
+      await supabase.auth.signOut();
+    }
+    
+    // Reset all states synchronously
     setUserRole(null);
     setUser(null);
     setSession(null);
-    
-    // Force re-initialization to allow switching auth types
-    console.log('🔄 Forcing auth re-initialization');
-    setIsLoading(true);
-    setAuthKey(prev => prev + 1);
+    setIsLoading(false);
   };
 
-  const setClientAuth = async (client: ClientData) => {
+  const setClientAuth = (client: ClientData) => {
     console.log('👤 Setting client authentication');
     
-    // Save client session FIRST
+    // Save to localStorage and set client state immediately
     localStorage.setItem('clientData', JSON.stringify(client));
     setClientData(client);
     setUserRole('client');
-    
-    // Sign out any Supabase session to prevent conflicts
+    setIsLoading(false);
+
+    // Sign out any existing Supabase session (async, don't wait)
     if (user) {
-      console.log('🔓 Signing out management session for client login');
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
+      supabase.auth.signOut().then(() => {
+        setUser(null);
+        setSession(null);
+      });
     }
-    
-    // Force re-initialization to establish client-only auth
-    setAuthKey(prev => prev + 1);
   };
 
   const clearClientAuth = () => {
     console.log('🧹 Clearing client authentication');
+    localStorage.removeItem('clientData');
     setClientData(null);
     setUserRole(null);
-    localStorage.removeItem('clientData');
-    
-    // Force re-initialization to allow management login
-    setIsLoading(true);
-    setAuthKey(prev => prev + 1);
+    setIsLoading(false);
   };
 
   const refreshAuth = async () => {
