@@ -139,6 +139,63 @@ export type Database = {
           },
         ]
       }
+      cashier_sessions: {
+        Row: {
+          card_sales: number | null
+          cash_difference: number | null
+          cash_sales: number | null
+          closing_cash: number | null
+          created_at: string
+          end_time: string | null
+          expected_cash: number | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          opening_cash: number
+          staff_id: string
+          staff_name: string
+          start_time: string
+          total_sales: number | null
+          updated_at: string
+        }
+        Insert: {
+          card_sales?: number | null
+          cash_difference?: number | null
+          cash_sales?: number | null
+          closing_cash?: number | null
+          created_at?: string
+          end_time?: string | null
+          expected_cash?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          opening_cash?: number
+          staff_id: string
+          staff_name: string
+          start_time?: string
+          total_sales?: number | null
+          updated_at?: string
+        }
+        Update: {
+          card_sales?: number | null
+          cash_difference?: number | null
+          cash_sales?: number | null
+          closing_cash?: number | null
+          created_at?: string
+          end_time?: string | null
+          expected_cash?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          opening_cash?: number
+          staff_id?: string
+          staff_name?: string
+          start_time?: string
+          total_sales?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           color: string | null
