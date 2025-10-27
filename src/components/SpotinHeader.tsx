@@ -65,15 +65,15 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
     performLogout();
   };
   
-  return <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
+  return <header className="bg-primary text-primary-foreground p-6 shadow-lg">
       <div className="container flex items-center justify-between mx-0 px-0">
         <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-lg">
+          <div className="bg-primary-foreground/10 p-2 rounded-lg">
             <img src={spotinLogo} alt="SpotIN Logo" className="h-10 w-10 object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">SpotIN</h1>
-            <p className="text-white/80 text-sm">The Space of the Future</p>
+            <p className="text-primary-foreground/80 text-sm">The Space of the Future</p>
           </div>
         </div>
         
@@ -87,7 +87,7 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder-avatar.jpg" />
-                  <AvatarFallback className="bg-white/20 text-white text-sm">
+                  <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-sm">
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
