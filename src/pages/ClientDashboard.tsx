@@ -158,8 +158,9 @@ export default function ClientDashboard() {
         .order('category');
       
       if (drinksData) {
-        setDrinks(drinksData);
-        loadMockFavorites(drinksData);
+        const availableDrinks = drinksData.filter(d => d.category !== 'day_use_ticket');
+        setDrinks(availableDrinks);
+        loadFavoritesFromOrders(clientId, availableDrinks);
       }
 
       // Fetch last orders
@@ -209,11 +210,39 @@ export default function ClientDashboard() {
     }
   };
 
-  const loadMockFavorites = (availableDrinks: Drink[]) => {
-    const mockFavorites = availableDrinks
-      .filter(drink => ['Cappuccino', 'Latte', 'Americano'].includes(drink.name))
-      .slice(0, 3);
-    setFavoriteDrinks(mockFavorites);
+  const loadFavoritesFromOrders = async (clientId: string, availableDrinks: Drink[]) => {
+    try {
+      // Get order history to find most frequently ordered items
+      const { data: orders } = await supabase
+        .from('session_line_items')
+        .select('item_name, quantity')
+        .eq('user_id', clientId)
+        .in('status', ['completed', 'served']);
+
+      if (orders && orders.length > 0) {
+        // Count frequency of each item
+        const itemFrequency = orders.reduce((acc: Record<string, number>, order) => {
+          const itemName = order.item_name;
+          acc[itemName] = (acc[itemName] || 0) + order.quantity;
+          return acc;
+        }, {});
+
+        // Sort by frequency and get top 3
+        const topItems = Object.entries(itemFrequency)
+          .sort(([, a], [, b]) => (b as number) - (a as number))
+          .slice(0, 3)
+          .map(([name]) => name);
+
+        // Match with available drinks
+        const favorites = availableDrinks.filter(drink => topItems.includes(drink.name));
+        setFavoriteDrinks(favorites);
+      } else {
+        setFavoriteDrinks([]);
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      setFavoriteDrinks([]);
+    }
   };
 
   const fetchCheckInsLast30Days = async (clientId: string) => {
