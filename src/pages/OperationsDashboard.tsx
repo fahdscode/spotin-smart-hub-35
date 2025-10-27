@@ -199,9 +199,8 @@ const OperationsDashboard = () => {
             </>}
         </div>
 
-        <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-13">
-            <TabsTrigger value="analytics">Top Products</TabsTrigger>
+        <Tabs defaultValue="payments" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-12">
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
@@ -226,11 +225,6 @@ const OperationsDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="users">User Roles</TabsTrigger>
           </TabsList>
-
-          {/* Top Products Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <TopProductsSales />
-          </TabsContent>
 
           {/* Product Payments Tab */}
           <TabsContent value="payments" className="space-y-6">
