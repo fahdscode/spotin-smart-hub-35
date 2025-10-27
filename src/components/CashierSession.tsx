@@ -25,6 +25,8 @@ interface CashierSessionData {
   total_sales: number;
   cash_sales: number;
   card_sales: number;
+  bank_transfer_sales: number;
+  hot_desk_sales: number;
   notes?: string;
   is_active: boolean;
 }
@@ -79,15 +81,22 @@ const CashierSession = () => {
       let totalSales = 0;
       let cashSales = 0;
       let cardSales = 0;
+      let bankTransferSales = 0;
+      let hotDeskSales = 0;
 
       receipts?.forEach(receipt => {
         const amount = parseFloat(receipt.total_amount.toString());
         totalSales += amount;
         
-        if (receipt.payment_method?.toLowerCase() === 'cash') {
+        const paymentMethod = receipt.payment_method?.toLowerCase();
+        if (paymentMethod === 'cash') {
           cashSales += amount;
-        } else {
+        } else if (paymentMethod === 'visa') {
           cardSales += amount;
+        } else if (paymentMethod === 'bank_transfer') {
+          bankTransferSales += amount;
+        } else if (paymentMethod === 'hot_desk') {
+          hotDeskSales += amount;
         }
       });
 
@@ -98,6 +107,8 @@ const CashierSession = () => {
           total_sales: totalSales,
           cash_sales: cashSales,
           card_sales: cardSales,
+          bank_transfer_sales: bankTransferSales,
+          hot_desk_sales: hotDeskSales,
           expected_cash: sessionData.opening_cash + cashSales
         })
         .eq('id', sessionData.id);
@@ -108,6 +119,8 @@ const CashierSession = () => {
         total_sales: totalSales,
         cash_sales: cashSales,
         card_sales: cardSales,
+        bank_transfer_sales: bankTransferSales,
+        hot_desk_sales: hotDeskSales,
         expected_cash: sessionData.opening_cash + cashSales
       } : null);
     } catch (error) {
@@ -348,16 +361,24 @@ const CashierSession = () => {
             <div>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Receipt className="h-4 w-4" />
-                Sales Breakdown
+                Sales Breakdown by Payment Method
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="text-sm text-muted-foreground mb-1">Cash Sales</div>
                   <div className="text-xl font-semibold">{formatCurrency(session.cash_sales)}</div>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Card Sales</div>
+                  <div className="text-sm text-muted-foreground mb-1">Visa Sales</div>
                   <div className="text-xl font-semibold">{formatCurrency(session.card_sales)}</div>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="text-sm text-muted-foreground mb-1">Bank Transfer</div>
+                  <div className="text-xl font-semibold">{formatCurrency(session.bank_transfer_sales)}</div>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="text-sm text-muted-foreground mb-1">Hot Desk</div>
+                  <div className="text-xl font-semibold">{formatCurrency(session.hot_desk_sales)}</div>
                 </div>
               </div>
             </div>

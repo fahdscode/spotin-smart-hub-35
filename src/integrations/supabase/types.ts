@@ -180,6 +180,7 @@ export type Database = {
       }
       cashier_sessions: {
         Row: {
+          bank_transfer_sales: number | null
           card_sales: number | null
           cash_difference: number | null
           cash_sales: number | null
@@ -187,6 +188,7 @@ export type Database = {
           created_at: string
           end_time: string | null
           expected_cash: number | null
+          hot_desk_sales: number | null
           id: string
           is_active: boolean
           notes: string | null
@@ -198,6 +200,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bank_transfer_sales?: number | null
           card_sales?: number | null
           cash_difference?: number | null
           cash_sales?: number | null
@@ -205,6 +208,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           expected_cash?: number | null
+          hot_desk_sales?: number | null
           id?: string
           is_active?: boolean
           notes?: string | null
@@ -216,6 +220,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bank_transfer_sales?: number | null
           card_sales?: number | null
           cash_difference?: number | null
           cash_sales?: number | null
@@ -223,6 +228,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           expected_cash?: number | null
+          hot_desk_sales?: number | null
           id?: string
           is_active?: boolean
           notes?: string | null
