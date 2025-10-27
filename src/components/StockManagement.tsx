@@ -38,6 +38,7 @@ const StockManagement = () => {
 
   const units = [
     { value: "kg", label: "Kilograms" },
+    { value: "grams", label: "Grams" },
     { value: "liter", label: "Liters" },
     { value: "piece", label: "Pieces" },
     { value: "ml", label: "Milliliters" },
