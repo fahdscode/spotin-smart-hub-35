@@ -139,6 +139,39 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          products_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          products_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          products_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       check_in_logs: {
         Row: {
           action: string
@@ -261,6 +294,63 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_tickets: {
+        Row: {
+          checked_in_at: string | null
+          client_id: string
+          created_at: string | null
+          expiry_date: string
+          id: string
+          is_active: boolean
+          payment_method: string
+          purchase_date: string
+          ticket_id: string
+          updated_at: string | null
+          used_at: string | null
+        }
+        Insert: {
+          checked_in_at?: string | null
+          client_id: string
+          created_at?: string | null
+          expiry_date: string
+          id?: string
+          is_active?: boolean
+          payment_method?: string
+          purchase_date?: string
+          ticket_id: string
+          updated_at?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          checked_in_at?: string | null
+          client_id?: string
+          created_at?: string | null
+          expiry_date?: string
+          id?: string
+          is_active?: boolean
+          payment_method?: string
+          purchase_date?: string
+          ticket_id?: string
+          updated_at?: string | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tickets_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "drinks"
             referencedColumns: ["id"]
           },
         ]
@@ -513,7 +603,7 @@ export type Database = {
           attempted_at: string | null
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           phone: string
           success: boolean | null
         }
@@ -521,7 +611,7 @@ export type Database = {
           attempted_at?: string | null
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           phone: string
           success?: boolean | null
         }
@@ -529,7 +619,7 @@ export type Database = {
           attempted_at?: string | null
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           phone?: string
           success?: boolean | null
         }
@@ -761,6 +851,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          client_name: string | null
           created_at: string
           end_time: string
           id: string
@@ -771,6 +862,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_name?: string | null
           created_at?: string
           end_time: string
           id?: string
@@ -781,6 +873,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_name?: string | null
           created_at?: string
           end_time?: string
           id?: string
@@ -914,7 +1007,7 @@ export type Database = {
           created_at: string | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           log_level: string
           message: string
           metadata: Json | null
@@ -926,7 +1019,7 @@ export type Database = {
           created_at?: string | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           log_level: string
           message: string
           metadata?: Json | null
@@ -938,7 +1031,7 @@ export type Database = {
           created_at?: string | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           log_level?: string
           message?: string
           metadata?: Json | null
@@ -1071,6 +1164,15 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_ticket_to_client: {
+        Args: {
+          p_client_id: string
+          p_duration_hours?: number
+          p_payment_method?: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
       authenticate_client: {
         Args: { client_password: string; client_phone: string }
         Returns: Json
@@ -1083,10 +1185,11 @@ export type Database = {
         }
         Returns: Json
       }
-      check_admin_exists: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
+      authenticate_client_simple: {
+        Args: { client_password: string; client_phone: string }
+        Returns: Json
       }
+      check_admin_exists: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: { p_ip_address?: unknown; p_phone: string }
         Returns: boolean
@@ -1099,30 +1202,17 @@ export type Database = {
         Args: { p_email: string; p_full_name: string; p_password: string }
         Returns: Json
       }
-      generate_barcode: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_barcode: { Args: never; Returns: string }
       generate_barcode_for_client: {
         Args: { client_code: string }
         Returns: string
       }
-      generate_client_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_reset_token: {
-        Args: { p_phone: string }
-        Returns: Json
-      }
-      generate_unique_barcode: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_client_by_id: {
-        Args: { client_id: string }
-        Returns: Json
-      }
+      generate_client_code: { Args: never; Returns: string }
+      generate_reset_token: { Args: { p_phone: string }; Returns: Json }
+      generate_unique_barcode: { Args: never; Returns: string }
+      get_available_tickets: { Args: never; Returns: Json }
+      get_client_active_ticket: { Args: { p_client_id: string }; Returns: Json }
+      get_client_by_id: { Args: { client_id: string }; Returns: Json }
       get_client_check_in_status: {
         Args: { p_client_id: string }
         Returns: string
@@ -1131,58 +1221,22 @@ export type Database = {
         Args: { p_limit?: number; p_user_id: string }
         Returns: Json
       }
-      get_client_memberships: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_client_status: {
-        Args: { client_id: string }
-        Returns: string
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_client_memberships: { Args: never; Returns: Json }
+      get_client_status: { Args: { client_id: string }; Returns: string }
+      get_current_user_role: { Args: never; Returns: string }
       get_event_analytics: {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: Json
       }
-      get_receptionist_active_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_receptionist_daily_registrations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_user_role: {
-        Args: { check_user_id?: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_or_staff: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_user: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_current_user_staff: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_valid_client_id: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
+      get_receptionist_active_sessions: { Args: never; Returns: Json }
+      get_receptionist_daily_registrations: { Args: never; Returns: number }
+      get_user_role: { Args: { check_user_id?: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
+      is_admin_or_staff: { Args: never; Returns: boolean }
+      is_admin_user: { Args: { check_user_id?: string }; Returns: boolean }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_current_user_staff: { Args: never; Returns: boolean }
+      is_valid_client_id: { Args: { check_user_id: string }; Returns: boolean }
       log_login_attempt: {
         Args: { p_ip_address?: unknown; p_phone: string; p_success: boolean }
         Returns: undefined
@@ -1206,9 +1260,9 @@ export type Database = {
         Args: { p_email: string; p_full_name: string; p_user_id: string }
         Returns: Json
       }
-      test_client_registration: {
-        Args:
-          | {
+      test_client_registration:
+        | {
+            Args: {
               p_barcode: string
               p_client_code: string
               p_email: string
@@ -1216,7 +1270,19 @@ export type Database = {
               p_password_hash: string
               p_phone: string
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_email: string
+              p_full_name: string
+              p_password_hash: string
+              p_phone: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
               p_email: string
               p_first_name: string
               p_how_did_you_find_us: string
@@ -1225,14 +1291,8 @@ export type Database = {
               p_password_hash: string
               p_phone: string
             }
-          | {
-              p_email: string
-              p_full_name: string
-              p_password_hash: string
-              p_phone: string
-            }
-        Returns: Json
-      }
+            Returns: Json
+          }
       toggle_client_checkin_status: {
         Args: { p_barcode: string; p_scanned_by_user_id?: string }
         Returns: Json

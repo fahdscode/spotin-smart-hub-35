@@ -12,6 +12,7 @@ import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { PaymentDialog } from '@/components/PaymentDialog';
+import { ActiveTicketCard } from '@/components/ActiveTicketCard';
 import { usePaymentProcessing } from '@/hooks/usePaymentProcessing';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -874,6 +875,9 @@ export default function ClientDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Active Ticket Card */}
+            {isCheckedIn && clientData?.id && <ActiveTicketCard clientId={clientData.id} />}
 
             {/* Quick Actions */}
             <div className="space-y-4">

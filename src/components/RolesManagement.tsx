@@ -57,13 +57,20 @@ const RolesManagement = () => {
 
   const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProfiles(data || []);
+        if (error) throw error;
+        
+        // Map data to ensure all Profile properties exist
+        const mappedProfiles: Profile[] = (data || []).map((profile: any) => ({
+          ...profile,
+          is_admin: profile.is_admin ?? false
+        }));
+        
+        setProfiles(mappedProfiles);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       toast({
