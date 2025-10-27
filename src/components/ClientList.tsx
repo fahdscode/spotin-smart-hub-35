@@ -85,6 +85,14 @@ const ClientList = () => {
 
         const checkInTime = checkInData?.checked_in_at;
 
+        // Check if client has an active membership
+        const { data: membership } = await supabase
+          .from('client_memberships')
+          .select('*')
+          .eq('client_id', clientId)
+          .eq('is_active', true)
+          .maybeSingle();
+
         // Fetch only orders from the current session (after check-in time)
         const { data: orders } = await supabase
           .from('session_line_items')
@@ -98,8 +106,39 @@ const ClientList = () => {
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
 
-        // Calculate total from current session orders only
-        const orderTotal = orders?.reduce((sum, order) => sum + (order.price * order.quantity), 0) || 0;
+        // Prepare receipt items
+        let receiptItems = orders?.map(order => ({
+          name: order.item_name,
+          quantity: order.quantity,
+          price: order.price,
+          total: order.price * order.quantity
+        })) || [];
+
+        // If no membership, add day use ticket
+        if (!membership) {
+          // Fetch day use ticket price
+          const { data: ticketData } = await supabase
+            .from('drinks')
+            .select('name, price')
+            .eq('category', 'day_use_ticket')
+            .eq('is_available', true)
+            .maybeSingle();
+
+          if (ticketData) {
+            receiptItems = [
+              {
+                name: ticketData.name,
+                quantity: 1,
+                price: ticketData.price,
+                total: ticketData.price
+              },
+              ...receiptItems
+            ];
+          }
+        }
+
+        // Calculate total from current session orders + ticket (if applicable)
+        const orderTotal = receiptItems.reduce((sum, item) => sum + item.total, 0);
         
         // Prepare receipt data
         setReceiptData({
@@ -107,12 +146,7 @@ const ClientList = () => {
           customerName: client?.full_name || 'Client',
           customerEmail: client?.email || '',
           userId: clientId,
-          items: orders?.map(order => ({
-            name: order.item_name,
-            quantity: order.quantity,
-            price: order.price,
-            total: order.price * order.quantity
-          })) || [],
+          items: receiptItems,
           subtotal: orderTotal,
           discount: 0,
           total: orderTotal,
