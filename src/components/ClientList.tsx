@@ -300,6 +300,11 @@ const ClientList = () => {
           membership: membership ? {
             plan_name: membership.plan_name,
             discount_percentage: membership.discount_percentage
+          } : null,
+          assignedTicket: assignedTicket?.ticket ? {
+            name: assignedTicket.ticket.name,
+            price: assignedTicket.ticket.price,
+            ticket_type: assignedTicket.ticket.ticket_type
           } : null
         });
 
@@ -1028,6 +1033,18 @@ const ClientList = () => {
                     <Badge variant="default" className="ml-2">
                       {receiptData.membership.plan_name} ({receiptData.membership.discount_percentage}% discount)
                     </Badge>
+                  </div>
+                )}
+                {receiptData.assignedTicket && (
+                  <div className="flex justify-between items-center bg-primary/10 p-3 rounded-md -mx-1">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="font-semibold">{receiptData.assignedTicket.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{receiptData.assignedTicket.ticket_type?.replace('_', ' ')}</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-primary">{formatCurrency(receiptData.assignedTicket.price)}</span>
                   </div>
                 )}
                 {receiptData.checkInTime && (
