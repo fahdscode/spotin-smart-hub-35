@@ -142,7 +142,13 @@ const BillManagement = () => {
         updatedItems[index].total_price = updatedItems[index].quantity * stock.cost_per_unit;
       }
     } else if (field === 'quantity' || field === 'unit_price') {
+      // When quantity or unit_price changes, recalculate total_price
       updatedItems[index].total_price = updatedItems[index].quantity * updatedItems[index].unit_price;
+    } else if (field === 'total_price') {
+      // When total_price changes, recalculate unit_price
+      if (updatedItems[index].quantity > 0) {
+        updatedItems[index].unit_price = updatedItems[index].total_price / updatedItems[index].quantity;
+      }
     }
 
     setLineItems(updatedItems);
@@ -468,7 +474,17 @@ const BillManagement = () => {
                                 />
                               </TableCell>
                               <TableCell>
-                                {item.total_price.toFixed(2)} EGP
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.total_price}
+                                    onChange={(e) => updateLineItem(index, 'total_price', parseFloat(e.target.value) || 0)}
+                                    className="w-28"
+                                  />
+                                  <span className="text-sm text-muted-foreground">EGP</span>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <Button 
