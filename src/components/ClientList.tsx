@@ -145,7 +145,7 @@ const ClientList = () => {
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
-      // If checking out, show confirmation first
+      // If checking out, ALWAYS show confirmation first - this is mandatory
       if (currentStatus) {
         setPendingCheckoutClient(clientId);
         
@@ -178,7 +178,7 @@ const ClientList = () => {
           startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
         }
 
-        // Check for pending or preparing orders
+        // Check for pending or preparing orders - MUST complete before checkout
         const { data: pendingOrders } = await supabase
           .from('session_line_items')
           .select('*')
@@ -316,7 +316,7 @@ const ClientList = () => {
         // Reset payment method selection for new checkout
         setSelectedPaymentMethod("");
         
-        // Show confirmation dialog
+        // MANDATORY: Always show confirmation dialog - no checkout without this
         setShowCheckoutConfirmation(true);
         return;
       }

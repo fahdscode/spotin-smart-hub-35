@@ -107,7 +107,7 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
           setShowTicketDialog(true);
           setBarcode('');
         } else {
-          // Show checkout confirmation
+          // MANDATORY: Show checkout confirmation - this cannot be bypassed
           setCheckoutClient({
             name: result.client!.full_name
           });
