@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Receipt from "@/components/Receipt";
+import { TicketSelector } from "@/components/TicketSelector";
 import { formatCurrency } from "@/lib/currency";
 
 interface Client {
@@ -62,6 +63,8 @@ const ClientList = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const [showTicketDialog, setShowTicketDialog] = useState(false);
+  const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -272,22 +275,13 @@ const ClientList = () => {
         return;
       }
 
-      // For check-in, proceed directly
-      const { error } = await supabase
-        .from('clients')
-        .update({ active: !currentStatus })
-        .eq('id', clientId);
-
-      if (error) throw error;
-
-      setClients(prev => prev.map(client => 
-        client.id === clientId 
-          ? { ...client, active: !currentStatus }
-          : client
-      ));
-      
+      // For check-in, show ticket selector dialog
       const client = clients.find(c => c.id === clientId);
-      toast.success(`${client?.full_name} checked in successfully`);
+      setPendingCheckInClient({
+        id: clientId,
+        name: client?.full_name || 'Client'
+      });
+      setShowTicketDialog(true);
     } catch (error) {
       console.error('Error updating client status:', error);
       toast.error("Failed to update client status");
@@ -523,6 +517,72 @@ const ClientList = () => {
       console.error('Error deleting client:', error);
       toast.error("Failed to delete client");
     }
+  };
+
+  const handleTicketAssigned = async (ticketData: any) => {
+    setShowTicketDialog(false);
+    
+    if (pendingCheckInClient) {
+      // Update client active status
+      const { error } = await supabase
+        .from('clients')
+        .update({ active: true })
+        .eq('id', pendingCheckInClient.id);
+
+      if (error) {
+        console.error('Error checking in client:', error);
+        toast.error("Failed to check in client");
+        setPendingCheckInClient(null);
+        return;
+      }
+
+      // Update local state
+      setClients(prev => prev.map(client => 
+        client.id === pendingCheckInClient.id 
+          ? { ...client, active: true }
+          : client
+      ));
+
+      toast.success(`${pendingCheckInClient.name} checked in with ${ticketData.ticket_name}`);
+      
+      // Emit event to refresh active sessions
+      window.dispatchEvent(new CustomEvent('client-status-changed'));
+    }
+    
+    setPendingCheckInClient(null);
+  };
+
+  const handleSkipTicket = async () => {
+    setShowTicketDialog(false);
+    
+    if (pendingCheckInClient) {
+      // Update client active status
+      const { error } = await supabase
+        .from('clients')
+        .update({ active: true })
+        .eq('id', pendingCheckInClient.id);
+
+      if (error) {
+        console.error('Error checking in client:', error);
+        toast.error("Failed to check in client");
+        setPendingCheckInClient(null);
+        return;
+      }
+
+      // Update local state
+      setClients(prev => prev.map(client => 
+        client.id === pendingCheckInClient.id 
+          ? { ...client, active: true }
+          : client
+      ));
+
+      toast.success(`${pendingCheckInClient.name} checked in successfully`);
+      
+      // Emit event to refresh active sessions
+      window.dispatchEvent(new CustomEvent('client-status-changed'));
+    }
+    
+    setPendingCheckInClient(null);
   };
 
   const filteredClients = clients.filter(client => {
@@ -818,6 +878,29 @@ const ClientList = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Ticket Selector Dialog */}
+      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5" />
+              Assign Ticket
+            </DialogTitle>
+            <DialogDescription>
+              Choose a ticket type for the client or skip to check in without a ticket
+            </DialogDescription>
+          </DialogHeader>
+          {pendingCheckInClient && (
+            <TicketSelector
+              clientId={pendingCheckInClient.id}
+              clientName={pendingCheckInClient.name}
+              onTicketAssigned={handleTicketAssigned}
+              onCancel={handleSkipTicket}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Client Details Dialog */}
       <Dialog open={showClientDetails} onOpenChange={setShowClientDetails}>
