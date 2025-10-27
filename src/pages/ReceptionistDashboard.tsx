@@ -365,9 +365,6 @@ const ReceptionistDashboard = () => {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-6">
-                            <div className="bg-muted/50 p-3 rounded-md text-sm">
-                              <strong>Scanner Status:</strong> User ID: {currentUserId || 'No authenticated user (actions will be tracked as system)'}
-                            </div>
                             <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                           </div>
                         </DialogContent>
