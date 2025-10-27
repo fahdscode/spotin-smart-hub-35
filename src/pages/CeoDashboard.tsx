@@ -73,6 +73,12 @@ const CeoDashboard = () => {
     occupancyRate: 0,
     eventsThisMonth: 0
   });
+  const [systemAlerts, setSystemAlerts] = useState<Array<{
+    type: 'warning' | 'info' | 'success';
+    title: string;
+    message: string;
+    priority: 'high' | 'medium' | 'low';
+  }>>([]);
   const [peakHoursData, setPeakHoursData] = useState<Array<{
     hour: string;
     visitors: number;
@@ -96,7 +102,13 @@ const CeoDashboard = () => {
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      await Promise.all([fetchSatisfactionData(), fetchBusinessMetrics(), fetchPeakHoursData(), fetchDailyRevenueData()]);
+      await Promise.all([
+        fetchSatisfactionData(), 
+        fetchBusinessMetrics(), 
+        fetchPeakHoursData(), 
+        fetchDailyRevenueData(),
+        fetchSystemAlerts()
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -264,6 +276,70 @@ const CeoDashboard = () => {
       }
     } catch (error) {
       // Error already logged
+    }
+  };
+  
+  const fetchSystemAlerts = async () => {
+    try {
+      const alerts: Array<{
+        type: 'warning' | 'info' | 'success';
+        title: string;
+        message: string;
+        priority: 'high' | 'medium' | 'low';
+      }> = [];
+
+      // Check for low stock items
+      const { data: lowStock } = await supabase
+        .from('stock')
+        .select('name, current_quantity, min_quantity')
+        .eq('is_active', true)
+        .limit(10);
+
+      // Filter and add low stock alerts
+      const lowStockItems = lowStock?.filter(item => item.current_quantity <= item.min_quantity) || [];
+      lowStockItems.slice(0, 3).forEach(item => {
+        alerts.push({
+          type: 'warning',
+          title: `Low ${item.name} Stock`,
+          message: `Only ${item.current_quantity} units remaining (min: ${item.min_quantity})`,
+          priority: 'high'
+        });
+      });
+
+      // Check revenue progress
+      const currentMonth = financialData[0];
+      if (currentMonth && currentMonth.revenue > 0) {
+        const progress = (currentMonth.revenue / (currentMonth.revenue / 0.85)) * 100;
+        alerts.push({
+          type: 'info',
+          title: 'Revenue Milestone',
+          message: `Monthly target ${Math.round(progress)}% achieved`,
+          priority: 'medium'
+        });
+      }
+
+      // Check for upcoming events
+      const { data: upcomingEvents } = await supabase
+        .from('events')
+        .select('title, registered_attendees')
+        .gte('event_date', new Date().toISOString().split('T')[0])
+        .eq('is_active', true)
+        .order('event_date', { ascending: true })
+        .limit(1);
+
+      if (upcomingEvents && upcomingEvents.length > 0) {
+        const event = upcomingEvents[0];
+        alerts.push({
+          type: 'success',
+          title: 'Upcoming Event',
+          message: `${event.title} - ${event.registered_attendees} registered`,
+          priority: 'low'
+        });
+      }
+
+      setSystemAlerts(alerts);
+    } catch (error) {
+      console.error('Error fetching system alerts:', error);
     }
   };
   const revenueBreakdown: Array<{
@@ -542,38 +618,39 @@ const CeoDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-4 bg-warning/10 rounded-lg border border-warning/20">
-                      <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Low Coffee Stock</p>
-                        <p className="text-xs text-muted-foreground">Only 12 units remaining</p>
+                    {systemAlerts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">No system alerts at this time</p>
+                        <p className="text-xs mt-1">Everything is running smoothly</p>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        High
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Revenue Milestone</p>
-                        <p className="text-xs text-muted-foreground">Monthly target 85% achieved</p>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        Info
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <Calendar className="h-5 w-5 text-green-600 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Upcoming Event</p>
-                        <p className="text-xs text-muted-foreground">Networking Night - 45 registered</p>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        Low
-                      </Badge>
-                    </div>
+                    ) : (
+                      systemAlerts.map((alert, index) => (
+                        <div 
+                          key={index}
+                          className={`flex items-start gap-3 p-4 rounded-lg border ${
+                            alert.type === 'warning' 
+                              ? 'bg-warning/10 border-warning/20' 
+                              : alert.type === 'success'
+                              ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                              : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                          }`}
+                        >
+                          {alert.type === 'warning' && <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />}
+                          {alert.type === 'info' && <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />}
+                          {alert.type === 'success' && <Calendar className="h-5 w-5 text-green-600 mt-0.5" />}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{alert.title}</p>
+                            <p className="text-xs text-muted-foreground">{alert.message}</p>
+                          </div>
+                          <Badge 
+                            variant={alert.priority === 'high' ? 'destructive' : 'outline'} 
+                            className="text-xs capitalize"
+                          >
+                            {alert.priority}
+                          </Badge>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
