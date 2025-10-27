@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
 import spotinLogo from "@/assets/spotin-logo-main.png";
 import LanguageSelector from "@/components/LanguageSelector";
 import RTLWrapper from "@/components/RTLWrapper";
@@ -73,17 +72,16 @@ const ClientLogin = () => {
     setIsLoading(true);
 
     try {
-      const { data: authResult, error } = await supabase.rpc('authenticate_client_secure', {
-        client_phone: phone,
-        client_password: password,
-        p_ip_address: null
+      // Server-side password verification (SECURE - password never exposed)
+      const { data: authResult, error } = await supabase.rpc('verify_client_password' as any, {
+        p_phone: phone,
+        p_password: password
       });
 
       if (error) {
-        console.error('Authentication error:', error);
         toast({
           title: t('auth.loginError'),
-          description: "An error occurred. Please try again.",
+          description: t('auth.loginError'),
           variant: "destructive"
         });
         setIsLoading(false);
@@ -95,19 +93,7 @@ const ClientLogin = () => {
       if (!result.success || !result.client) {
         toast({
           title: t('auth.loginError'),
-          description: result.error || "Invalid phone number or password.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      const isPasswordValid = await bcrypt.compare(password, result.client.password_hash);
-
-      if (!isPasswordValid) {
-        toast({
-          title: t('auth.loginError'),
-          description: "Invalid phone number or password.",
+          description: result.error || t('auth.loginError'),
           variant: "destructive"
         });
         setIsLoading(false);
@@ -119,6 +105,7 @@ const ClientLogin = () => {
         description: `${t('dashboard.welcome')}, ${result.client.full_name}!`
       });
 
+      // Client data (NO password hash included)
       const clientData = {
         id: result.client.id,
         client_code: result.client.client_code,
@@ -131,10 +118,9 @@ const ClientLogin = () => {
       setClientAuth(clientData);
       navigate('/client');
     } catch (error: any) {
-      console.error('Login error:', error);
       toast({
         title: t('common.error'),
-        description: "An error occurred during login.",
+        description: t('auth.loginError'),
         variant: "destructive"
       });
     }

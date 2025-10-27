@@ -11,7 +11,6 @@ import MetricCard from "@/components/MetricCard";
 import RoomBooking from "@/components/RoomBooking";
 import Receipt from "@/components/Receipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import BarcodeDebugger from "@/components/BarcodeDebugger";
 import ClientList from "@/components/ClientList";
 import { QuickRegistration } from "@/components/QuickRegistration";
 import MembershipAssignment from '@/components/MembershipAssignment';
@@ -460,11 +459,6 @@ const ReceptionistDashboard = () => {
             <CashierSession />
           </TabsContent>
         </Tabs>
-
-        {/* Barcode Debugger for Development */}
-        <div className="lg:hidden">
-          <BarcodeDebugger />
-        </div>
       </div>
     </div>;
 };

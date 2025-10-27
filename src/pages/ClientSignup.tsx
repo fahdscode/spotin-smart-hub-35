@@ -10,7 +10,6 @@ import { Coffee, User, Phone, Lock, Check, AlertCircle, Calendar, Users, Mail } 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
 import spotinLogo from "@/assets/spotin-logo-main.png";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -130,16 +129,13 @@ const ClientSignup = () => {
     setIsLoading(true);
 
     try {
-      // Hash password
-      const passwordHash = await bcrypt.hash(formData.password, 10);
-
-      // Use the updated registration function with new fields
+      // Password will be hashed server-side (SECURE)
       const { data: registrationData, error: registrationError } = await supabase.rpc('test_client_registration', {
         p_first_name: formData.firstName,
         p_last_name: formData.lastName,
         p_phone: formData.phone,
         p_email: formData.email || null,
-        p_password_hash: passwordHash,
+        p_password_hash: formData.password, // Hashed server-side
         p_job_title: formData.jobTitle || 'Not specified',
         p_how_did_you_find_us: formData.howDidYouFindUs
       });
