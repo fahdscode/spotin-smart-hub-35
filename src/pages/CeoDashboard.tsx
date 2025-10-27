@@ -165,14 +165,14 @@ const CeoDashboard = () => {
   };
   const fetchBusinessMetrics = async () => {
     try {
-      const [ordersData, eventsData, currentCheckInsData] = await Promise.all([
+      const [ordersData, eventsData, activeClientsData] = await Promise.all([
         supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), 
         supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), 
-        supabase.from('check_ins').select('id').eq('status', 'checked_in')
+        supabase.from('clients').select('id').eq('is_active', true).eq('active', true)
       ]);
 
-      // Count currently checked-in clients (active right now)
-      const activeMembers = currentCheckInsData.data?.length || 0;
+      // Count currently active clients (checked in right now)
+      const activeMembers = activeClientsData.data?.length || 0;
       const totalClients = getTotalClientsCount() || 1;
       const occupancyRate = totalClients > 0 ? (activeMembers / totalClients * 100) : 0;
 
