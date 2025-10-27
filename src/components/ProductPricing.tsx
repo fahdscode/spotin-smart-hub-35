@@ -45,6 +45,7 @@ const ProductPricing = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [ingredientSearch, setIngredientSearch] = useState<Record<string, string>>({});
+  const [newProductIngredientSearch, setNewProductIngredientSearch] = useState("");
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -487,32 +488,60 @@ const ProductPricing = () => {
                         <div className="flex gap-2 items-start">
                           <div className="flex-1">
                             <Label className="text-xs text-muted-foreground">Ingredient</Label>
-                            <Select
-                              value={ingredient.stock_id}
-                              onValueChange={(value) => updateIngredient(index, 'stock_id', value)}
-                            >
-                              <SelectTrigger className="bg-background border-input mt-1">
-                                <SelectValue placeholder="Select ingredient" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover border-input z-50 max-h-48">
-                                {stockItems.length === 0 ? (
-                                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                                    No stock items available. Add items in Stock Management.
-                                  </div>
-                                ) : (
-                                  stockItems.map((stock) => (
-                                    <SelectItem key={stock.id} value={stock.id} className="hover:bg-accent">
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">{stock.name}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          Available: {stock.current_quantity} {stock.unit}
-                                        </span>
-                                      </div>
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
+                            <div className="space-y-2 mt-1">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  placeholder="Search stock ingredients..."
+                                  value={newProductIngredientSearch}
+                                  onChange={(e) => setNewProductIngredientSearch(e.target.value)}
+                                  className="pl-9 bg-background"
+                                />
+                              </div>
+                              
+                              {newProductIngredientSearch && (
+                                <div className="max-h-48 overflow-y-auto border rounded-md bg-popover z-50">
+                                  {stockItems
+                                    .filter(item => 
+                                      item.name.toLowerCase().includes(newProductIngredientSearch.toLowerCase())
+                                    )
+                                    .map(stockItem => (
+                                      <button
+                                        key={stockItem.id}
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors"
+                                        onClick={() => {
+                                          updateIngredient(index, 'stock_id', stockItem.id);
+                                          setNewProductIngredientSearch("");
+                                        }}
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{stockItem.name}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            Available: {stockItem.current_quantity} {stockItem.unit}
+                                          </span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  
+                                  {stockItems.filter(item => 
+                                    item.name.toLowerCase().includes(newProductIngredientSearch.toLowerCase())
+                                  ).length === 0 && (
+                                    <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                                      No ingredients found
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {ingredient.stock_id && (
+                                <div className="text-sm">
+                                  <span className="font-medium">
+                                    {stockItems.find(s => s.id === ingredient.stock_id)?.name || 'Unknown'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="w-24">
                             <Label className="text-xs text-muted-foreground">Quantity</Label>
