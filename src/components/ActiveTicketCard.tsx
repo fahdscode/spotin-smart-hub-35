@@ -8,7 +8,6 @@ import { formatCurrency } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 import { TicketExpiryCountdown } from './TicketExpiryCountdown';
 import { toast } from 'sonner';
-import { playSuccess, playError, playTap, playClick } from '@/lib/clientSounds';
 interface ActiveTicketData {
   id: string;
   ticket_name: string;
@@ -105,8 +104,6 @@ export const ActiveTicketCard = ({
     
     setClaiming(true);
     try {
-      playSuccess();
-      
       const drink = availableDrinks.find(d => d.id === selectedDrink);
       
       // Create order with price = 0
@@ -140,7 +137,6 @@ export const ActiveTicketCard = ({
       fetchActiveTicket();
     } catch (error) {
       console.error('Error claiming drink:', error);
-      playError();
       toast.error('Failed to claim drink. Please try again.');
     } finally {
       setClaiming(false);
@@ -183,7 +179,6 @@ export const ActiveTicketCard = ({
         {ticketData.includes_free_drink && !ticketData.free_drink_claimed && (
           <Button
             onClick={() => {
-              playTap();
               fetchAvailableDrinks();
               setShowDrinkDialog(true);
             }}
@@ -246,7 +241,6 @@ export const ActiveTicketCard = ({
                     : 'hover:ring-1 hover:ring-green-300'
                 }`}
                 onClick={() => {
-                  playClick();
                   setSelectedDrink(drink.id);
                 }}
               >
