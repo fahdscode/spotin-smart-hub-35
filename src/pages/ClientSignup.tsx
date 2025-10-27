@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import spotinLogo from "@/assets/spotin-logo-main.png";
+import LanguageSelector from "@/components/LanguageSelector";
 
 // Form validation schema
 const signupSchema = z.object({
@@ -89,6 +92,7 @@ const ClientSignup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setClientAuth } = useAuth();
+  const { t } = useTranslation();
 
   const validateForm = () => {
     try {
@@ -115,8 +119,8 @@ const ClientSignup = () => {
     // Validate form first
     if (!validateForm()) {
       toast({
-        title: "Validation Error",
-        description: "Please fix the errors below",
+        title: t('auth.validationError'),
+        description: t('auth.fixErrors'),
         variant: "destructive",
       });
       return;
@@ -147,14 +151,14 @@ const ClientSignup = () => {
       if (!result.success) {
         if (result.error.includes('phone number') || result.error.includes('email')) {
           toast({
-            title: "Account Already Exists",
+            title: t('auth.signupError'),
             description: result.error,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Registration Failed",
-            description: result.error || "Could not create account. Please try again.",
+            title: t('auth.signupError'),
+            description: result.error || t('auth.signupError'),
             variant: "destructive",
           });
         }
@@ -163,8 +167,8 @@ const ClientSignup = () => {
       }
 
       toast({
-        title: "Account Created Successfully!",
-        description: `Welcome ${result.full_name}! Your client ID: ${result.client_code}`,
+        title: t('clientSignup.accountCreated'),
+        description: `${t('clientSignup.welcomeMessage')} ${result.full_name}!`,
       });
 
       // Store client info and redirect using auth context
@@ -186,16 +190,16 @@ const ClientSignup = () => {
       
     } catch (error: any) {
       console.error('Registration error:', error);
-      const errorMessage = error.message || "Failed to create account. Please try again.";
+      const errorMessage = error.message || t('auth.signupError');
       if (errorMessage.includes('unique constraint') || errorMessage.includes('already exists')) {
         toast({
-          title: "Account Already Exists",
-          description: "An account with this phone number or email already exists.",
+          title: t('auth.signupError'),
+          description: t('auth.signupError'),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Registration Failed",
+          title: t('auth.signupError'),
           description: errorMessage,
           variant: "destructive",
         });
@@ -232,50 +236,55 @@ const ClientSignup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-8">
+        {/* Language selector */}
+        <div className="flex justify-end">
+          <LanguageSelector />
+        </div>
+        
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
-            <Coffee className="h-8 w-8 text-white" />
+          <div className="flex justify-center mb-4">
+            <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Join SpotIn</h1>
-          <p className="text-gray-600 mt-2">Create your coworking account</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('clientSignup.title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('clientSignup.subtitle')}</p>
         </div>
 
         {/* Benefits */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="flex flex-col items-center space-y-2">
-            <Coffee className="h-6 w-6 text-green-600" />
-            <span className="text-sm text-gray-600">Order Drinks</span>
+            <Coffee className="h-6 w-6 text-primary" />
+            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.orderDrinks')}</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <User className="h-6 w-6 text-orange-600" />
-            <span className="text-sm text-gray-600">Book Rooms</span>
+            <User className="h-6 w-6 text-primary" />
+            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.bookRooms')}</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <Check className="h-6 w-6 text-yellow-600" />
-            <span className="text-sm text-gray-600">Quick Check-in</span>
+            <Check className="h-6 w-6 text-primary" />
+            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.quickCheckin')}</span>
           </div>
         </div>
 
         {/* Signup Form */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Create Account</CardTitle>
-            <CardDescription>Start your coworking journey today</CardDescription>
+            <CardTitle className="text-xl">{t('clientSignup.createAccount')}</CardTitle>
+            <CardDescription>{t('clientSignup.startJourney')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName">{t('clientSignup.firstName')}</Label>
                     <Input
                       id="firstName"
                       name="firstName"
                       type="text"
-                      placeholder="Enter your first name"
+                      placeholder={t('clientSignup.firstName')}
                       value={formData.firstName}
                       onChange={handleInputChange}
                       className={errors.firstName ? "border-destructive" : ""}
@@ -286,12 +295,12 @@ const ClientSignup = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName">{t('clientSignup.lastName')}</Label>
                     <Input
                       id="lastName"
                       name="lastName"
                       type="text"
-                      placeholder="Enter your last name"
+                      placeholder={t('clientSignup.lastName')}
                       value={formData.lastName}
                       onChange={handleInputChange}
                       className={errors.lastName ? "border-destructive" : ""}
@@ -304,14 +313,14 @@ const ClientSignup = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="gender">Gender</Label>
+                    <Label htmlFor="gender">{t('clientSignup.gender')}</Label>
                     <Select value={formData.gender} onValueChange={(value) => handleSelectChange('gender', value)}>
                       <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Select gender" />
+                        <SelectValue placeholder={t('clientSignup.gender')} />
                       </SelectTrigger>
                       <SelectContent className="bg-background border z-50">
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="male">{t('clientSignup.male')}</SelectItem>
+                        <SelectItem value="female">{t('clientSignup.female')}</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.gender && (
@@ -320,7 +329,7 @@ const ClientSignup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="birthday">Birth Date</Label>
+                    <Label htmlFor="birthday">{t('clientSignup.birthday')}</Label>
                     <Input
                       id="birthday"
                       name="birthday"
@@ -337,12 +346,12 @@ const ClientSignup = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('clientSignup.phoneNumber')}</Label>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="e.g., 1234567890"
+                    placeholder={t('clientSignup.phoneNumber')}
                     value={formData.phone}
                     onChange={(e) => {
                       const cleanedValue = e.target.value.replace(/\D/g, '');
@@ -356,12 +365,12 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email (optional)</Label>
+                  <Label htmlFor="email">{t('clientSignup.emailOptional')}</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="Enter your email address"
+                    placeholder={t('clientSignup.emailOptional')}
                     value={formData.email}
                     onChange={handleInputChange}
                     className={errors.email ? "border-destructive" : ""}
@@ -372,12 +381,12 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t('clientSignup.password')}</Label>
                   <Input
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="Min 8 chars, uppercase, lowercase, number"
+                    placeholder={t('clientSignup.password')}
                     value={formData.password}
                     onChange={handleInputChange}
                     className={errors.password ? "border-destructive" : ""}
@@ -388,12 +397,12 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword">{t('clientSignup.confirmPassword')}</Label>
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
-                    placeholder="Confirm your password"
+                    placeholder={t('clientSignup.confirmPassword')}
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     className={errors.confirmPassword ? "border-destructive" : ""}
@@ -404,12 +413,12 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="jobTitle">Job Title / Profession (optional)</Label>
+                  <Label htmlFor="jobTitle">{t('clientSignup.jobTitle')}</Label>
                   <Input
                     id="jobTitle"
                     name="jobTitle"
                     type="text"
-                    placeholder="e.g., Software Engineer, Marketing Manager, Freelancer"
+                    placeholder={t('clientSignup.jobTitle')}
                     value={formData.jobTitle}
                     onChange={handleInputChange}
                     className={errors.jobTitle ? "border-destructive" : ""}
@@ -425,27 +434,27 @@ const ClientSignup = () => {
                       name="isStudent"
                       className="rounded border-gray-300"
                     />
-                    <Label htmlFor="isStudent" className="text-sm font-normal">I am a student</Label>
+                    <Label htmlFor="isStudent" className="text-sm font-normal">{t('clientSignup.isStudent')}</Label>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="howDidYouFindUs">How did you find us?</Label>
+                  <Label htmlFor="howDidYouFindUs">{t('clientSignup.howDidYouFindUs')}</Label>
                   <Select value={formData.howDidYouFindUs} onValueChange={(value) => handleSelectChange('howDidYouFindUs', value)}>
                     <SelectTrigger className={errors.howDidYouFindUs ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select how you found us" />
+                      <SelectValue placeholder={t('clientSignup.howDidYouFindUs')} />
                     </SelectTrigger>
                     <SelectContent className="bg-background border z-50">
-                      <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="friend_referral">Friend Referral</SelectItem>
-                      <SelectItem value="google_search">Google Search</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
-                      <SelectItem value="facebook">Facebook</SelectItem>
-                      <SelectItem value="linkedin">LinkedIn</SelectItem>
-                      <SelectItem value="walking_by">Walking By</SelectItem>
-                      <SelectItem value="event">Event/Workshop</SelectItem>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="social_media">{t('clientSignup.findUsOptions.socialMedia')}</SelectItem>
+                      <SelectItem value="friend_referral">{t('clientSignup.findUsOptions.friendReferral')}</SelectItem>
+                      <SelectItem value="google_search">{t('clientSignup.findUsOptions.googleSearch')}</SelectItem>
+                      <SelectItem value="instagram">{t('clientSignup.findUsOptions.instagram')}</SelectItem>
+                      <SelectItem value="facebook">{t('clientSignup.findUsOptions.facebook')}</SelectItem>
+                      <SelectItem value="linkedin">{t('clientSignup.findUsOptions.linkedin')}</SelectItem>
+                      <SelectItem value="walking_by">{t('clientSignup.findUsOptions.walkingBy')}</SelectItem>
+                      <SelectItem value="event">{t('clientSignup.findUsOptions.event')}</SelectItem>
+                      <SelectItem value="website">{t('clientSignup.findUsOptions.website')}</SelectItem>
+                      <SelectItem value="other">{t('clientSignup.findUsOptions.other')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.howDidYouFindUs && (
@@ -457,30 +466,18 @@ const ClientSignup = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-orange-500 hover:from-green-600 hover:to-orange-600 text-white font-semibold"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold"
               >
-                {isLoading ? "Creating Account..." : "Create Account"}
+                {isLoading ? t('auth.signingUp') : t('clientSignup.createAccount')}
               </Button>
             </form>
-            
-            <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-              <p className="text-sm text-gray-600 mb-3">
-                Your unique client ID and barcode will be generated automatically
-              </p>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="flex items-center justify-center gap-2 text-green-700">
-                  <Check className="h-4 w-4" />
-                  <span className="text-sm font-medium">Free to join • Instant access</span>
-                </div>
-              </div>
-            </div>
 
             <div className="mt-4 text-center space-y-2">
               <a
                 href="/client-login"
-                className="text-sm text-green-600 hover:text-green-700 transition-colors font-medium"
+                className="text-sm text-primary hover:text-primary/90 transition-colors font-medium"
               >
-                Already have an account? Login →
+                {t('clientSignup.alreadyHaveAccount')} {t('clientSignup.loginHere')} →
               </a>
             </div>
           </CardContent>
