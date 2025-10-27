@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import spotinLogo from "@/assets/spotin-logo-main.png";
 import LanguageSelector from "@/components/LanguageSelector";
+import RTLWrapper from "@/components/RTLWrapper";
 
 const ClientHome = () => {
   const navigate = useNavigate();
@@ -29,12 +30,13 @@ const ClientHome = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        {/* Language selector at top right */}
-        <div className="flex justify-end mb-4">
-          <LanguageSelector />
-        </div>
+    <RTLWrapper>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          {/* Language selector at top right */}
+          <div className="flex justify-end mb-4">
+            <LanguageSelector />
+          </div>
         
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -93,6 +95,7 @@ const ClientHome = () => {
         </div>
       </div>
     </div>
+    </RTLWrapper>
   );
 };
 

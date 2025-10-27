@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 import CairoClock from "@/components/CairoClock";
 import spotinLogo from "@/assets/spotin-logo.png";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -19,6 +20,7 @@ interface SpotinHeaderProps {
 const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
   const navigate = useNavigate();
   const { signOut, userRole } = useAuth();
+  const { t } = useTranslation();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [activeClientsCount, setActiveClientsCount] = useState(0);
 
@@ -108,11 +110,11 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
                     }, 100);
                   }}>
                     <User className="mr-2 h-4 w-4" />
-                    Profile
+                    {t('dashboard.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/client-settings')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    {t('dashboard.settings')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -120,17 +122,17 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
                 <>
                   <DropdownMenuItem onClick={() => navigate('/management-profile')}>
                     <User className="mr-2 h-4 w-4" />
-                    Profile
+                    {t('dashboard.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/management-settings')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    {t('dashboard.settings')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
               )}
               <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
-                Sign Out
+                {t('dashboard.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

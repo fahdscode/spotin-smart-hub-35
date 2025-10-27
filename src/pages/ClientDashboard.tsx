@@ -18,10 +18,10 @@ import { ActiveTicketCard } from '@/components/ActiveTicketCard';
 import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency } from '@/lib/currency';
-import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedFields } from '@/hooks/useLocalizedFields';
+import { formatCurrency } from '@/lib/currency';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Remove this interface as we'll use the one from AuthContext
 
@@ -57,8 +57,20 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientData, isAuthenticated, userRole, clearClientAuth, isLoading: authLoading } = useAuth();
-  const { t } = useTranslation();
-  const { getProductName, getProductDescription } = useLocalizedFields();
+  const { t, i18n } = useTranslation();
+  const { isArabic, getProductName, getProductDescription } = useLocalizedFields();
+  
+  // Update document direction based on language
+  useEffect(() => {
+    document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+    
+    if (isArabic) {
+      document.documentElement.classList.add('font-cairo');
+    } else {
+      document.documentElement.classList.remove('font-cairo');
+    }
+  }, [isArabic, i18n.language]);
   
   // Prevent accidental logout from back/refresh buttons
   usePreventAccidentalLogout();

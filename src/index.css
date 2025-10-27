@@ -129,4 +129,92 @@ All colors MUST be HSL. Based on organic brand palette.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* RTL Support for Arabic */
+  [dir="rtl"] {
+    direction: rtl;
+  }
+
+  [dir="rtl"] .font-cairo {
+    font-family: 'Cairo', sans-serif;
+  }
+
+  /* RTL specific adjustments */
+  [dir="rtl"] .flex-row {
+    flex-direction: row-reverse;
+  }
+
+  [dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+  }
+
+  /* RTL Icon positioning */
+  [dir="rtl"] .lucide {
+    transform: scaleX(-1);
+  }
+
+  /* Prevent icon flip for symmetric icons */
+  [dir="rtl"] .lucide-circle,
+  [dir="rtl"] .lucide-square,
+  [dir="rtl"] .lucide-star,
+  [dir="rtl"] .lucide-coffee,
+  [dir="rtl"] .lucide-calendar,
+  [dir="rtl"] .lucide-user,
+  [dir="rtl"] .lucide-settings,
+  [dir="rtl"] .lucide-check,
+  [dir="rtl"] .lucide-x,
+  [dir="rtl"] .lucide-plus,
+  [dir="rtl"] .lucide-minus {
+    transform: none;
+  }
+
+  /* RTL Text alignment */
+  [dir="rtl"] .text-left {
+    text-align: right;
+  }
+
+  [dir="rtl"] .text-right {
+    text-align: left;
+  }
+
+  /* RTL Margin/Padding adjustments */
+  [dir="rtl"] .mr-2 {
+    margin-right: 0;
+    margin-left: 0.5rem;
+  }
+
+  [dir="rtl"] .ml-2 {
+    margin-left: 0;
+    margin-right: 0.5rem;
+  }
+
+  [dir="rtl"] .mr-4 {
+    margin-right: 0;
+    margin-left: 1rem;
+  }
+
+  [dir="rtl"] .ml-4 {
+    margin-left: 0;
+    margin-right: 1rem;
+  }
+
+  /* RTL Border radius */
+  [dir="rtl"] .rounded-l {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+  }
+
+  [dir="rtl"] .rounded-r {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+  }
+
+  /* Smooth transitions for RTL */
+  [dir="rtl"] * {
+    transition: margin 0.3s ease, padding 0.3s ease;
+  }
 }

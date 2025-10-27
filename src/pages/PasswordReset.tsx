@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowLeft } from "lucide-react";
 import spotinLogo from "@/assets/spotin-logo-main.png";
+import RTLWrapper from "@/components/RTLWrapper";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const PasswordReset = () => {
   const [phone, setPhone] = useState("");
@@ -156,12 +158,18 @@ const PasswordReset = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
-        </div>
+    <RTLWrapper>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          {/* Language selector */}
+          <div className="flex justify-end">
+            <LanguageSelector />
+          </div>
+          
+          {/* Logo */}
+          <div className="flex justify-center">
+            <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
+          </div>
 
         <Card className="shadow-lg">
           <CardHeader>
@@ -244,6 +252,7 @@ const PasswordReset = () => {
         </Card>
       </div>
     </div>
+    </RTLWrapper>
   );
 };
 

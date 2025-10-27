@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Bell, Lock, User, Mail, Phone, Shield, Trash2, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import RTLWrapper from '@/components/RTLWrapper';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -178,8 +179,9 @@ export default function ClientSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <SpotinHeader />
+    <RTLWrapper>
+      <div className="min-h-screen bg-background">
+        <SpotinHeader />
       
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
@@ -407,6 +409,7 @@ export default function ClientSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </RTLWrapper>
   );
 }
