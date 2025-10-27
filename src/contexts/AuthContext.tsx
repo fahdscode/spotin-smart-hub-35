@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [roleFetchInProgress, setRoleFetchInProgress] = useState(false);
+  const [authKey, setAuthKey] = useState(0); // Force re-initialization trigger
 
   useEffect(() => {
     let isMounted = true;
@@ -160,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [authKey]); // Re-run when authKey changes
 
   const fetchUserRole = async (userId: string) => {
     // CRITICAL: Don't fetch management role if client session exists
@@ -208,6 +209,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🚪 Signing out...');
+    
     if (user) {
       await supabase.auth.signOut();
     }
@@ -218,9 +221,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     setUserRole(null);
+    setUser(null);
+    setSession(null);
+    
+    // Force re-initialization to allow switching auth types
+    console.log('🔄 Forcing auth re-initialization');
+    setIsLoading(true);
+    setAuthKey(prev => prev + 1);
   };
 
   const setClientAuth = async (client: ClientData) => {
+    console.log('👤 Setting client authentication');
+    
     // Save client session FIRST
     localStorage.setItem('clientData', JSON.stringify(client));
     setClientData(client);
@@ -233,12 +245,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
     }
+    
+    // Force re-initialization to establish client-only auth
+    setAuthKey(prev => prev + 1);
   };
 
   const clearClientAuth = () => {
+    console.log('🧹 Clearing client authentication');
     setClientData(null);
     setUserRole(null);
     localStorage.removeItem('clientData');
+    
+    // Force re-initialization to allow management login
+    setIsLoading(true);
+    setAuthKey(prev => prev + 1);
   };
 
   const refreshAuth = async () => {
