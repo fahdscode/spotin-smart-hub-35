@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Search, Coffee, Clock, Package, StickyNote, XCircle } from "lucide-react";
 import { useProductAvailability } from "@/hooks/useProductAvailability";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -36,20 +37,37 @@ interface QuickItemSelectorProps {
   onItemSelect: (itemName: string, note?: string) => void;
 }
 
-const categories = [
-  { value: "beverage", label: "Beverages", icon: "☕" },
-  { value: "food", label: "Food", icon: "🍽️" },
-  { value: "snack", label: "Snacks", icon: "🥨" },
-  { value: "dessert", label: "Desserts", icon: "🧁" }
-];
+interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+}
 
 const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: QuickItemSelectorProps) => {
   const { products, loading } = useProductAvailability();
+  const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [itemNote, setItemNote] = useState("");
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (!error && data) {
+        setCategories(data);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     // Filter products based on search term and category
@@ -131,14 +149,14 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
             <div className="flex gap-2 flex-wrap">
               {categories.map((category) => (
                 <Button
-                  key={category.value}
-                  variant={selectedCategory === category.value ? "default" : "outline"}
-                  onClick={() => setSelectedCategory(category.value)}
+                  key={category.id}
+                  variant={selectedCategory === category.name ? "default" : "outline"}
+                  onClick={() => setSelectedCategory(category.name)}
                   className="gap-2"
                   size="sm"
                 >
-                  <span>{category.icon}</span>
-                  {category.label}
+                  {category.icon && <span>{category.icon}</span>}
+                  {category.name}
                 </Button>
               ))}
             </div>
@@ -153,7 +171,7 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
                 <div key={category}>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    {categories.find(c => c.value === category)?.label || category}
+                    {categories.find(c => c.name === category)?.name || category}
                     <Badge variant="outline">{categoryProducts.length} items</Badge>
                   </h3>
                   
@@ -230,7 +248,7 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleConfirmItem} className="flex-1" variant="professional">
+              <Button onClick={handleConfirmItem} className="flex-1">
                 Add Item
               </Button>
               <Button 
