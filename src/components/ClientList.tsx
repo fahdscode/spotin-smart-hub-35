@@ -72,14 +72,7 @@ const ClientList = () => {
       if (currentStatus) {
         const client = clients.find(c => c.id === clientId);
         
-        // Fetch any pending orders for this client
-        const { data: orders } = await supabase
-          .from('session_line_items')
-          .select('*')
-          .eq('user_id', clientId)
-          .in('status', ['pending', 'completed', 'served']);
-
-        // Get check-in time
+        // Get current check-in session time first
         const { data: checkInData } = await supabase
           .from('check_ins')
           .select('checked_in_at')
@@ -87,14 +80,25 @@ const ClientList = () => {
           .eq('status', 'checked_in')
           .is('checked_out_at', null)
           .order('checked_in_at', { ascending: false })
-          .limit(1);
+          .limit(1)
+          .maybeSingle();
 
-        const checkInTime = checkInData?.[0]?.checked_in_at;
+        const checkInTime = checkInData?.checked_in_at;
+
+        // Fetch only orders from the current session (after check-in time)
+        const { data: orders } = await supabase
+          .from('session_line_items')
+          .select('*')
+          .eq('user_id', clientId)
+          .in('status', ['pending', 'completed', 'served'])
+          .gte('created_at', checkInTime || new Date().toISOString())
+          .order('created_at', { ascending: true });
+
         const duration = checkInTime 
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
 
-        // Calculate total from orders
+        // Calculate total from current session orders only
         const orderTotal = orders?.reduce((sum, order) => sum + (order.price * order.quantity), 0) || 0;
         
         // Prepare receipt data
