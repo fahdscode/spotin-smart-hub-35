@@ -119,25 +119,30 @@ const ProductPricing = () => {
 
       if (error) throw error;
       
-      const categoryOptions = (data || []).map(cat => ({
-        value: cat.name.toLowerCase(),
+      if (!data || data.length === 0) {
+        toast({
+          title: "No Categories Found",
+          description: "Please add categories in the Product Categories tab first",
+          variant: "destructive",
+        });
+        setCategories([]);
+        return;
+      }
+      
+      const categoryOptions = data.map(cat => ({
+        value: cat.name,
         label: cat.name
       }));
       
       setCategories(categoryOptions);
     } catch (error: any) {
+      console.error('Error fetching categories:', error);
       toast({
         title: "Error fetching categories",
-        description: error.message,
+        description: "Please ensure categories are created in Product Categories tab",
         variant: "destructive",
       });
-      // Fallback to default categories
-      setCategories([
-        { value: "beverage", label: "Beverage" },
-        { value: "food", label: "Food" },
-        { value: "snack", label: "Snack" },
-        { value: "dessert", label: "Dessert" }
-      ]);
+      setCategories([]);
     }
   };
 
@@ -460,14 +465,20 @@ const ProductPricing = () => {
                       onValueChange={(value) => setNewProduct(prev => ({ ...prev, category: value }))}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder={categories.length === 0 ? "No categories available" : "Select category"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))}
+                        {categories.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                            No categories found. Please create categories in Product Categories tab.
+                          </div>
+                        ) : (
+                          categories.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
