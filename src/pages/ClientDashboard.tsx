@@ -851,7 +851,7 @@ export default function ClientDashboard() {
         {currentView === 'home' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
+            <Card className="bg-primary/10">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
@@ -872,24 +872,24 @@ export default function ClientDashboard() {
 
             {/* Client Status & Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className={isCheckedIn ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+              <Card className={isCheckedIn ? "border-success/30 bg-success/10" : "border-destructive/30 bg-destructive/10"}>
                 <CardContent className="pt-6 text-center">
-                  <div className={`h-8 w-8 mx-auto mb-2 ${isCheckedIn ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`h-8 w-8 mx-auto mb-2 ${isCheckedIn ? 'text-success' : 'text-destructive'}`}>
                     {isCheckedIn ? (
-                      <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
+                      <div className="h-8 w-8 bg-success rounded-full flex items-center justify-center">
                         <div className="h-4 w-4 bg-white rounded-full"></div>
                       </div>
                     ) : (
-                      <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
+                      <div className="h-8 w-8 bg-destructive rounded-full flex items-center justify-center">
                         <div className="h-4 w-4 bg-white rounded-full"></div>
                       </div>
                     )}
                   </div>
-                  <div className={`text-lg font-bold ${isCheckedIn ? 'text-green-700' : 'text-red-700'}`}>
+                  <div className={`text-lg font-bold ${isCheckedIn ? 'text-success' : 'text-destructive'}`}>
                     {isCheckedIn ? 'Checked In' : 'Checked Out'}
                   </div>
                   {isCheckedIn && checkInTime && (
-                    <p className="text-sm text-green-600">Since {checkInTime}</p>
+                    <p className="text-sm text-success">Since {checkInTime}</p>
                   )}
                   {!isCheckedIn && (
                     <p className="text-sm text-muted-foreground mt-2">Visit reception to check in</p>
