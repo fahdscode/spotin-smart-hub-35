@@ -16,21 +16,34 @@ interface TicketSettings {
   description: string;
   is_active: boolean;
   includes_free_drink: boolean;
+  ticket_type: string;
+}
+
+interface TicketItem {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  is_active: boolean;
+  includes_free_drink: boolean;
+  ticket_type: string;
 }
 
 const DayUseTicketControls = () => {
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [settings, setSettings] = useState<TicketSettings>({
     name: "Day Use Pass",
     price: 25.00,
     description: "Full day access to workspace, WiFi, and common areas",
     is_active: true,
-    includes_free_drink: false
+    includes_free_drink: false,
+    ticket_type: "day_use"
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
-  const [hasSettings, setHasSettings] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,29 +53,31 @@ const DayUseTicketControls = () => {
   const fetchTicketSettings = async () => {
     try {
       setLoading(true);
-      // Check for day use ticket in drinks table
+      // Fetch all tickets in the day_use_ticket category
       const { data, error } = await supabase
         .from('drinks')
         .select('*')
         .eq('category', 'day_use_ticket')
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
-      if (data) {
-        setSettings({
-          id: data.id,
-          name: data.name,
-          price: data.price,
-          description: data.description || "Full day access to workspace, WiFi, and common areas",
-          is_active: data.is_available,
-          includes_free_drink: data.ingredients?.includes('free_drink') || false
-        });
-        setHasSettings(true);
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setTickets(data.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          description: item.description || "",
+          is_active: item.is_available,
+          includes_free_drink: item.ingredients?.includes('free_drink') || false,
+          ticket_type: item.ticket_type || 'day_use'
+        })));
       } else {
-        setHasSettings(false);
+        setTickets([]);
       }
     } catch (error) {
       console.error('Error fetching ticket settings:', error);
-      setHasSettings(false);
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -71,7 +86,8 @@ const DayUseTicketControls = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (hasSettings && settings.id) {
+      if (settings.id) {
+        // Update existing ticket
         const { error } = await supabase
           .from('drinks')
           .update({
@@ -79,18 +95,20 @@ const DayUseTicketControls = () => {
             price: settings.price,
             description: settings.description,
             is_available: settings.is_active,
-            ingredients: settings.includes_free_drink ? ['free_drink'] : []
+            ingredients: settings.includes_free_drink ? ['free_drink'] : [],
+            ticket_type: settings.ticket_type
           })
           .eq('id', settings.id);
 
         if (error) throw error;
 
         toast({
-          title: "Settings Updated",
-          description: "Day use ticket settings have been updated successfully.",
+          title: "Ticket Updated",
+          description: "Ticket settings have been updated successfully.",
         });
       } else {
-        const { data, error } = await supabase
+        // Create new ticket
+        const { error } = await supabase
           .from('drinks')
           .insert({
             name: settings.name,
@@ -98,23 +116,21 @@ const DayUseTicketControls = () => {
             description: settings.description,
             category: 'day_use_ticket',
             is_available: settings.is_active,
-            ingredients: settings.includes_free_drink ? ['free_drink'] : []
-          })
-          .select()
-          .single();
+            ingredients: settings.includes_free_drink ? ['free_drink'] : [],
+            ticket_type: settings.ticket_type
+          });
 
         if (error) throw error;
 
-        setSettings(prev => ({ ...prev, id: data.id }));
-        setHasSettings(true);
-
         toast({
-          title: "Day Use Ticket Created",
-          description: "Day use ticket has been set up successfully.",
+          title: "Ticket Created",
+          description: "New ticket has been created successfully.",
         });
       }
 
+      await fetchTicketSettings();
       setIsEditing(false);
+      setIsAdding(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -127,27 +143,33 @@ const DayUseTicketControls = () => {
   };
 
   const handleCancel = () => {
-    fetchTicketSettings();
     setIsEditing(false);
+    setIsAdding(false);
+    setSettings({
+      name: "Day Use Pass",
+      price: 25.00,
+      description: "Full day access to workspace, WiFi, and common areas",
+      is_active: true,
+      includes_free_drink: false,
+      ticket_type: "day_use"
+    });
   };
 
-  const handleActiveToggle = async (checked: boolean) => {
-    if (!hasSettings || !settings.id) return;
-
+  const handleActiveToggle = async (ticketId: string, checked: boolean) => {
     setToggling(true);
     try {
       const { error } = await supabase
         .from('drinks')
         .update({ is_available: checked })
-        .eq('id', settings.id);
+        .eq('id', ticketId);
 
       if (error) throw error;
 
-      setSettings(prev => ({ ...prev, is_active: checked }));
+      await fetchTicketSettings();
 
       toast({
         title: checked ? "Ticket Sales Activated" : "Ticket Sales Deactivated",
-        description: `Day use ticket sales have been ${checked ? 'enabled' : 'disabled'}.`,
+        description: `Ticket sales have been ${checked ? 'enabled' : 'disabled'}.`,
       });
     } catch (error) {
       toast({
@@ -158,6 +180,32 @@ const DayUseTicketControls = () => {
     } finally {
       setToggling(false);
     }
+  };
+
+  const handleEdit = (ticket: TicketItem) => {
+    setSettings({
+      id: ticket.id,
+      name: ticket.name,
+      price: ticket.price,
+      description: ticket.description,
+      is_active: ticket.is_active,
+      includes_free_drink: ticket.includes_free_drink,
+      ticket_type: ticket.ticket_type
+    });
+    setIsEditing(true);
+  };
+
+  const handleAddNew = () => {
+    setSettings({
+      name: "",
+      price: 0,
+      description: "",
+      is_active: true,
+      includes_free_drink: false,
+      ticket_type: "day_use"
+    });
+    setIsAdding(true);
+    setIsEditing(true);
   };
 
   if (loading) {
@@ -171,28 +219,28 @@ const DayUseTicketControls = () => {
     );
   }
 
-  if (!hasSettings && !isEditing) {
+  if (tickets.length === 0 && !isEditing) {
     return (
       <Card className="w-full">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Ticket className="h-5 w-5 text-primary" />
-            <CardTitle>Day Use Tickets</CardTitle>
+            <CardTitle>Tickets Management</CardTitle>
           </div>
           <CardDescription>
-            Set up day use ticket pricing and availability for walk-in customers
+            Create different types of tickets for walk-in customers
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Day Use Ticket Configured</h3>
+            <h3 className="text-lg font-medium mb-2">No Tickets Configured</h3>
             <p className="text-muted-foreground mb-4">
-              Create a day use ticket option for walk-in customers to access your workspace.
+              Create tickets like Day Use Pass, Event Tickets, Premium Access, etc.
             </p>
-            <Button onClick={() => setIsEditing(true)}>
+            <Button onClick={handleAddNew}>
               <Plus className="h-4 w-4 mr-2" />
-              Set Up Day Use Ticket
+              Create First Ticket
             </Button>
           </div>
         </CardContent>
@@ -206,71 +254,63 @@ const DayUseTicketControls = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Ticket className="h-5 w-5 text-primary" />
-            <CardTitle>Day Use Tickets</CardTitle>
+            <CardTitle>Tickets Management</CardTitle>
           </div>
-          <Badge variant={settings.is_active ? "default" : "secondary"}>
-            {settings.is_active ? "Active" : "Inactive"}
-          </Badge>
+          {!isEditing && (
+            <Button onClick={handleAddNew} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Ticket
+            </Button>
+          )}
         </div>
         <CardDescription>
-          Manage day use ticket pricing and availability for walk-in customers
+          Manage ticket types and pricing for walk-in customers
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {!isEditing ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-semibold">{settings.name}</h3>
-                <p className="text-sm text-muted-foreground">{settings.description}</p>
-                {settings.includes_free_drink && (
-                  <Badge variant="secondary" className="mt-2">
-                    Includes Free Drink
-                  </Badge>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-primary flex items-center gap-1">
-                  <DollarSign className="h-5 w-5" />
-                  {settings.price.toFixed(2)}
+            {tickets.map((ticket) => (
+              <div key={ticket.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">{ticket.name}</h3>
+                    <Badge variant="outline" className="text-xs">
+                      {ticket.ticket_type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{ticket.description}</p>
+                  {ticket.includes_free_drink && (
+                    <Badge variant="secondary" className="mt-2">
+                      Includes Free Drink
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">per day</p>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary flex items-center gap-1">
+                      <DollarSign className="h-5 w-5" />
+                      {ticket.price.toFixed(2)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">EGP</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Switch 
+                      checked={ticket.is_active} 
+                      onCheckedChange={(checked) => handleActiveToggle(ticket.id, checked)}
+                      disabled={toggling}
+                    />
+                    <Button 
+                      onClick={() => handleEdit(ticket)}
+                      variant="outline" 
+                      size="sm"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Ticket Sales Active</span>
-              <Switch 
-                checked={settings.is_active} 
-                onCheckedChange={handleActiveToggle}
-                disabled={!hasSettings || toggling}
-              />
-            </div>
-
-            {/* Countdown Timer Example */}
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground mb-3">Example: How countdown appears for clients</p>
-              <TicketExpiryCountdown 
-                purchaseTime={new Date(Date.now() - 20 * 60 * 60 * 1000)} // 20 hours ago
-                expiryHours={24}
-                onExpired={() => {
-                  toast({
-                    title: "Example Ticket Expired",
-                    description: "This is just a demo countdown.",
-                    variant: "destructive"
-                  });
-                }}
-              />
-            </div>
-
-            <Button 
-              onClick={() => setIsEditing(true)}
-              variant="outline" 
-              className="w-full"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Edit Settings
-            </Button>
+            ))}
           </div>
         ) : (
           <div className="space-y-4">
@@ -279,8 +319,25 @@ const DayUseTicketControls = () => {
               <Input
                 value={settings.name}
                 onChange={(e) => setSettings(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter ticket name"
+                placeholder="e.g., Day Use Pass, Event Ticket, Premium Access"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ticket Type</label>
+              <select 
+                className="w-full p-2 border rounded-md bg-background"
+                value={settings.ticket_type}
+                onChange={(e) => setSettings(prev => ({ ...prev, ticket_type: e.target.value }))}
+              >
+                <option value="day_use">Day Use</option>
+                <option value="event">Event Ticket</option>
+                <option value="drink_included">With Drink</option>
+                <option value="premium">Premium Access</option>
+                <option value="hourly">Hourly Pass</option>
+                <option value="weekly">Weekly Pass</option>
+                <option value="monthly">Monthly Pass</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -300,7 +357,7 @@ const DayUseTicketControls = () => {
               <Input
                 value={settings.description}
                 onChange={(e) => setSettings(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Enter description"
+                placeholder="Describe what's included"
               />
             </div>
 
@@ -328,10 +385,10 @@ const DayUseTicketControls = () => {
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {hasSettings ? 'Saving...' : 'Creating...'}
+                    {isAdding ? 'Creating...' : 'Saving...'}
                   </>
                 ) : (
-                  hasSettings ? 'Save Changes' : 'Create Ticket'
+                  isAdding ? 'Create Ticket' : 'Save Changes'
                 )}
               </Button>
               <Button onClick={handleCancel} variant="outline" className="flex-1" disabled={saving}>

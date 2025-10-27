@@ -15,6 +15,7 @@ interface Ticket {
   price: number;
   description: string;
   includes_free_drink: boolean;
+  ticket_type: string;
   image_url?: string;
 }
 
@@ -128,7 +129,7 @@ export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCance
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-2">Select Ticket for {clientName}</h3>
-        <p className="text-sm text-muted-foreground">Choose a day use pass</p>
+        <p className="text-sm text-muted-foreground">Choose a ticket type</p>
       </div>
 
       <RadioGroup value={selectedTicketId} onValueChange={setSelectedTicketId}>
@@ -148,6 +149,9 @@ export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCance
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold">{ticket.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {ticket.ticket_type?.replace('_', ' ') || 'day use'}
+                      </Badge>
                       {selectedTicketId === ticket.id && (
                         <Check className="h-4 w-4 text-primary" />
                       )}
@@ -164,7 +168,11 @@ export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCance
                     <div className="text-2xl font-bold text-primary">
                       {formatCurrency(ticket.price)}
                     </div>
-                    <div className="text-xs text-muted-foreground">24 hours</div>
+                    <div className="text-xs text-muted-foreground">
+                      {ticket.ticket_type === 'hourly' ? 'per hour' : 
+                       ticket.ticket_type === 'weekly' ? 'per week' :
+                       ticket.ticket_type === 'monthly' ? 'per month' : '24 hours'}
+                    </div>
                   </div>
                 </div>
               </Label>

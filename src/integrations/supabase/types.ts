@@ -520,6 +520,7 @@ export type Database = {
           name: string
           prep_time_minutes: number | null
           price: number
+          ticket_type: string | null
           updated_at: string
         }
         Insert: {
@@ -533,6 +534,7 @@ export type Database = {
           name: string
           prep_time_minutes?: number | null
           price: number
+          ticket_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -546,6 +548,7 @@ export type Database = {
           name?: string
           prep_time_minutes?: number | null
           price?: number
+          ticket_type?: string | null
           updated_at?: string
         }
         Relationships: []
