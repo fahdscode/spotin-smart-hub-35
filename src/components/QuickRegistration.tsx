@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, UserPlus, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import bcrypt from 'bcryptjs';
+
 
 interface QuickRegistrationProps {
   onSuccess?: () => void;
@@ -35,17 +35,16 @@ export const QuickRegistration = ({ onSuccess }: QuickRegistrationProps) => {
     setLoading(true);
 
     try {
-      // Hash password (or use default if not provided)
+      // Use default password if not provided (will be hashed server-side)
       const password = formData.password || 'Welcome123';
-      const passwordHash = await bcrypt.hash(password, 10);
 
-      // Call the registration function
+      // Call the registration function (password hashed server-side)
       const { data, error } = await supabase.rpc('test_client_registration', {
         p_first_name: formData.firstName,
         p_last_name: formData.lastName,
         p_phone: formData.phone,
         p_email: formData.email || null,
-        p_password_hash: passwordHash,
+        p_password_hash: password, // Server-side hashing
         p_job_title: formData.jobTitle,
         p_how_did_you_find_us: formData.howDidYouFindUs || 'Not specified'
       });
