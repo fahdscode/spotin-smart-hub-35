@@ -12,7 +12,6 @@ import Receipt from "@/components/Receipt";
 import EditableReceipt from "@/components/EditableReceipt";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import BarcodeDebugger from "@/components/BarcodeDebugger";
-import CheckInTestHelper from "@/components/CheckInTestHelper";
 import ClientList from "@/components/ClientList";
 import MembershipAssignment from '@/components/MembershipAssignment';
 import RoomCalendar from '@/components/RoomCalendar';
@@ -369,7 +368,6 @@ const ReceptionistDashboard = () => {
                             <div className="bg-muted/50 p-3 rounded-md text-sm">
                               <strong>Scanner Status:</strong> User ID: {currentUserId || 'No authenticated user (actions will be tracked as system)'}
                             </div>
-                            <CheckInTestHelper />
                             <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                           </div>
                         </DialogContent>
