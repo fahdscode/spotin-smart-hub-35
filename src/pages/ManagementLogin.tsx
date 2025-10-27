@@ -26,6 +26,13 @@ const ManagementLogin = () => {
       // Validate input
       loginSchema.parse({ email, password });
 
+      // CRITICAL: Clear any client session BEFORE Supabase login
+      console.log('🧹 Clearing client session before management login');
+      localStorage.removeItem('clientData');
+      
+      // Force a small delay to ensure localStorage is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password

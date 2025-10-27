@@ -53,60 +53,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let isMounted = true;
+    let authSubscription: any = null;
 
-    // PRIORITY CHECK: Client session in localStorage FIRST
-    const clientSession = localStorage.getItem('clientData');
-    
-    if (clientSession) {
-      // CLIENT SESSION EXISTS - Skip all Supabase auth processing
-      console.log('✅ Client session found, skipping Supabase auth');
-      try {
-        const parsedClient = JSON.parse(clientSession);
-        setClientData(parsedClient);
-        setUserRole('client');
-        setIsLoading(false);
-        return; // Don't set up Supabase auth listener at all
-      } catch (error) {
-        console.error('Error parsing client session:', error);
-        localStorage.removeItem('clientData');
-      }
-    }
-
-    // NO CLIENT SESSION - Proceed with Supabase auth for management
-    console.log('📋 No client session, setting up management auth');
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return;
-        
-        console.log('🔐 Auth state changed:', event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user && event === 'SIGNED_IN') {
-          console.log('👔 Management user logged in');
-          setTimeout(() => {
-            if (isMounted) {
-              fetchUserRole(session.user.id);
-            }
-          }, 0);
-        } else if (session?.user && event === 'INITIAL_SESSION') {
-          console.log('🔄 Initial management session found');
-          setTimeout(() => {
-            if (isMounted) {
-              fetchUserRole(session.user.id);
-            }
-          }, 0);
-        } else if (!session?.user) {
-          setUserRole(null);
+    const initializeAuth = async () => {
+      // PRIORITY CHECK: Client session in localStorage FIRST
+      const clientSession = localStorage.getItem('clientData');
+      
+      if (clientSession) {
+        // CLIENT SESSION EXISTS - Skip all Supabase auth processing
+        console.log('✅ Client session found, skipping Supabase auth');
+        try {
+          const parsedClient = JSON.parse(clientSession);
+          setClientData(parsedClient);
+          setUserRole('client');
           setIsLoading(false);
+          return; // Don't set up Supabase auth listener at all
+        } catch (error) {
+          console.error('Error parsing client session:', error);
+          localStorage.removeItem('clientData');
+          // Fall through to Supabase auth
         }
       }
-    );
 
-    // Check for existing session
-    const getSession = async () => {
+      // NO CLIENT SESSION - Proceed with Supabase auth for management
+      console.log('📋 No client session, setting up management auth');
+      
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!isMounted) return;
+          
+          console.log('🔐 Auth state changed:', event, session?.user?.email);
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user && event === 'SIGNED_IN') {
+            console.log('👔 Management user logged in');
+            setTimeout(() => {
+              if (isMounted) {
+                fetchUserRole(session.user.id);
+              }
+            }, 0);
+          } else if (session?.user && event === 'INITIAL_SESSION') {
+            console.log('🔄 Initial management session found');
+            setTimeout(() => {
+              if (isMounted) {
+                fetchUserRole(session.user.id);
+              }
+            }, 0);
+          } else if (!session?.user) {
+            setUserRole(null);
+            setIsLoading(false);
+          }
+        }
+      );
+
+      authSubscription = subscription;
+
+      // Check for existing session
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -132,11 +136,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    getSession();
+    initializeAuth();
+
+    // Listen for storage changes (when localStorage is cleared/updated)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'clientData') {
+        console.log('🔄 Client data changed in storage, reinitializing auth');
+        // Cleanup existing subscription
+        if (authSubscription) {
+          authSubscription.unsubscribe();
+        }
+        // Reinitialize
+        initializeAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
