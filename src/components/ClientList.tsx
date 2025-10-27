@@ -225,11 +225,12 @@ const ClientList = () => {
           : 0;
 
         // Check for assigned ticket in this session
-        const { data: assignedTicket } = await supabase
+        console.log('🎫 Looking for ticket assigned at or after:', startTime);
+        const { data: assignedTicket, error: ticketError } = await supabase
           .from('client_tickets')
           .select(`
             *,
-            ticket:drinks(name, price, ticket_type)
+            ticket:drinks!client_tickets_ticket_id_fkey(name, price, ticket_type)
           `)
           .eq('client_id', clientId)
           .eq('is_active', true)
@@ -238,9 +239,13 @@ const ClientList = () => {
           .limit(1)
           .maybeSingle();
 
+        console.log('🎫 Assigned ticket found:', assignedTicket);
+        console.log('🎫 Ticket query error:', ticketError);
+
         // If no membership, add the assigned ticket (or default day use ticket if no ticket assigned)
         if (!membership) {
           if (assignedTicket?.ticket) {
+            console.log('✅ Adding assigned ticket to receipt:', assignedTicket.ticket.name);
             // Add the specific ticket that was assigned during check-in
             receiptItems = [
               {
@@ -252,6 +257,7 @@ const ClientList = () => {
               ...receiptItems
             ];
           } else {
+            console.log('⚠️ No ticket assigned, using default day use ticket');
             // Fallback: fetch default day use ticket if no ticket was assigned
             const { data: ticketData } = await supabase
               .from('drinks')
