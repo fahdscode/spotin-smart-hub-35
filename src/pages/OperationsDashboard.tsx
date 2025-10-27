@@ -183,7 +183,7 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
@@ -193,6 +193,10 @@ const OperationsDashboard = () => {
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
             <TabsTrigger value="memberships">Memberships</TabsTrigger>
+            <TabsTrigger value="tickets">
+              <Ticket className="h-4 w-4 mr-2" />
+              Tickets
+            </TabsTrigger>
             <TabsTrigger value="users">User Roles</TabsTrigger>
           </TabsList>
 
@@ -348,6 +352,11 @@ const OperationsDashboard = () => {
           {/* Memberships Tab */}
           <TabsContent value="memberships" className="space-y-6">
             <MembershipManagement />
+          </TabsContent>
+
+          {/* Tickets Tab */}
+          <TabsContent value="tickets" className="space-y-6">
+            <DayUseTicketControls />
           </TabsContent>
 
           {/* User Roles Tab */}
