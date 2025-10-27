@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, User } from "lucide-react";
+import { Lock, User, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SpotinHeader from "@/components/SpotinHeader";
 import { toast } from "sonner";
@@ -62,6 +62,14 @@ const ManagementSettings = () => {
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6 max-w-4xl space-y-6">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Back</span>
+        </button>
+        
         <Card>
           <CardHeader>
             <CardTitle>Account Information</CardTitle>
