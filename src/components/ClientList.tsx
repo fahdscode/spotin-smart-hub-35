@@ -66,8 +66,6 @@ const ClientList = () => {
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
-  const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
-  const [checkoutSuccessClient, setCheckoutSuccessClient] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -387,11 +385,16 @@ const ClientList = () => {
       
       setShowCheckoutConfirmation(false);
       
-      // Show checkout success confirmation
-      setCheckoutSuccessClient({
-        name: client?.full_name || 'Client'
-      });
-      setShowCheckoutSuccess(true);
+      // Only show receipt if there's something to show
+      if (receiptData.items.length > 0 || receiptData.total > 0) {
+        setShowReceipt(true);
+      }
+      
+      const message = receiptData.total === 0 
+        ? `${client?.full_name} checked out successfully (no charges)`
+        : `${client?.full_name} checked out successfully`;
+      
+      toast.success(message);
     } catch (error) {
       console.error('Error checking out client:', error);
       toast.error("Failed to checkout client");
@@ -1435,42 +1438,6 @@ const ClientList = () => {
               Save Changes
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Checkout Success Confirmation Dialog */}
-      <Dialog open={showCheckoutSuccess} onOpenChange={setShowCheckoutSuccess}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Checkout Successful
-            </DialogTitle>
-            <DialogDescription>
-              Client has been checked out successfully
-            </DialogDescription>
-          </DialogHeader>
-          {checkoutSuccessClient && (
-            <div className="space-y-4">
-              <div className="p-6 bg-success/10 border border-success/30 rounded-lg text-center">
-                <XCircle className="h-12 w-12 mx-auto mb-3 text-success" />
-                <h3 className="text-lg font-semibold text-foreground">{checkoutSuccessClient.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">Has been checked out</p>
-              </div>
-              <Button 
-                onClick={() => {
-                  setShowCheckoutSuccess(false);
-                  // Show receipt if there are items
-                  if (receiptData && (receiptData.items.length > 0 || receiptData.total > 0)) {
-                    setShowReceipt(true);
-                  }
-                }} 
-                className="w-full"
-              >
-                Done
-              </Button>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 

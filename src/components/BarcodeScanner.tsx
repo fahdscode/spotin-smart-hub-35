@@ -44,8 +44,6 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
-  const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
-  const [checkoutClient, setCheckoutClient] = useState<{ name: string } | null>(null);
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -107,12 +105,13 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
           setShowTicketDialog(true);
           setBarcode('');
         } else {
-          // Show checkout confirmation
-          setCheckoutClient({
-            name: result.client!.full_name
+          const actionText = 'Checked Out';
+          
+          toast({
+            title: `Client ${actionText}`,
+            description: `${result.client!.full_name} has been checked out successfully.`,
+            variant: "default",
           });
-          setShowCheckoutConfirmation(true);
-          setBarcode('');
 
           const scanResult: ScanResult = {
             barcode: barcode.trim(),
@@ -123,6 +122,7 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
 
           setLatestScan(scanResult);
           setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
+          setBarcode('');
           
           // Emit event to refresh active sessions
           window.dispatchEvent(new CustomEvent('client-status-changed'));
@@ -232,35 +232,6 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
               onTicketAssigned={handleTicketAssigned}
               onCancel={handleSkipTicket}
             />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Checkout Successful
-            </DialogTitle>
-            <DialogDescription>
-              Client has been checked out successfully
-            </DialogDescription>
-          </DialogHeader>
-          {checkoutClient && (
-            <div className="space-y-4">
-              <div className="p-6 bg-success/10 border border-success/30 rounded-lg text-center">
-                <XCircle className="h-12 w-12 mx-auto mb-3 text-success" />
-                <h3 className="text-lg font-semibold text-foreground">{checkoutClient.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">Has been checked out</p>
-              </div>
-              <Button 
-                onClick={() => setShowCheckoutConfirmation(false)} 
-                className="w-full"
-              >
-                Done
-              </Button>
-            </div>
           )}
         </DialogContent>
       </Dialog>
