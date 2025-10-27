@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Package, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Package, AlertTriangle, Pencil, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface StockItem {
   id: string;
@@ -22,12 +25,23 @@ interface StockItem {
   is_active: boolean;
 }
 
+interface Vendor {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
 const StockManagement = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddingStock, setIsAddingStock] = useState(false);
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [openSupplierCombo, setOpenSupplierCombo] = useState(false);
+  const [openEditSupplierCombo, setOpenEditSupplierCombo] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [editSupplierSearch, setEditSupplierSearch] = useState("");
   const [newStock, setNewStock] = useState({
     name: "",
     unit: "kg",
@@ -67,7 +81,23 @@ const StockManagement = () => {
 
   useEffect(() => {
     fetchStockItems();
+    fetchVendors();
   }, []);
+
+  const fetchVendors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('id, name, is_active')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setVendors(data || []);
+    } catch (error: any) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
 
   const fetchStockItems = async () => {
     try {
@@ -345,12 +375,65 @@ const StockManagement = () => {
                   </div>
                   <div>
                     <Label htmlFor="supplier">Supplier (Optional)</Label>
-                    <Input
-                      id="supplier"
-                      value={newStock.supplier}
-                      onChange={(e) => setNewStock(prev => ({ ...prev, supplier: e.target.value }))}
-                      placeholder="Supplier name"
-                    />
+                    <Popover open={openSupplierCombo} onOpenChange={setOpenSupplierCombo}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openSupplierCombo}
+                          className="w-full justify-between"
+                        >
+                          {newStock.supplier || "Select vendor or type manually..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search vendor or type new..."
+                            value={supplierSearch}
+                            onValueChange={setSupplierSearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              <Button
+                                variant="ghost"
+                                className="w-full justify-start"
+                                onClick={() => {
+                                  setNewStock(prev => ({ ...prev, supplier: supplierSearch }));
+                                  setOpenSupplierCombo(false);
+                                  setSupplierSearch("");
+                                }}
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Use "{supplierSearch}"
+                              </Button>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {vendors.map((vendor) => (
+                                <CommandItem
+                                  key={vendor.id}
+                                  value={vendor.name}
+                                  onSelect={(currentValue) => {
+                                    setNewStock(prev => ({ ...prev, supplier: currentValue }));
+                                    setOpenSupplierCombo(false);
+                                    setSupplierSearch("");
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      newStock.supplier === vendor.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {vendor.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -442,11 +525,65 @@ const StockManagement = () => {
                           </div>
                           <div className="space-y-2">
                             <Label className="text-xs">Supplier</Label>
-                            <Input
-                              value={currentItem?.supplier || ''}
-                              onChange={(e) => setEditStock(prev => prev ? { ...prev, supplier: e.target.value } : null)}
-                              className="h-8"
-                            />
+                            <Popover open={openEditSupplierCombo} onOpenChange={setOpenEditSupplierCombo}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={openEditSupplierCombo}
+                                  className="w-full justify-between h-8 text-sm"
+                                >
+                                  {currentItem?.supplier || "Select vendor..."}
+                                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0">
+                                <Command>
+                                  <CommandInput
+                                    placeholder="Search vendor or type new..."
+                                    value={editSupplierSearch}
+                                    onValueChange={setEditSupplierSearch}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      <Button
+                                        variant="ghost"
+                                        className="w-full justify-start text-sm"
+                                        onClick={() => {
+                                          setEditStock(prev => prev ? { ...prev, supplier: editSupplierSearch } : null);
+                                          setOpenEditSupplierCombo(false);
+                                          setEditSupplierSearch("");
+                                        }}
+                                      >
+                                        <Plus className="mr-2 h-3 w-3" />
+                                        Use "{editSupplierSearch}"
+                                      </Button>
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      {vendors.map((vendor) => (
+                                        <CommandItem
+                                          key={vendor.id}
+                                          value={vendor.name}
+                                          onSelect={(currentValue) => {
+                                            setEditStock(prev => prev ? { ...prev, supplier: currentValue } : null);
+                                            setOpenEditSupplierCombo(false);
+                                            setEditSupplierSearch("");
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-3 w-3",
+                                              currentItem?.supplier === vendor.name ? "opacity-100" : "opacity-0"
+                                            )}
+                                          />
+                                          {vendor.name}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                           <div className="flex gap-2">
                             <Button onClick={handleUpdateStock} size="sm" className="flex-1">
