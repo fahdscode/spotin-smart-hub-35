@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocalizedFields } from '@/hooks/useLocalizedFields';
 import { formatCurrency } from '@/lib/currency';
 import { useAuth } from '@/contexts/AuthContext';
+import * as ClientSound from '@/lib/clientSounds';
 
 // Remove this interface as we'll use the one from AuthContext
 
@@ -452,6 +453,7 @@ export default function ClientDashboard() {
   };
   const addToCart = (drink: Drink, goToCart = false) => {
     if (!isCheckedIn) {
+      ClientSound.playError();
       toast({
         title: "Check-in Required",
         description: "Please check in at reception before placing orders.",
@@ -459,6 +461,8 @@ export default function ClientDashboard() {
       });
       return;
     }
+    
+    ClientSound.playItemAdded();
     const existingItem = cart.find(item => item.id === drink.id);
     if (existingItem) {
       setCart(cart.map(item => item.id === drink.id ? {
@@ -532,6 +536,7 @@ export default function ClientDashboard() {
   };
   const handlePlaceOrder = async () => {
     if (!isCheckedIn) {
+      ClientSound.playError();
       toast({
         title: "Check-in Required",
         description: "Please check in at reception before placing orders.",
@@ -540,6 +545,7 @@ export default function ClientDashboard() {
       return;
     }
     if (cart.length === 0) {
+      ClientSound.playError();
       toast({
         title: "Empty Cart",
         description: "Please add items to your cart before placing an order.",
@@ -548,6 +554,7 @@ export default function ClientDashboard() {
       return;
     }
     if (!tableNumber.trim()) {
+      ClientSound.playError();
       toast({
         title: "Table Number Required",
         description: "Please enter your table number before placing an order.",
@@ -556,6 +563,7 @@ export default function ClientDashboard() {
       return;
     }
     if (!clientData?.id) {
+      ClientSound.playError();
       toast({
         title: "Authentication Error",
         description: "Client information not found. Please try logging in again.",
@@ -596,6 +604,7 @@ export default function ClientDashboard() {
           last_table_number: tableNumber.trim()
         }).eq('id', clientData.id);
       }
+      ClientSound.playOrderPlaced();
       setCart([]);
       setTableNumber('');
       setOrderNotes({});
@@ -607,6 +616,7 @@ export default function ClientDashboard() {
       await fetchPendingOrders();
     } catch (error) {
       console.error('Error placing order:', error);
+      ClientSound.playError();
       toast({
         title: "Order Failed",
         description: error instanceof Error ? error.message : "Could not place order. Please try again.",
@@ -685,35 +695,43 @@ export default function ClientDashboard() {
           <Button variant={currentView === 'home' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
+          ClientSound.playTap();
           setCurrentView('home');
-        }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
+        }} className="flex flex-col items-center gap-1 h-auto py-2 transition-transform active:scale-95" type="button">
             <Coffee className="h-4 w-4" />
             <span className="text-xs">{t('clientDashboard.home')}</span>
           </Button>
           <Button variant={currentView === 'order' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
-          if (isCheckedIn) setCurrentView('order');
-        }} className="flex flex-col items-center gap-1 h-auto py-2 relative" disabled={!isCheckedIn} type="button">
+          if (isCheckedIn) {
+            ClientSound.playTap();
+            setCurrentView('order');
+          } else {
+            ClientSound.playError();
+          }
+        }} className="flex flex-col items-center gap-1 h-auto py-2 relative transition-transform active:scale-95" disabled={!isCheckedIn} type="button">
             <ShoppingCart className="h-4 w-4" />
             <span className="text-xs">{t('clientDashboard.order')}</span>
-            {cart.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+            {cart.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse">
                 {cart.length}
               </Badge>}
           </Button>
           <Button variant={currentView === 'events' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
+          ClientSound.playTap();
           setCurrentView('events');
-        }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
+        }} className="flex flex-col items-center gap-1 h-auto py-2 transition-transform active:scale-95" type="button">
             <Calendar className="h-4 w-4" />
             <span className="text-xs">{t('clientDashboard.events')}</span>
           </Button>
           <Button variant={currentView === 'profile' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
+          ClientSound.playTap();
           setCurrentView('profile');
-        }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
+        }} className="flex flex-col items-center gap-1 h-auto py-2 transition-transform active:scale-95" type="button">
             <User className="h-4 w-4" />
             <span className="text-xs">{t('clientDashboard.profile')}</span>
           </Button>
@@ -765,18 +783,18 @@ export default function ClientDashboard() {
         {/* Home View */}
         {currentView === 'home' && <div className="space-y-6">
             {/* Welcome Section */}
-            <Card className="bg-primary/10">
+            <Card className="bg-gradient-to-r from-primary/10 to-primary/5 animate-fade-in">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
+                  <Avatar className="h-16 w-16 transition-transform hover:scale-110 duration-300">
                     <AvatarFallback className="text-lg">
                       {clientData?.full_name?.[0]}{clientData?.full_name?.split(' ')[1]?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h1 className="text-2xl font-bold">{t('clientDashboard.welcomeBack')}, {clientData?.full_name?.split(' ')[0]}!</h1>
+                    <h1 className="text-2xl font-bold animate-fade-in">{t('clientDashboard.welcomeBack')}, {clientData?.full_name?.split(' ')[0]}! 👋</h1>
                     <p className="text-muted-foreground">{t('clientDashboard.quickOrder')}</p>
-                    <Badge variant="secondary" className="mt-2">
+                    <Badge variant="secondary" className="mt-2 animate-scale-in">
                       {membershipStatus}
                     </Badge>
                   </div>
@@ -870,13 +888,13 @@ export default function ClientDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {bestSellingProducts.map(drink => <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                       {bestSellingProducts.map(drink => <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
                           <div className="flex-1">
                             <p className="font-medium">{getProductName(drink)}</p>
                             <p className="text-sm text-muted-foreground">{getProductDescription(drink)}</p>
                             <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(drink.price)}</p>
                           </div>
-                          <Button size="sm" onClick={() => addToCart(drink, false)} disabled={!isCheckedIn}>
+                          <Button size="sm" onClick={() => addToCart(drink, false)} disabled={!isCheckedIn} className="transition-transform active:scale-95">
                             <Plus className="h-4 w-4 mr-1" />
                             {t('clientDashboard.addToCart')}
                           </Button>
