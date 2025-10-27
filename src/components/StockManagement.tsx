@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Package, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Package, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,6 +26,8 @@ const StockManagement = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddingStock, setIsAddingStock] = useState(false);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [newStock, setNewStock] = useState({
     name: "",
     unit: "kg",
@@ -34,6 +37,7 @@ const StockManagement = () => {
     supplier: "",
     category: "ingredient"
   });
+  const [editStock, setEditStock] = useState<StockItem | null>(null);
   const { toast } = useToast();
 
   const units = [
@@ -172,6 +176,81 @@ const StockManagement = () => {
     }
   };
 
+  const handleEditStock = (item: StockItem) => {
+    setEditingStockId(item.id);
+    setEditStock({ ...item });
+  };
+
+  const handleUpdateStock = async () => {
+    if (!editStock || !editStock.name) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter valid stock details",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('stock')
+        .update({
+          name: editStock.name,
+          unit: editStock.unit,
+          current_quantity: editStock.current_quantity,
+          min_quantity: editStock.min_quantity,
+          cost_per_unit: editStock.cost_per_unit,
+          supplier: editStock.supplier,
+          category: editStock.category
+        })
+        .eq('id', editStock.id);
+
+      if (error) throw error;
+
+      setStockItems(stockItems.map(item => 
+        item.id === editStock.id ? editStock : item
+      ));
+      setEditingStockId(null);
+      setEditStock(null);
+
+      toast({
+        title: "Stock Updated",
+        description: `${editStock.name} has been updated successfully`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating stock",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteStock = async (stockId: string) => {
+    try {
+      const { error } = await supabase
+        .from('stock')
+        .update({ is_active: false })
+        .eq('id', stockId);
+
+      if (error) throw error;
+
+      setStockItems(stockItems.filter(item => item.id !== stockId));
+      setDeleteConfirmId(null);
+
+      toast({
+        title: "Stock Deleted",
+        description: "Stock item has been removed",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting stock",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -287,53 +366,165 @@ const StockManagement = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stockItems.map((item) => (
-              <Card key={item.id} className={`${item.current_quantity <= item.min_quantity ? 'border-destructive/50' : ''}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{item.name}</CardTitle>
-                    {item.current_quantity <= item.min_quantity && (
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+            {stockItems.map((item) => {
+              const isEditing = editingStockId === item.id;
+              const currentItem = isEditing ? editStock : item;
+
+              return (
+                <Card key={item.id} className={`${item.current_quantity <= item.min_quantity ? 'border-destructive/50' : ''}`}>
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Current:</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.current_quantity}
-                        onChange={(e) => updateStockQuantity(item.id, parseFloat(e.target.value) || 0)}
-                        className="w-20 h-8"
-                      />
-                      <span className="text-sm">{item.unit}</span>
+                      {isEditing ? (
+                        <Input
+                          value={currentItem?.name || ''}
+                          onChange={(e) => setEditStock(prev => prev ? { ...prev, name: e.target.value } : null)}
+                          className="h-8 font-semibold"
+                        />
+                      ) : (
+                        <CardTitle className="text-base">{item.name}</CardTitle>
+                      )}
+                      {!isEditing && item.current_quantity <= item.min_quantity && (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Min:</span>
-                      <span className="text-sm">{item.min_quantity} {item.unit}</span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {isEditing ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Unit</Label>
+                            <Select
+                              value={currentItem?.unit || 'kg'}
+                              onValueChange={(value) => setEditStock(prev => prev ? { ...prev, unit: value } : null)}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {units.map((unit) => (
+                                  <SelectItem key={unit.value} value={unit.value}>
+                                    {unit.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Current Quantity</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={currentItem?.current_quantity || 0}
+                              onChange={(e) => setEditStock(prev => prev ? { ...prev, current_quantity: parseFloat(e.target.value) || 0 } : null)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Min Quantity</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={currentItem?.min_quantity || 0}
+                              onChange={(e) => setEditStock(prev => prev ? { ...prev, min_quantity: parseFloat(e.target.value) || 0 } : null)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Cost per Unit (EGP)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={currentItem?.cost_per_unit || 0}
+                              onChange={(e) => setEditStock(prev => prev ? { ...prev, cost_per_unit: parseFloat(e.target.value) || 0 } : null)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Supplier</Label>
+                            <Input
+                              value={currentItem?.supplier || ''}
+                              onChange={(e) => setEditStock(prev => prev ? { ...prev, supplier: e.target.value } : null)}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button onClick={handleUpdateStock} size="sm" className="flex-1">
+                              Save
+                            </Button>
+                            <Button 
+                              onClick={() => {
+                                setEditingStockId(null);
+                                setEditStock(null);
+                              }} 
+                              size="sm" 
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Current:</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.current_quantity}
+                              onChange={(e) => updateStockQuantity(item.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 h-8"
+                            />
+                            <span className="text-sm">{item.unit}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Min:</span>
+                            <span className="text-sm">{item.min_quantity} {item.unit}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Cost:</span>
+                            <span className="text-sm">EGP {item.cost_per_unit}/{item.unit}</span>
+                          </div>
+                          {item.supplier && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Supplier:</span>
+                              <span className="text-sm">{item.supplier}</span>
+                            </div>
+                          )}
+                          <Badge 
+                            variant={item.current_quantity <= item.min_quantity ? "destructive" : "default"}
+                            className="w-full justify-center"
+                          >
+                            {item.current_quantity <= item.min_quantity ? "Low Stock" : "In Stock"}
+                          </Badge>
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              onClick={() => handleEditStock(item)} 
+                              size="sm" 
+                              variant="outline"
+                              className="flex-1 gap-1"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Edit
+                            </Button>
+                            <Button 
+                              onClick={() => setDeleteConfirmId(item.id)} 
+                              size="sm" 
+                              variant="outline"
+                              className="flex-1 gap-1 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Delete
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Cost:</span>
-                      <span className="text-sm">EGP {item.cost_per_unit}/{item.unit}</span>
-                    </div>
-                    {item.supplier && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Supplier:</span>
-                        <span className="text-sm">{item.supplier}</span>
-                      </div>
-                    )}
-                    <Badge 
-                      variant={item.current_quantity <= item.min_quantity ? "destructive" : "default"}
-                      className="w-full justify-center"
-                    >
-                      {item.current_quantity <= item.min_quantity ? "Low Stock" : "In Stock"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {stockItems.length === 0 && (
@@ -344,6 +535,26 @@ const StockManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Stock Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this stock item? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId && handleDeleteStock(deleteConfirmId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
