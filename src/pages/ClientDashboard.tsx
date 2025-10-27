@@ -740,9 +740,22 @@ export default function ClientDashboard() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleLogout = () => {
-    // Logout is handled by the LogoutButton component
-    navigate('/client-login');
+  const handleLogout = async () => {
+    try {
+      await clearClientAuth();
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully",
+      });
+      navigate('/client-login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out properly",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
