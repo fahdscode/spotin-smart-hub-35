@@ -26,6 +26,7 @@ import RolesManagement from "@/components/RolesManagement";
 import CancelledReceipts from "@/components/CancelledReceipts";
 import PromotionsManagement from "@/components/PromotionsManagement";
 import TopProductsSales from "@/components/TopProductsSales";
+import { ProductPaymentsReport } from "@/components/ProductPaymentsReport";
 import { useNavigate } from "react-router-dom";
 import { useStockData } from "@/hooks/useStockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -199,8 +200,9 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-12">
+          <TabsList className="grid w-full grid-cols-13">
             <TabsTrigger value="analytics">Top Products</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
@@ -228,6 +230,11 @@ const OperationsDashboard = () => {
           {/* Top Products Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <TopProductsSales />
+          </TabsContent>
+
+          {/* Product Payments Tab */}
+          <TabsContent value="payments" className="space-y-6">
+            <ProductPaymentsReport />
           </TabsContent>
 
           {/* Stock Management Tab */}

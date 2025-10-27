@@ -4,6 +4,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, Re
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProductPaymentsReport } from '@/components/ProductPaymentsReport';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -764,7 +765,7 @@ const FinanceDashboard = () => {
 
         {/* Reports Tabs */}
         <Tabs defaultValue="pl" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-11">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-12">
             <TabsTrigger value="pl">P&L</TabsTrigger>
             <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
             <TabsTrigger value="balance">Balance</TabsTrigger>
@@ -775,6 +776,7 @@ const FinanceDashboard = () => {
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="payroll">
               <Users className="h-4 w-4 mr-2" />
               Payroll
@@ -1417,6 +1419,11 @@ const FinanceDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Product Payments Tab */}
+          <TabsContent value="payments">
+            <ProductPaymentsReport />
           </TabsContent>
 
           {/* Payroll Tab */}
