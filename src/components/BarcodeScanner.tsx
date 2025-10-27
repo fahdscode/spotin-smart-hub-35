@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Scan, Clock, User, CheckCircle, XCircle, Loader2, Ticket } from 'lucide-react';
@@ -123,6 +123,9 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
           setLatestScan(scanResult);
           setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
           setBarcode('');
+          
+          // Emit event to refresh active sessions
+          window.dispatchEvent(new CustomEvent('client-status-changed'));
         }
         
         setDebugInfo(result.debug);
@@ -171,6 +174,9 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
 
       setLatestScan(scanResult);
       setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
+      
+      // Emit event to refresh active sessions
+      window.dispatchEvent(new CustomEvent('client-status-changed'));
     }
     
     setPendingCheckInClient(null);
@@ -194,6 +200,9 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
 
       setLatestScan(scanResult);
       setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
+      
+      // Emit event to refresh active sessions
+      window.dispatchEvent(new CustomEvent('client-status-changed'));
     }
     
     setPendingCheckInClient(null);
@@ -212,6 +221,9 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
               <Ticket className="h-5 w-5" />
               Assign Day Use Ticket
             </DialogTitle>
+            <DialogDescription>
+              Select a ticket option for the client or skip to check in without a ticket
+            </DialogDescription>
           </DialogHeader>
           {pendingCheckInClient && (
             <TicketSelector

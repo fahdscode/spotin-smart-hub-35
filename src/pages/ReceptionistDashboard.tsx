@@ -174,6 +174,14 @@ const ReceptionistDashboard = () => {
 
     initializeDashboard();
     
+    // Listen for client status changes from BarcodeScanner
+    const handleClientStatusChange = () => {
+      console.log('🔄 Client status changed, refreshing sessions...');
+      fetchActiveSessions();
+    };
+    
+    window.addEventListener('client-status-changed', handleClientStatusChange);
+    
     // Set up real-time subscription for client check-ins/outs
     const channel = supabase
       .channel('clients-changes')
@@ -201,6 +209,7 @@ const ReceptionistDashboard = () => {
     }, 30000);
 
     return () => {
+      window.removeEventListener('client-status-changed', handleClientStatusChange);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
