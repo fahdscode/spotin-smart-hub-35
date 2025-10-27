@@ -78,7 +78,10 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
     );
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+      // Case-insensitive category matching
+      filtered = filtered.filter(product => 
+        product.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
 
     setFilteredProducts(filtered);
