@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, Users, MapPin, Search, Plus, Trash2, Receipt as ReceiptIcon, Percent, X } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, Search, Plus, Trash2, Receipt as ReceiptIcon, Percent, X, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
@@ -64,6 +64,8 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const [repetitionType, setRepetitionType] = useState<"none" | "daily" | "weekly" | "monthly">("none");
+  const [repetitionCount, setRepetitionCount] = useState<number>(1);
 
   useEffect(() => {
     fetchRooms();
@@ -130,32 +132,72 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
       return;
     }
 
-    // Check if this date already exists
-    const existingReservation = reservations.find(
-      r => format(r.date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
-    );
+    const amount = duration * selectedRoomData.hourly_rate;
+    const newReservations: Reservation[] = [];
 
-    if (existingReservation) {
-      toast.error("Reservation for this date already added");
+    // Generate reservations based on repetition
+    if (repetitionType === "none") {
+      // Check if this date already exists
+      const existingReservation = reservations.find(
+        r => format(r.date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
+      );
+
+      if (existingReservation) {
+        toast.error("Reservation for this date already added");
+        return;
+      }
+
+      newReservations.push({
+        id: Math.random().toString(36).substr(2, 9),
+        date: currentDate,
+        startTime: currentStartTime,
+        endTime: currentEndTime,
+        duration,
+        amount
+      });
+    } else {
+      // Generate multiple reservations based on repetition pattern
+      for (let i = 0; i < repetitionCount; i++) {
+        let reservationDate: Date;
+        
+        if (repetitionType === "daily") {
+          reservationDate = addDays(currentDate, i);
+        } else if (repetitionType === "weekly") {
+          reservationDate = addWeeks(currentDate, i);
+        } else { // monthly
+          reservationDate = addMonths(currentDate, i);
+        }
+
+        // Check if this date already exists
+        const existingReservation = reservations.find(
+          r => format(r.date, 'yyyy-MM-dd') === format(reservationDate, 'yyyy-MM-dd')
+        );
+
+        if (!existingReservation) {
+          newReservations.push({
+            id: Math.random().toString(36).substr(2, 9),
+            date: reservationDate,
+            startTime: currentStartTime,
+            endTime: currentEndTime,
+            duration,
+            amount
+          });
+        }
+      }
+    }
+
+    if (newReservations.length === 0) {
+      toast.error("No new reservations to add (dates may already exist)");
       return;
     }
 
-    const amount = duration * selectedRoomData.hourly_rate;
-
-    const newReservation: Reservation = {
-      id: Math.random().toString(36).substr(2, 9),
-      date: currentDate,
-      startTime: currentStartTime,
-      endTime: currentEndTime,
-      duration,
-      amount
-    };
-
-    setReservations([...reservations, newReservation]);
+    setReservations([...reservations, ...newReservations]);
     setCurrentDate(undefined);
     setCurrentStartTime("");
     setCurrentEndTime("");
-    toast.success("Reservation added");
+    setRepetitionType("none");
+    setRepetitionCount(1);
+    toast.success(`${newReservations.length} reservation(s) added`);
   };
 
   const removeReservation = (id: string) => {
@@ -428,6 +470,47 @@ const RoomBooking = ({ onBookingComplete }: RoomBookingProps) => {
                 <CardDescription>Add multiple dates and times for the booking</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Repetition Options */}
+                <div className="p-4 bg-accent/50 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-semibold">Repetition Options</Label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Repeat</Label>
+                      <Select value={repetitionType} onValueChange={(value: any) => setRepetitionType(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="No repetition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Repetition</SelectItem>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {repetitionType !== "none" && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Number of Occurrences</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="52"
+                          value={repetitionCount}
+                          onChange={(e) => setRepetitionCount(Math.max(1, Math.min(52, parseInt(e.target.value) || 1)))}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {repetitionType !== "none" && (
+                    <p className="text-xs text-muted-foreground">
+                      Will create {repetitionCount} reservation{repetitionCount > 1 ? 's' : ''} {repetitionType === "daily" ? "daily" : repetitionType === "weekly" ? "weekly" : "monthly"}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Date</Label>
