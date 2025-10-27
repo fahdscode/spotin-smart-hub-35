@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import SpotinHeader from '@/components/SpotinHeader';
@@ -25,6 +26,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  note?: string;
 }
 
 interface Drink {
@@ -57,6 +59,8 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [tableNumber, setTableNumber] = useState<string>('');
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
   
   // Order data
   const [drinks, setDrinks] = useState<Drink[]>([]);
@@ -420,7 +424,8 @@ export default function ClientDashboard() {
         id: drink.id,
         name: drink.name,
         price: drink.price,
-        quantity: 1
+        quantity: 1,
+        note: orderNotes[drink.id] || ''
       }]);
     }
     
@@ -432,6 +437,14 @@ export default function ClientDashboard() {
     if (goToCart) {
       setCurrentView('order');
     }
+  };
+
+  const updateItemNote = (itemId: string, note: string) => {
+    setCart(cart.map(item => 
+      item.id === itemId 
+        ? { ...item, note }
+        : item
+    ));
   };
 
   const reorderLastOrder = (order: LastOrder) => {
@@ -502,6 +515,15 @@ export default function ClientDashboard() {
       return;
     }
 
+    if (!tableNumber.trim()) {
+      toast({
+        title: "Table Number Required",
+        description: "Please enter your table number before placing an order.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!clientData?.id) {
       toast({
         title: "Authentication Error",
@@ -531,7 +553,9 @@ export default function ClientDashboard() {
           item_name: item.name,
           quantity: item.quantity,
           price: item.price,
-          status: 'pending'
+          status: 'pending',
+          table_number: tableNumber.trim(),
+          notes: item.note?.trim() || null
         })
       );
 
@@ -544,6 +568,8 @@ export default function ClientDashboard() {
       }
 
       setCart([]);
+      setTableNumber('');
+      setOrderNotes({});
       setCurrentView('home');
       
       toast({
@@ -890,30 +916,62 @@ export default function ClientDashboard() {
                   <CardTitle>Your Order ({cart.length} items)</CardTitle>
                   <CardDescription>Total: {formatCurrency(getCartTotal())}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 mb-4">
+                <CardContent className="space-y-4">
+                  {/* Table Number Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tableNumber" className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Table Number *
+                    </Label>
+                    <Input
+                      id="tableNumber"
+                      type="text"
+                      placeholder="Enter your table number"
+                      value={tableNumber}
+                      onChange={(e) => setTableNumber(e.target.value)}
+                      className="text-center text-lg font-semibold"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-3">
                     {cart.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                      <div key={item.id} className="space-y-2 p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                        <div className="space-y-1">
+                          <Label htmlFor={`note-${item.id}`} className="text-xs text-muted-foreground">
+                            Special instructions (optional)
+                          </Label>
+                          <Input
+                            id={`note-${item.id}`}
+                            type="text"
+                            placeholder="e.g., No sugar, extra hot..."
+                            value={item.note || ''}
+                            onChange={(e) => updateItemNote(item.id, e.target.value)}
+                            className="text-sm"
+                          />
                         </div>
                       </div>
                     ))}

@@ -1158,27 +1158,33 @@ export type Database = {
           created_at: string
           id: string
           item_name: string
+          notes: string | null
           price: number
           quantity: number
           status: string
+          table_number: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           item_name: string
+          notes?: string | null
           price: number
           quantity?: number
           status?: string
+          table_number?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           item_name?: string
+          notes?: string | null
           price?: number
           quantity?: number
           status?: string
+          table_number?: string | null
           user_id?: string
         }
         Relationships: []
