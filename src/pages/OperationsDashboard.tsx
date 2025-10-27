@@ -7,7 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import PendingOrders from "@/components/PendingOrders";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
@@ -37,6 +39,7 @@ const OperationsDashboard = () => {
   const [restockAmount, setRestockAmount] = useState<{
     [key: string]: number;
   }>({});
+  const [showPendingOrders, setShowPendingOrders] = useState(false);
   const expenses = [{
     id: 1,
     category: "Rent",
@@ -299,7 +302,7 @@ const OperationsDashboard = () => {
                       <Download className="h-4 w-4 mr-2" />
                       Generate Stock Report
                     </Button>
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full" onClick={() => setShowPendingOrders(true)}>
                       <Truck className="h-4 w-4 mr-2" />
                       View Pending Orders
                     </Button>
@@ -365,6 +368,16 @@ const OperationsDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Pending Orders Dialog */}
+      <Dialog open={showPendingOrders} onOpenChange={setShowPendingOrders}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pending Orders</DialogTitle>
+          </DialogHeader>
+          <PendingOrders />
+        </DialogContent>
+      </Dialog>
     </div>;
 };
 export default OperationsDashboard;
