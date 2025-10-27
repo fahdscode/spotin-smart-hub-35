@@ -44,18 +44,11 @@ const ReceptionistDashboard = () => {
 
   const quickActions = [
     { 
-      title: "Check-IN", 
-      description: "Scan QR code or search client", 
+      title: "Check-IN/OUT", 
+      description: "Scan to check in or out", 
       icon: QrCode, 
       action: "checkin",
       variant: "success" as const
-    },
-    { 
-      title: "Check-OUT", 
-      description: "End session & free up seat", 
-      icon: XCircle, 
-      action: "checkout",
-      variant: "warning" as const
     },
     { 
       title: "Room Booking", 
@@ -341,8 +334,8 @@ const ReceptionistDashboard = () => {
                             <div className="flex flex-col items-center text-center gap-3">
                               <div className={`p-3 rounded-lg ${
                                 action.variant === "success" ? "bg-success/10 text-success" :
-                                action.variant === "warning" ? "bg-warning/10 text-warning" :
                                 action.variant === "info" ? "bg-info/10 text-info" :
+                                action.variant === "secondary" ? "bg-secondary/10 text-secondary" :
                                 "bg-primary/10 text-primary"
                               }`}>
                                 <action.icon className="h-6 w-6" />
@@ -358,7 +351,10 @@ const ReceptionistDashboard = () => {
                       {action.action === "checkin" && (
                         <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
                           <DialogHeader>
-                            <DialogTitle>Check-In Scanner</DialogTitle>
+                            <DialogTitle>Check-IN/OUT Scanner</DialogTitle>
+                            <DialogDescription>
+                              Scan a client's barcode to automatically check them in or out
+                            </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-6">
                             <div className="bg-muted/50 p-3 rounded-md text-sm">
@@ -367,14 +363,6 @@ const ReceptionistDashboard = () => {
                             <CheckInTestHelper />
                             <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                           </div>
-                        </DialogContent>
-                      )}
-                      {action.action === "checkout" && (
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Check-Out Scanner</DialogTitle>
-                          </DialogHeader>
-                          <BarcodeScanner scannedByUserId={currentUserId || undefined} />
                         </DialogContent>
                       )}
                       {action.action === "booking" && (
