@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket, CreditCard, Banknote, Building2, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ const ClientList = () => {
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
 
   useEffect(() => {
     fetchClients();
@@ -310,6 +311,9 @@ const ClientList = () => {
           } : null
         });
 
+        // Reset payment method selection for new checkout
+        setSelectedPaymentMethod("");
+        
         // Show confirmation dialog
         setShowCheckoutConfirmation(true);
         return;
@@ -331,6 +335,11 @@ const ClientList = () => {
   const confirmCheckout = async () => {
     if (!pendingCheckoutClient || !receiptData) return;
 
+    if (!selectedPaymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
     try {
       // Only create receipt if there are items or total > 0
       if (receiptData.items.length > 0 || receiptData.total > 0) {
@@ -341,7 +350,7 @@ const ClientList = () => {
             user_id: receiptData.userId,
             total_amount: receiptData.total,
             amount: receiptData.total,
-            payment_method: receiptData.paymentMethod,
+            payment_method: selectedPaymentMethod,
             transaction_type: 'checkout',
             line_items: receiptData.items,
             status: 'completed'
@@ -1166,6 +1175,52 @@ const ClientList = () => {
                 </div>
               </div>
 
+              {/* Payment Method Selection */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <Label className="text-base font-semibold">Payment Method *</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "visa" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("visa")}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    <span>Visa</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "cash" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("cash")}
+                  >
+                    <Banknote className="h-5 w-5" />
+                    <span>Cash</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "bank_transfer" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("bank_transfer")}
+                  >
+                    <Building2 className="h-5 w-5" />
+                    <span>Bank Transfer</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "hot_desk" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("hot_desk")}
+                  >
+                    <Laptop className="h-5 w-5" />
+                    <span>Hot Desk</span>
+                  </Button>
+                </div>
+                {!selectedPaymentMethod && (
+                  <p className="text-sm text-destructive">Please select a payment method</p>
+                )}
+              </div>
+
               <div className="border rounded-lg p-4 bg-muted/50">
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -1199,7 +1254,10 @@ const ClientList = () => {
               <Ban className="h-4 w-4 mr-2" />
               Cancel Receipt
             </Button>
-            <Button onClick={confirmCheckout}>
+            <Button 
+              onClick={confirmCheckout}
+              disabled={!selectedPaymentMethod}
+            >
               Confirm Checkout
             </Button>
           </DialogFooter>
