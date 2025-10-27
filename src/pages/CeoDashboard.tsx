@@ -160,16 +160,25 @@ const CeoDashboard = () => {
   };
   const fetchBusinessMetrics = async () => {
     try {
-      const [ordersData, clientsData, eventsData, checkInsData] = await Promise.all([supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), supabase.from('clients').select('id, active').eq('is_active', true), supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), supabase.from('check_ins').select('id, status').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'checked_in')]);
+      const [ordersData, clientsData, eventsData, currentCheckInsData] = await Promise.all([
+        supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), 
+        supabase.from('clients').select('id, active').eq('is_active', true), 
+        supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), 
+        supabase.from('check_ins').select('id').eq('status', 'checked_in')
+      ]);
+
+      // Count currently checked-in clients (active right now)
+      const activeMembers = currentCheckInsData.data?.length || 0;
+      const totalClients = clientsData.data?.length || 1;
+      const occupancyRate = activeMembers / totalClients * 100;
+
       if (ordersData.data && ordersData.data.length > 0) {
         const totalRevenue = ordersData.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const avgOrder = totalRevenue / ordersData.data.length;
         const uniqueCustomers = new Set(ordersData.data.map(item => item.user_id)).size;
         const totalOrders = ordersData.data.length;
         const repeatRate = totalOrders > uniqueCustomers ? (totalOrders - uniqueCustomers) / totalOrders * 100 : 0;
-        const activeMembers = clientsData.data?.filter(c => c.active).length || 0;
-        const totalClients = clientsData.data?.length || 1;
-        const occupancyRate = activeMembers / totalClients * 100;
+        
         setBusinessMetrics({
           avgOrderValue: Number(avgOrder.toFixed(1)),
           totalOrders,
@@ -179,9 +188,17 @@ const CeoDashboard = () => {
           occupancyRate: Number(occupancyRate.toFixed(0)),
           eventsThisMonth: eventsData.data?.length || 0
         });
+      } else {
+        // If no orders, still update active members count
+        setBusinessMetrics(prev => ({
+          ...prev,
+          activeMembers,
+          occupancyRate: Number(occupancyRate.toFixed(0)),
+          eventsThisMonth: eventsData.data?.length || 0
+        }));
       }
     } catch (error) {
-      // Error already logged
+      console.error('Error fetching business metrics:', error);
     }
   };
   const fetchPeakHoursData = async () => {
