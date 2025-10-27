@@ -30,6 +30,7 @@ interface AuthContextType {
   setClientAuth: (client: ClientData) => void;
   clearClientAuth: () => void;
   refreshAuth: () => Promise<void>;
+  initializeManagementAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -251,7 +252,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('clientData');
     setClientData(null);
     setUserRole(null);
-    setIsLoading(false);
+    setIsLoading(true); // Set loading to true to trigger re-initialization
+  };
+
+  const initializeManagementAuth = async () => {
+    console.log('🔐 Forcing management auth initialization');
+    
+    // Ensure client data is cleared
+    localStorage.removeItem('clientData');
+    setClientData(null);
+    setIsLoading(true);
+    
+    // Set up Supabase auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('🔐 Management auth state changed:', event);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserRole(session.user.id);
+          }, 0);
+        } else {
+          setUserRole(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    if (session?.user) {
+      await fetchUserRole(session.user.id);
+    } else {
+      setIsLoading(false);
+    }
+
+    // Don't return the subscription - just clean up later
   };
 
   const refreshAuth = async () => {
@@ -285,7 +327,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       setClientAuth,
       clearClientAuth,
-      refreshAuth
+      refreshAuth,
+      initializeManagementAuth
     }}>
       {children}
     </AuthContext.Provider>

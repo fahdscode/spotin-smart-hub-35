@@ -19,7 +19,7 @@ const ManagementLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { clearClientAuth } = useAuth();
+  const { clearClientAuth, initializeManagementAuth } = useAuth();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -28,11 +28,12 @@ const ManagementLogin = () => {
       // Validate input
       loginSchema.parse({ email, password });
 
-      // CRITICAL: Clear any client session BEFORE Supabase login
-      console.log('🧹 Clearing client session before management login');
+      // CRITICAL: Clear client session and initialize management auth
+      console.log('🧹 Clearing client session and initializing management auth');
       clearClientAuth();
-      localStorage.removeItem('clientData');
-
+      
+      // Force management auth initialization
+      await initializeManagementAuth();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
