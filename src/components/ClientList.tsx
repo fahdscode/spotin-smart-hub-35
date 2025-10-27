@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2 } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ interface Client {
 
 const ClientList = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [drinks, setDrinks] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +58,7 @@ const ClientList = () => {
 
   useEffect(() => {
     fetchClients();
+    fetchDrinks();
   }, []);
 
   const fetchClients = async () => {
@@ -76,6 +78,46 @@ const ClientList = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchDrinks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('drinks')
+        .select('*')
+        .eq('is_available', true)
+        .neq('category', 'day_use_ticket')
+        .order('name');
+
+      if (error) throw error;
+      setDrinks(data || []);
+    } catch (error) {
+      console.error('Error fetching drinks:', error);
+    }
+  };
+
+  const addItemToCheckout = (drinkId: string) => {
+    const drink = drinks.find(d => d.id === drinkId);
+    if (!drink || !receiptData) return;
+
+    const newItem = {
+      name: drink.name,
+      quantity: 1,
+      price: drink.price,
+      total: drink.price
+    };
+
+    const updatedItems = [...receiptData.items, newItem];
+    const newSubtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    
+    setReceiptData({
+      ...receiptData,
+      items: updatedItems,
+      subtotal: newSubtotal,
+      total: newSubtotal - receiptData.discount
+    });
+
+    toast.success(`Added ${drink.name} to checkout`);
   };
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
@@ -764,7 +806,7 @@ const ClientList = () => {
 
       {/* Checkout Confirmation Dialog */}
       <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Checkout Confirmation</DialogTitle>
             <DialogDescription>
@@ -800,23 +842,53 @@ const ClientList = () => {
                 )}
               </div>
 
+              {/* Add Product Section */}
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Items to Checkout
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {drinks.map((drink) => (
+                    <Button
+                      key={drink.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addItemToCheckout(drink.id)}
+                      className="justify-start text-left"
+                    >
+                      <div className="truncate">
+                        <p className="font-medium text-xs truncate">{drink.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-muted p-3">
                   <h3 className="font-semibold">Items</h3>
                 </div>
                 <div className="divide-y">
-                  {receiptData.items.map((item: any, index: number) => (
-                    <div key={index} className="p-3 flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(item.total)}</p>
-                        <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
-                      </div>
+                  {receiptData.items.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No items yet. Add items above to include them in the checkout.
                     </div>
-                  ))}
+                  ) : (
+                    receiptData.items.map((item: any, index: number) => (
+                      <div key={index} className="p-3 flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{formatCurrency(item.total)}</p>
+                          <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
