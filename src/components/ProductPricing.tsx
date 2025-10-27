@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image, Minus, Camera, FolderOpen } from "lucide-react";
+import { Plus, Edit, Save, X, DollarSign, Package, Trash2, Upload, Image, Minus, Camera, FolderOpen, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,7 @@ interface ProductIngredient {
 const ProductPricing = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [ingredientSearch, setIngredientSearch] = useState<Record<string, string>>({});
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -736,98 +737,80 @@ const ProductPricing = () => {
                             </div>
                              <div>
                                <Label>Ingredients</Label>
-                               <Select
-                                 value=""
-                                 onValueChange={(value) => {
-                                   // Check if ingredient exists in stock
-                                   const stockIngredient = stockItems.find(item => 
-                                     item.name.toLowerCase() === value.replace("-", " ").toLowerCase()
-                                   );
-                                   
-                                   let unit = "ml"; // default unit
-                                   if (stockIngredient) {
-                                     unit = stockIngredient.unit;
-                                   } else {
-                                     // Define default units for common ingredients
-                                     const ingredientUnits: Record<string, string> = {
-                                       "coffee-beans": "kg",
-                                       "milk": "liter", 
-                                       "sugar": "kg",
-                                       "flour": "kg",
-                                       "butter": "kg",
-                                       "eggs": "piece",
-                                       "chocolate": "kg",
-                                       "vanilla": "ml",
-                                       "cinnamon": "kg",
-                                       "honey": "kg",
-                                       "tea-leaves": "kg",
-                                       "cream": "liter"
-                                     };
-                                     unit = ingredientUnits[value] || "ml";
+                               <div className="space-y-2">
+                                 <div className="relative">
+                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                   <Input
+                                     placeholder="Search stock ingredients..."
+                                     value={ingredientSearch[product.id] || ""}
+                                     onChange={(e) => {
+                                       setIngredientSearch(prev => ({
+                                         ...prev,
+                                         [product.id]: e.target.value
+                                       }));
+                                     }}
+                                     className="pl-9"
+                                   />
+                                 </div>
+                                 
+                                 {ingredientSearch[product.id] && ingredientSearch[product.id].trim() && (
+                                   <div className="max-h-48 overflow-y-auto border rounded-md">
+                                     {stockItems
+                                       .filter(item => 
+                                         item.name.toLowerCase().includes(ingredientSearch[product.id].toLowerCase())
+                                       )
+                                       .map(stockItem => (
+                                         <button
+                                           key={stockItem.id}
+                                           type="button"
+                                           className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors flex items-center justify-between"
+                                           onClick={() => {
+                                             const amount = prompt(`How much ${stockItem.name} is needed for this product? (in ${stockItem.unit})`);
+                                             if (amount && amount.trim()) {
+                                               const currentIngredients = product.ingredients || [];
+                                               const ingredientWithAmount = `${stockItem.name}:${amount.trim()} ${stockItem.unit}`;
+                                               
+                                               const existingIndex = currentIngredients.findIndex(ing => 
+                                                 ing.toLowerCase().startsWith(stockItem.name.toLowerCase() + ":")
+                                               );
+                                               
+                                               if (existingIndex >= 0) {
+                                                 const newIngredients = [...currentIngredients];
+                                                 newIngredients[existingIndex] = ingredientWithAmount;
+                                                 setProducts(products.map(p => 
+                                                   p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                                 ));
+                                               } else {
+                                                 const newIngredients = [...currentIngredients, ingredientWithAmount];
+                                                 setProducts(products.map(p => 
+                                                   p.id === product.id ? { ...p, ingredients: newIngredients } : p
+                                                 ));
+                                               }
+                                               
+                                               setIngredientSearch(prev => ({
+                                                 ...prev,
+                                                 [product.id]: ""
+                                               }));
+                                             }
+                                           }}
+                                         >
+                                           <span className="font-medium">{stockItem.name}</span>
+                                           <Badge variant="outline" className="text-xs">
+                                             {stockItem.current_quantity} {stockItem.unit}
+                                           </Badge>
+                                         </button>
+                                       ))}
                                      
-                                     // Auto-add to stock items array (frontend only)
-                                     const newStockItem = {
-                                       id: `temp-${Date.now()}`,
-                                       name: value.replace("-", " "),
-                                       unit: unit,
-                                       current_quantity: 0,
-                                       min_quantity: 0,
-                                       cost_per_unit: 0,
-                                       supplier: "",
-                                       category: "ingredient",
-                                       is_active: true
-                                     };
-                                     setStockItems(prev => [...prev, newStockItem]);
-                                     
-                                     toast({
-                                       title: "Ingredient Added to Stock",
-                                       description: `${value.replace("-", " ")} has been added to stock management`,
-                                     });
-                                   }
-                                   
-                                   // Ask for amount with the correct unit
-                                   const amount = prompt(`How much ${value.replace("-", " ")} is needed for this product? (in ${unit})`);
-                                   if (amount && amount.trim()) {
-                                     const currentIngredients = product.ingredients || [];
-                                     const ingredientWithAmount = `${value}:${amount.trim()} ${unit}`;
-                                     
-                                     // Check if this ingredient type already exists
-                                     const existingIndex = currentIngredients.findIndex(ing => ing.startsWith(value + ":"));
-                                     if (existingIndex >= 0) {
-                                       // Update existing ingredient
-                                       const newIngredients = [...currentIngredients];
-                                       newIngredients[existingIndex] = ingredientWithAmount;
-                                       setProducts(products.map(p => 
-                                         p.id === product.id ? { ...p, ingredients: newIngredients } : p
-                                       ));
-                                     } else {
-                                       // Add new ingredient
-                                       const newIngredients = [...currentIngredients, ingredientWithAmount];
-                                       setProducts(products.map(p => 
-                                         p.id === product.id ? { ...p, ingredients: newIngredients } : p
-                                       ));
-                                     }
-                                   }
-                                 }}
-                               >
-                                 <SelectTrigger>
-                                   <SelectValue placeholder="Add ingredient" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                   <SelectItem value="coffee-beans">Coffee Beans</SelectItem>
-                                   <SelectItem value="milk">Milk</SelectItem>
-                                   <SelectItem value="sugar">Sugar</SelectItem>
-                                   <SelectItem value="flour">Flour</SelectItem>
-                                   <SelectItem value="butter">Butter</SelectItem>
-                                   <SelectItem value="eggs">Eggs</SelectItem>
-                                   <SelectItem value="chocolate">Chocolate</SelectItem>
-                                   <SelectItem value="vanilla">Vanilla</SelectItem>
-                                   <SelectItem value="cinnamon">Cinnamon</SelectItem>
-                                   <SelectItem value="honey">Honey</SelectItem>
-                                   <SelectItem value="tea-leaves">Tea Leaves</SelectItem>
-                                   <SelectItem value="cream">Cream</SelectItem>
-                                 </SelectContent>
-                               </Select>
+                                     {stockItems.filter(item => 
+                                       item.name.toLowerCase().includes(ingredientSearch[product.id].toLowerCase())
+                                     ).length === 0 && (
+                                       <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                                         No ingredients found
+                                       </div>
+                                     )}
+                                   </div>
+                                 )}
+                               </div>
                                
                                {/* Display selected ingredients with amounts */}
                                {product.ingredients && product.ingredients.length > 0 && (
