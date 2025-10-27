@@ -295,46 +295,35 @@ const ClientList = () => {
       return;
     }
 
-    if (!receiptData?.receiptId) {
-      toast.error("No receipt to cancel");
-      return;
-    }
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Update the receipt status to cancelled
-      const { error } = await supabase
-        .from('receipts')
-        .update({
-          status: 'cancelled',
-          cancellation_reason: cancellationReason,
-          cancelled_at: new Date().toISOString(),
-          cancelled_by: user?.id
-        })
-        .eq('id', receiptData.receiptId);
-
-      if (error) throw error;
-
-      // Also checkout the client
-      await supabase
-        .from('clients')
-        .update({ active: false })
-        .eq('id', pendingCheckoutClient);
-
-      setClients(prev => prev.map(client => 
-        client.id === pendingCheckoutClient 
-          ? { ...client, active: false }
-          : client
-      ));
-      
       const client = clients.find(c => c.id === pendingCheckoutClient);
-      
+
+      // If receipt was already created, cancel it in the database
+      if (receiptData?.receiptId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { error } = await supabase
+          .from('receipts')
+          .update({
+            status: 'cancelled',
+            cancellation_reason: cancellationReason,
+            cancelled_at: new Date().toISOString(),
+            cancelled_by: user?.id
+          })
+          .eq('id', receiptData.receiptId);
+
+        if (error) throw error;
+      }
+
+      // Close dialogs and reset state
       setShowCancelDialog(false);
       setShowCheckoutConfirmation(false);
+      setShowReceipt(false);
       setCancellationReason("");
+      setPendingCheckoutClient(null);
+      setReceiptData(null);
       
-      toast.success(`Receipt cancelled for ${client?.full_name}`);
+      toast.success(`Checkout cancelled for ${client?.full_name}. Reason: ${cancellationReason}`);
     } catch (error) {
       console.error('Error cancelling receipt:', error);
       toast.error("Failed to cancel receipt");
