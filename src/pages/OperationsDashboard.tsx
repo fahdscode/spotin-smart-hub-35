@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban, Download } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban, Download, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import VendorManagement from "@/components/VendorManagement";
 import BillManagement from "@/components/BillManagement";
 import RolesManagement from "@/components/RolesManagement";
 import CancelledReceipts from "@/components/CancelledReceipts";
+import PromotionsManagement from "@/components/PromotionsManagement";
 import { useNavigate } from "react-router-dom";
 import { useStockData } from "@/hooks/useStockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -211,6 +212,10 @@ const OperationsDashboard = () => {
               <Ticket className="h-4 w-4 mr-2" />
               Tickets
             </TabsTrigger>
+            <TabsTrigger value="promotions">
+              <Tag className="h-4 w-4 mr-2" />
+              Sales
+            </TabsTrigger>
             <TabsTrigger value="cancelled">
               <Ban className="h-4 w-4 mr-2" />
               Cancelled
@@ -360,6 +365,11 @@ const OperationsDashboard = () => {
           {/* Cancelled Receipts Tab */}
           <TabsContent value="cancelled" className="space-y-6">
             <CancelledReceipts />
+          </TabsContent>
+
+          {/* Promotions & Sales Tab */}
+          <TabsContent value="promotions" className="space-y-6">
+            <PromotionsManagement />
           </TabsContent>
 
           {/* User Roles Tab */}

@@ -1177,6 +1177,69 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          applicable_to: string
+          category: string | null
+          combo_items: Json | null
+          created_at: string
+          description: string | null
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_active: boolean
+          max_discount_amount: number | null
+          min_purchase_amount: number | null
+          name: string
+          product_ids: string[] | null
+          promotion_type: string
+          start_date: string
+          times_used: number | null
+          updated_at: string
+          usage_limit: number | null
+        }
+        Insert: {
+          applicable_to?: string
+          category?: string | null
+          combo_items?: Json | null
+          created_at?: string
+          description?: string | null
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_purchase_amount?: number | null
+          name: string
+          product_ids?: string[] | null
+          promotion_type: string
+          start_date?: string
+          times_used?: number | null
+          updated_at?: string
+          usage_limit?: number | null
+        }
+        Update: {
+          applicable_to?: string
+          category?: string | null
+          combo_items?: Json | null
+          created_at?: string
+          description?: string | null
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_purchase_amount?: number | null
+          name?: string
+          product_ids?: string[] | null
+          promotion_type?: string
+          start_date?: string
+          times_used?: number | null
+          updated_at?: string
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       receipts: {
         Row: {
           amount: number
