@@ -9,22 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import OrderingCycleStatus from "@/components/OrderingCycleStatus";
-
 interface Client {
   id: string;
   client_code: string;
@@ -34,7 +23,6 @@ interface Client {
   active: boolean;
   barcode?: string;
 }
-
 interface Order {
   id: string;
   item_name: string;
@@ -47,10 +35,11 @@ interface Order {
   location?: string;
   notes?: string;
 }
-
 const BaristaDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isEditProductsOpen, setIsEditProductsOpen] = useState(false);
@@ -67,65 +56,51 @@ const BaristaDashboard = () => {
       console.log('Sound not available:', error);
     }
   };
-
   useEffect(() => {
     fetchOrders();
-    
-    // Set up real-time subscription for new orders
-    const channel = supabase
-      .channel('barista-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'session_line_items'
-        },
-        (payload) => {
-          console.log('Real-time order update:', payload);
-          
-          // Refresh orders when any change occurs
-          fetchOrders();
-          
-          // Play sound for new orders
-          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
-            console.log('New order received, playing sound');
-            playOrderSound();
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Real-time subscription status:', status);
-      });
 
+    // Set up real-time subscription for new orders
+    const channel = supabase.channel('barista-orders').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'session_line_items'
+    }, payload => {
+      console.log('Real-time order update:', payload);
+
+      // Refresh orders when any change occurs
+      fetchOrders();
+
+      // Play sound for new orders
+      if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+        console.log('New order received, playing sound');
+        playOrderSound();
+      }
+    }).subscribe(status => {
+      console.log('Real-time subscription status:', status);
+    });
     return () => {
       console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, []);
-
   const fetchOrders = async () => {
     try {
       setLoading(true);
       // First get orders - exclude cancelled orders from active view
-      const { data: ordersData, error } = await supabase
-        .from('session_line_items')
-        .select('*')
-        .not('status', 'eq', 'cancelled')
-        .in('status', ['pending', 'preparing', 'ready', 'completed'])
-        .order('created_at', { ascending: true });
-
+      const {
+        data: ordersData,
+        error
+      } = await supabase.from('session_line_items').select('*').not('status', 'eq', 'cancelled').in('status', ['pending', 'preparing', 'ready', 'completed']).order('created_at', {
+        ascending: true
+      });
       if (error) throw error;
 
       // Then get client names for each order
       const clientIds = [...new Set(ordersData?.map(order => order.user_id) || [])];
-      const { data: clientsData } = await supabase
-        .from('clients')
-        .select('id, full_name, client_code')
-        .in('id', clientIds);
-
+      const {
+        data: clientsData
+      } = await supabase.from('clients').select('id, full_name, client_code').in('id', clientIds);
       const clientsMap = new Map(clientsData?.map(client => [client.id, client]) || []);
-
       const formattedOrders: Order[] = ordersData?.map(order => {
         const client = clientsMap.get(order.user_id);
         return {
@@ -141,68 +116,75 @@ const BaristaDashboard = () => {
           notes: `Order #${order.id.slice(-8)}`
         };
       }) || [];
-
       setOrders(formattedOrders);
     } catch (error: any) {
       toast({
         title: "Error fetching orders",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const quickItems = [
-    { name: "Espresso", time: "2 min", icon: Coffee },
-    { name: "Americano", time: "3 min", icon: Coffee },
-    { name: "Cappuccino", time: "4 min", icon: Coffee },
-    { name: "Latte", time: "4 min", icon: Coffee },
-    { name: "Macchiato", time: "3 min", icon: Coffee },
-    { name: "Mocha", time: "5 min", icon: Coffee }
-  ];
-
+  const quickItems = [{
+    name: "Espresso",
+    time: "2 min",
+    icon: Coffee
+  }, {
+    name: "Americano",
+    time: "3 min",
+    icon: Coffee
+  }, {
+    name: "Cappuccino",
+    time: "4 min",
+    icon: Coffee
+  }, {
+    name: "Latte",
+    time: "4 min",
+    icon: Coffee
+  }, {
+    name: "Macchiato",
+    time: "3 min",
+    icon: Coffee
+  }, {
+    name: "Mocha",
+    time: "5 min",
+    icon: Coffee
+  }];
   const addQuickItem = async (itemName: string, note?: string) => {
     if (!selectedClient) {
       toast({
         title: "No Client Selected",
         description: "Please select an active client before adding items.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       // Get the drink price from the database
-      const { data: drinkData, error: drinkError } = await supabase
-        .from('drinks')
-        .select('price')
-        .eq('name', itemName)
-        .single();
-
+      const {
+        data: drinkData,
+        error: drinkError
+      } = await supabase.from('drinks').select('price').eq('name', itemName).single();
       if (drinkError) throw drinkError;
-
-      const { error } = await supabase
-        .from('session_line_items')
-        .insert({
-          user_id: selectedClient.id,
-          item_name: itemName,
-          quantity: 1,
-          price: drinkData.price,
-          status: 'pending'
-        });
-
+      const {
+        error
+      } = await supabase.from('session_line_items').insert({
+        user_id: selectedClient.id,
+        item_name: itemName,
+        quantity: 1,
+        price: drinkData.price,
+        status: 'pending'
+      });
       if (error) throw error;
-
       setIsQuickAddOpen(false);
-      
+
       // Play notification sound for new order
       playOrderNotification();
-      
       toast({
         title: "Item Added",
-        description: `${itemName} added for ${selectedClient.full_name}`,
+        description: `${itemName} added for ${selectedClient.full_name}`
       });
 
       // Refresh orders list
@@ -211,23 +193,21 @@ const BaristaDashboard = () => {
       toast({
         title: "Error Adding Item",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
     try {
-      const { error } = await supabase
-        .from('session_line_items')
-        .update({ status: newStatus })
-        .eq('id', orderId);
-
+      const {
+        error
+      } = await supabase.from('session_line_items').update({
+        status: newStatus
+      }).eq('id', orderId);
       if (error) throw error;
-
       toast({
         title: "Order Updated",
-        description: `Order status updated to ${newStatus}`,
+        description: `Order status updated to ${newStatus}`
       });
 
       // Refresh orders list
@@ -236,24 +216,22 @@ const BaristaDashboard = () => {
       toast({
         title: "Error Updating Order",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const cancelOrder = async (orderId: string) => {
     try {
       // Instead of deleting, update status to cancelled to maintain order history
-      const { error } = await supabase
-        .from('session_line_items')
-        .update({ status: 'cancelled' })
-        .eq('id', orderId);
-
+      const {
+        error
+      } = await supabase.from('session_line_items').update({
+        status: 'cancelled'
+      }).eq('id', orderId);
       if (error) throw error;
-
       toast({
         title: "Order Cancelled",
-        description: "Order has been cancelled successfully",
+        description: "Order has been cancelled successfully"
       });
 
       // Refresh orders list
@@ -262,60 +240,62 @@ const BaristaDashboard = () => {
       toast({
         title: "Error Cancelling Order",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const playOrderNotification = () => {
     // Create audio context for notification sound
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
     oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
     oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
     oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
   };
-
   const getStatusColor = (status: Order["status"]) => {
     switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "preparing": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "ready": return "bg-green-100 text-green-800 border-green-200";
-      case "completed": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "served": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "cancelled": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "preparing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "ready":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "completed":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "served":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
-
   const getStatusIcon = (status: Order["status"]) => {
     switch (status) {
-      case "pending": return Clock;
-      case "preparing": return Coffee;
-      case "ready": return CheckCircle;
-      case "completed": return CheckCircle;
-      default: return Clock;
+      case "pending":
+        return Clock;
+      case "preparing":
+        return Coffee;
+      case "ready":
+        return CheckCircle;
+      case "completed":
+        return CheckCircle;
+      default:
+        return Clock;
     }
   };
-
   const pendingOrders = orders.filter(order => order.status === "pending");
   const preparingOrders = orders.filter(order => order.status === "preparing");
   const readyOrders = orders.filter(order => order.status === "ready");
   const completedOrders = orders.filter(order => order.status === "completed");
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
@@ -380,10 +360,9 @@ const BaristaDashboard = () => {
                   </TabsList>
                   
                   <TabsContent value="pending" className="space-y-4 mt-6">
-                    {pendingOrders.map((order) => {
-                      const StatusIcon = getStatusIcon(order.status);
-                      return (
-                        <div key={order.id} className="p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow">
+                    {pendingOrders.map(order => {
+                    const StatusIcon = getStatusIcon(order.status);
+                    return <div key={order.id} className="p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-muted-foreground" />
@@ -403,21 +382,19 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(order.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                             </div>
                           </div>
-                          {order.notes && (
-                            <p className="text-sm bg-muted p-2 rounded mb-3">
+                          {order.notes && <p className="text-sm bg-muted p-2 rounded mb-3">
                               <strong>Note:</strong> {order.notes}
-                            </p>
-                          )}
+                            </p>}
                           <div className="flex gap-2">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  className="flex-1"
-                                  variant="professional"
-                                >
+                                <Button className="flex-1" variant="professional">
                                   Start Preparing
                                 </Button>
                               </AlertDialogTrigger>
@@ -438,10 +415,7 @@ const BaristaDashboard = () => {
                             </AlertDialog>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="destructive"
-                                  size="sm"
-                                >
+                                <Button variant="destructive" size="sm">
                                   <XCircle className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -461,16 +435,14 @@ const BaristaDashboard = () => {
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                        </div>
-                      );
-                    })}
+                        </div>;
+                  })}
                   </TabsContent>
                   
                   <TabsContent value="preparing" className="space-y-4 mt-6">
-                    {preparingOrders.map((order) => {
-                      const StatusIcon = getStatusIcon(order.status);
-                      return (
-                        <div key={order.id} className="p-4 border rounded-lg bg-card border-primary/20">
+                    {preparingOrders.map(order => {
+                    const StatusIcon = getStatusIcon(order.status);
+                    return <div key={order.id} className="p-4 border rounded-lg bg-card border-primary/20">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-primary animate-pulse" />
@@ -490,21 +462,19 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(order.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                             </div>
                           </div>
-                          {order.notes && (
-                            <p className="text-sm bg-muted p-2 rounded mb-3">
+                          {order.notes && <p className="text-sm bg-muted p-2 rounded mb-3">
                               <strong>Note:</strong> {order.notes}
-                            </p>
-                          )}
+                            </p>}
                           <div className="flex gap-2">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  className="flex-1"
-                                  variant="accent"
-                                >
+                                <Button className="flex-1" variant="accent">
                                   Mark as Ready
                                 </Button>
                               </AlertDialogTrigger>
@@ -525,10 +495,7 @@ const BaristaDashboard = () => {
                             </AlertDialog>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="destructive"
-                                  size="sm"
-                                >
+                                <Button variant="destructive" size="sm">
                                   <XCircle className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
@@ -548,16 +515,14 @@ const BaristaDashboard = () => {
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
-                        </div>
-                      );
-                    })}
+                        </div>;
+                  })}
                   </TabsContent>
                   
                   <TabsContent value="ready" className="space-y-4 mt-6">
-                    {readyOrders.map((order) => {
-                      const StatusIcon = getStatusIcon(order.status);
-                      return (
-                        <div key={order.id} className="p-4 border rounded-lg bg-card border-success/20">
+                    {readyOrders.map(order => {
+                    const StatusIcon = getStatusIcon(order.status);
+                    return <div key={order.id} className="p-4 border rounded-lg bg-card border-success/20">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <StatusIcon className="h-4 w-4 text-success" />
@@ -577,24 +542,20 @@ const BaristaDashboard = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(order.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                             </div>
                           </div>
-                          {order.notes && (
-                            <p className="text-sm bg-muted p-2 rounded mb-3">
+                          {order.notes && <p className="text-sm bg-muted p-2 rounded mb-3">
                               <strong>Note:</strong> {order.notes}
-                            </p>
-                          )}
-                          <Button 
-                            onClick={() => updateOrderStatus(order.id, "completed")}
-                            className="w-full"
-                            variant="card"
-                          >
+                            </p>}
+                          <Button onClick={() => updateOrderStatus(order.id, "completed")} className="w-full" variant="card">
                             Mark as Delivered
                           </Button>
-                        </div>
-                      );
-                    })}
+                        </div>;
+                  })}
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -613,23 +574,14 @@ const BaristaDashboard = () => {
                 <CardDescription>Select client and add items quickly</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ClientSelector 
-                  onClientSelect={setSelectedClient}
-                  selectedClientId={selectedClient?.id}
-                />
+                <ClientSelector onClientSelect={setSelectedClient} selectedClientId={selectedClient?.id} />
                 
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  disabled={!selectedClient}
-                  onClick={() => setIsQuickAddOpen(true)}
-                >
+                <Button variant="default" className="w-full" disabled={!selectedClient} onClick={() => setIsQuickAddOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Quick Item
                 </Button>
 
-                {selectedClient && (
-                  <div className="space-y-3">
+                {selectedClient && <div className="space-y-3">
                     <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
                       <strong>Selected:</strong> {selectedClient.full_name}
                       <br />
@@ -637,39 +589,19 @@ const BaristaDashboard = () => {
                       <br />
                       <strong>Barcode:</strong> {selectedClient.barcode}
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      disabled={!selectedClient}
-                      onClick={() => setIsEditProductsOpen(true)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Client Products
-                    </Button>
-                  </div>
-                )}
+                    
+                  </div>}
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Quick Item Selector Dialog */}
-        <QuickItemSelector
-          isOpen={isQuickAddOpen}
-          onClose={() => setIsQuickAddOpen(false)}
-          selectedClient={selectedClient}
-          onItemSelect={addQuickItem}
-        />
+        <QuickItemSelector isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} selectedClient={selectedClient} onItemSelect={addQuickItem} />
 
         {/* Client Product Editor Dialog */}
-        <ClientProductEditor
-          isOpen={isEditProductsOpen}
-          onClose={() => setIsEditProductsOpen(false)}
-          selectedClient={selectedClient}
-        />
+        <ClientProductEditor isOpen={isEditProductsOpen} onClose={() => setIsEditProductsOpen(false)} selectedClient={selectedClient} />
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default BaristaDashboard;
