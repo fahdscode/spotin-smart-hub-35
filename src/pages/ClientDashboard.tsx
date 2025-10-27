@@ -15,7 +15,7 @@ import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { ActiveTicketCard } from '@/components/ActiveTicketCard';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package } from 'lucide-react';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
@@ -1236,27 +1236,48 @@ export default function ClientDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Your personal details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarFallback className="text-lg">
+                  <Avatar className="h-20 w-20">
+                    <AvatarFallback className="text-2xl">
                       {clientData?.full_name?.[0]}{clientData?.full_name?.split(' ')[1]?.[0] || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold">{clientData?.full_name}</h3>
-                    <p className="text-muted-foreground">Client</p>
-                    <p className="text-sm text-muted-foreground">{clientData?.email}</p>
-                    {isCheckedIn && checkInTime && (
-                      <Badge variant="default" className="mt-2">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Checked in at {checkInTime}
-                      </Badge>
-                    )}
+                    <h3 className="text-2xl font-semibold">{clientData?.full_name}</h3>
+                    <p className="text-muted-foreground">Client Member</p>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span>{clientData?.email || 'No email'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{clientData?.phone || 'No phone'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>Client Code: {clientData?.client_code}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-auto">
-                    <LogoutButton variant="outline" size="sm" />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Status</Label>
+                    <Badge variant={isCheckedIn ? "default" : "secondary"} className="w-full justify-center py-2">
+                      {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                      {isCheckedIn && checkInTime && ` - ${checkInTime}`}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground">Membership</Label>
+                    <Badge variant="outline" className="w-full justify-center py-2">
+                      {membershipStatus}
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
@@ -1378,10 +1399,80 @@ export default function ClientDashboard() {
               </CardContent>
             </Card>
 
-            {/* Logout */}
-            <Button variant="outline" onClick={handleLogout} className="w-full">
-              Sign Out
-            </Button>
+            {/* Advanced Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Advanced Settings
+                </CardTitle>
+                <CardDescription>Manage your account preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Account Information</Label>
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex justify-between p-2 rounded bg-muted/50">
+                      <span className="text-muted-foreground">Barcode</span>
+                      <span className="font-medium">{clientData?.barcode}</span>
+                    </div>
+                    <div className="flex justify-between p-2 rounded bg-muted/50">
+                      <span className="text-muted-foreground">Client ID</span>
+                      <span className="font-mono text-xs">{clientData?.id?.slice(0, 8)}...</span>
+                    </div>
+                    {lastTableNumber && (
+                      <div className="flex justify-between p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">Last Table</span>
+                        <span className="font-medium">Table {lastTableNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Label className="mb-3 block">Account Actions</Label>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => toast({
+                        title: "Feature Coming Soon",
+                        description: "This feature will be available in the next update"
+                      })}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => toast({
+                        title: "Feature Coming Soon",
+                        description: "This feature will be available in the next update"
+                      })}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Manage Preferences
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sign Out Button */}
+            <Card className="border-destructive/50">
+              <CardContent className="pt-6">
+                <Button 
+                  variant="destructive" 
+                  onClick={handleLogout} 
+                  className="w-full"
+                  size="lg"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
