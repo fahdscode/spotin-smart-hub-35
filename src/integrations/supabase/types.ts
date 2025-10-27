@@ -1530,6 +1530,10 @@ export type Database = {
         }
         Returns: string
       }
+      reset_client_password: {
+        Args: { p_new_password: string; p_phone: string; p_reset_token: string }
+        Returns: Json
+      }
       search_clients_for_membership: {
         Args: { search_term: string }
         Returns: Json
