@@ -241,44 +241,18 @@ const CeoDashboard = () => {
       // Error already logged
     }
   };
-  const revenueBreakdown = [{
-    category: "Memberships",
-    amount: "12,450 EGP",
-    percentage: 45,
-    color: "bg-primary"
-  }, {
-    category: "Room Bookings",
-    amount: "8,200 EGP",
-    percentage: 30,
-    color: "bg-accent"
-  }, {
-    category: "Drinks & Food",
-    amount: "4,100 EGP",
-    percentage: 15,
-    color: "bg-success"
-  }, {
-    category: "Events",
-    amount: "2,750 EGP",
-    percentage: 10,
-    color: "bg-warning"
-  }];
-  const roomUtilization = [{
-    room: "Meeting Room 1",
-    utilization: 85,
-    status: "High"
-  }, {
-    room: "Meeting Room 2",
-    utilization: 62,
-    status: "Medium"
-  }, {
-    room: "Conference Hall",
-    utilization: 91,
-    status: "High"
-  }, {
-    room: "Private Office A",
-    utilization: 45,
-    status: "Low"
-  }];
+  const revenueBreakdown: Array<{
+    category: string;
+    amount: string;
+    percentage: number;
+    color: string;
+  }> = [];
+  
+  const roomUtilization: Array<{
+    room: string;
+    utilization: number;
+    status: string;
+  }> = [];
   return <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <SpotinHeader showClock />
       
@@ -489,25 +463,14 @@ const CeoDashboard = () => {
                 <CardContent>
                   <div className="text-center space-y-4">
                     <div className="relative">
-                      <div className="text-5xl font-bold text-primary">42</div>
+                      <div className="text-5xl font-bold text-primary">{businessMetrics.activeMembers}</div>
                       <Badge className="absolute -top-2 -right-2 bg-green-500">
                         Live
                       </Badge>
                     </div>
                     <p className="text-muted-foreground">People currently inside</p>
-                    <Progress value={70} className="h-4" />
-                    <p className="text-sm text-muted-foreground">70% capacity</p>
-                    
-                    <div className="pt-4 border-t space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Peak Today:</span>
-                        <span className="font-medium">58 at 2:30 PM</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Average:</span>
-                        <span className="font-medium">45 people/day</span>
-                      </div>
-                    </div>
+                    <Progress value={businessMetrics.occupancyRate} className="h-4" />
+                    <p className="text-sm text-muted-foreground">{businessMetrics.occupancyRate}% capacity</p>
                   </div>
                 </CardContent>
               </Card>
