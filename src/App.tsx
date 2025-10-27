@@ -23,6 +23,7 @@ import FinanceDashboard from "./pages/FinanceDashboard";
 import ClientSignup from "./pages/ClientSignup";
 import ClientSettings from "./pages/ClientSettings";
 import PasswordReset from "./pages/PasswordReset";
+import SuperAdminSetup from "./pages/SuperAdminSetup";
 import ManagementProfile from "./pages/ManagementProfile";
 import ManagementSettings from "./pages/ManagementSettings";
 import MarketingDashboard from "./pages/MarketingDashboard";
@@ -45,10 +46,11 @@ const App = () => (
                 <Route path="/client-home" element={<ClientHome />} />
                 <Route path="/client-login" element={<ClientLogin />} />
               <Route path="/management-login" element={<ManagementLogin />} />
-               <Route path="/client-signup" element={<ClientSignup />} />
-               <Route path="/password-reset" element={<PasswordReset />} />
-               
-               {/* Protected Client Routes */}
+              <Route path="/client-signup" element={<ClientSignup />} />
+              <Route path="/password-reset" element={<PasswordReset />} />
+              <Route path="/super-admin-setup" element={<SuperAdminSetup />} />
+              
+              {/* Protected Client Routes */}
               <Route path="/client" element={
                 <ProtectedRoute requiredRole="client" redirectTo="/client-login">
                   <ClientDashboard />

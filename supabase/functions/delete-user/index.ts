@@ -88,14 +88,6 @@ serve(async (req) => {
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Check if the user being deleted is a super admin (admin or ceo)
-    if (userToDelete && ['admin', 'ceo'].includes(userToDelete.role)) {
-      return new Response(
-        JSON.stringify({ error: 'Cannot delete super admin accounts. Super admins are protected from deletion.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     console.log('Starting user deletion process for:', userId);
 
     // Delete related data in specific order to avoid foreign key conflicts
