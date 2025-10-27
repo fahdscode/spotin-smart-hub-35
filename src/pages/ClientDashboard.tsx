@@ -688,7 +688,7 @@ export default function ClientDashboard() {
           setCurrentView('home');
         }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
             <Coffee className="h-4 w-4" />
-            <span className="text-xs">Home</span>
+            <span className="text-xs">{t('clientDashboard.home')}</span>
           </Button>
           <Button variant={currentView === 'order' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
@@ -696,7 +696,7 @@ export default function ClientDashboard() {
           if (isCheckedIn) setCurrentView('order');
         }} className="flex flex-col items-center gap-1 h-auto py-2 relative" disabled={!isCheckedIn} type="button">
             <ShoppingCart className="h-4 w-4" />
-            <span className="text-xs">Order</span>
+            <span className="text-xs">{t('clientDashboard.order')}</span>
             {cart.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                 {cart.length}
               </Badge>}
@@ -707,7 +707,7 @@ export default function ClientDashboard() {
           setCurrentView('events');
         }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
             <Calendar className="h-4 w-4" />
-            <span className="text-xs">Events</span>
+            <span className="text-xs">{t('clientDashboard.events')}</span>
           </Button>
           <Button variant={currentView === 'profile' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
@@ -715,7 +715,7 @@ export default function ClientDashboard() {
           setCurrentView('profile');
         }} className="flex flex-col items-center gap-1 h-auto py-2" type="button">
             <User className="h-4 w-4" />
-            <span className="text-xs">Profile</span>
+            <span className="text-xs">{t('clientDashboard.profile')}</span>
           </Button>
         </div>
       </div>
@@ -849,7 +849,7 @@ export default function ClientDashboard() {
                         </div>
                         <Button size="sm" onClick={() => reorderLastOrder(order)} className="shrink-0" disabled={!isCheckedIn}>
                           <Plus className="h-4 w-4 mr-1" />
-                          Reorder
+                          {t('clientDashboard.reorder')}
                         </Button>
                       </div>)}
                   </CardContent>
@@ -916,15 +916,15 @@ export default function ClientDashboard() {
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input placeholder="Search drinks..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input placeholder={t('clientDashboard.searchDrinksPlaceholder')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
 
             {/* Categories Filter */}
             {categories.length > 0 && <div className="space-y-2">
-                <Label className="text-sm font-medium">Categories</Label>
+                <Label className="text-sm font-medium">{t('clientDashboard.categories')}</Label>
                 <div className="flex flex-wrap gap-2">
                   <Button variant={selectedCategory === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCategory('all')} className="rounded-full">
-                    All Items
+                    {t('clientDashboard.allItems')}
                   </Button>
                   {categories.map(category => <Button key={category.id} variant={selectedCategory === category.id ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCategory(category.id)} className="rounded-full">
                       {category.name} ({category.count})
@@ -935,17 +935,17 @@ export default function ClientDashboard() {
             {/* Cart Summary */}
             {cart.length > 0 && <Card className="border-primary/20">
                 <CardHeader>
-                  <CardTitle>Your Order ({cart.length} items)</CardTitle>
-                  <CardDescription>Total: {formatCurrency(getCartTotal())}</CardDescription>
+                  <CardTitle>{t('clientDashboard.yourOrder')} ({cart.length} {t('clientDashboard.items')})</CardTitle>
+                  <CardDescription>{t('clientDashboard.total')}: {formatCurrency(getCartTotal())}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Table Number Input */}
                   <div className="space-y-2">
                     <Label htmlFor="tableNumber" className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      Table Number *
+                      {t('clientDashboard.tableNumberRequired')}
                     </Label>
-                    <Input id="tableNumber" type="text" placeholder={lastTableNumber ? `Last used: ${lastTableNumber}` : "Enter your table number"} value={tableNumber} onChange={e => setTableNumber(e.target.value)} className="text-center text-lg font-semibold" required />
+                    <Input id="tableNumber" type="text" placeholder={lastTableNumber ? `${t('clientDashboard.lastUsed')} ${lastTableNumber}` : t('clientDashboard.enterTableNumber')} value={tableNumber} onChange={e => setTableNumber(e.target.value)} className="text-center text-lg font-semibold" required />
                   </div>
 
                   <div className="space-y-3">
@@ -953,7 +953,7 @@ export default function ClientDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} {t('clientDashboard.eachPrice')}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button size="sm" variant="outline" onClick={() => updateCartQuantity(item.id, item.quantity - 1)}>
@@ -967,14 +967,14 @@ export default function ClientDashboard() {
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`note-${item.id}`} className="text-xs text-muted-foreground">
-                            Special instructions (optional)
+                            {t('clientDashboard.specialInstructions')}
                           </Label>
-                          <Input id={`note-${item.id}`} type="text" placeholder="e.g., No sugar, extra hot..." value={item.note || ''} onChange={e => updateItemNote(item.id, e.target.value)} className="text-sm" />
+                          <Input id={`note-${item.id}`} type="text" placeholder={t('clientDashboard.specialInstructionsPlaceholder')} value={item.note || ''} onChange={e => updateItemNote(item.id, e.target.value)} className="text-sm" />
                         </div>
                       </div>)}
                   </div>
                   <Button onClick={handlePlaceOrder} className="w-full" size="lg">
-                    Place Order • {formatCurrency(getCartTotal())}
+                    {t('clientDashboard.placeOrder')} • {formatCurrency(getCartTotal())}
                   </Button>
                 </CardContent>
               </Card>}
@@ -982,23 +982,23 @@ export default function ClientDashboard() {
             {/* Current Pending Orders */}
             {pendingOrders.length > 0 && <Card>
                 <CardHeader>
-                  <CardTitle>Current Orders</CardTitle>
-                  <CardDescription>Orders being prepared</CardDescription>
+                  <CardTitle>{t('clientDashboard.currentOrders')}</CardTitle>
+                  <CardDescription>{t('clientDashboard.ordersBeingPrepared')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {pendingOrders.map(order => <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                       <div>
                         <p className="font-medium">{order.item_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Quantity: {order.quantity} • {formatCurrency(order.price * order.quantity)}
+                          {t('clientDashboard.quantity')}: {order.quantity} • {formatCurrency(order.price * order.quantity)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={order.status === 'preparing' ? 'default' : 'secondary'}>
-                          {order.status}
+                          {t(`clientDashboard.${order.status}`)}
                         </Badge>
                         {order.status === 'pending' && <Button size="sm" variant="ghost" onClick={() => handleCancelOrder(order.id)}>
-                            Cancel
+                            {t('clientDashboard.cancel')}
                           </Button>}
                       </div>
                     </div>)}
@@ -1020,7 +1020,7 @@ export default function ClientDashboard() {
                       </div>
                       <Button onClick={() => addToCart(drink)} size="sm">
                         <Plus className="h-4 w-4 mr-1" />
-                        Add
+                        {t('clientDashboard.add')}
                       </Button>
                     </div>
                   </CardContent>
@@ -1029,7 +1029,7 @@ export default function ClientDashboard() {
 
             {/* Order History Section */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Order History</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('clientDashboard.orderHistory')}</h3>
               <ClientOrderHistory clientId={clientData?.id || ''} />
             </div>
           </div>}
@@ -1039,8 +1039,8 @@ export default function ClientDashboard() {
             {/* Profile Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>Your personal details</CardDescription>
+                <CardTitle>{t('clientDashboard.profileInformation')}</CardTitle>
+                <CardDescription>{t('clientDashboard.yourPersonalDetails')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -1051,19 +1051,19 @@ export default function ClientDashboard() {
                   </Avatar>
                   <div className="flex-1">
                     <h3 className="text-2xl font-semibold">{clientData?.full_name}</h3>
-                    <p className="text-muted-foreground">Client Member</p>
+                    <p className="text-muted-foreground">{t('clientDashboard.clientMember')}</p>
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span>{clientData?.email || 'No email'}</span>
+                        <span>{clientData?.email || t('clientDashboard.noEmail')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{clientData?.phone || 'No phone'}</span>
+                        <span>{clientData?.phone || t('clientDashboard.noPhone')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>Client Code: {clientData?.client_code}</span>
+                        <span>{t('clientDashboard.clientCode')}: {clientData?.client_code}</span>
                       </div>
                     </div>
                   </div>
@@ -1071,14 +1071,14 @@ export default function ClientDashboard() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                   <div className="space-y-1">
-                    <Label className="text-muted-foreground">Status</Label>
+                    <Label className="text-muted-foreground">{t('clientDashboard.status')}</Label>
                     <Badge variant={isCheckedIn ? "default" : "secondary"} className="w-full justify-center py-2">
-                      {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                      {isCheckedIn ? t('clientDashboard.checkedIn') : t('clientDashboard.checkOut')}
                       {isCheckedIn && checkInTime && ` - ${checkInTime}`}
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-muted-foreground">Membership</Label>
+                    <Label className="text-muted-foreground">{t('clientDashboard.membership')}</Label>
                     <Badge variant="outline" className="w-full justify-center py-2">
                       {membershipStatus}
                     </Badge>
@@ -1092,10 +1092,10 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <QrCode className="h-5 w-5" />
-                  Your QR Code
+                  {t('clientDashboard.yourQRCode')}
                 </CardTitle>
                 <CardDescription>
-                  Show this to reception to check in or out
+                  {t('clientDashboard.showToReception')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1108,29 +1108,29 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Visit Analytics
+                  {t('clientDashboard.visitAnalytics')}
                 </CardTitle>
-                <CardDescription>Your coworking space activity insights</CardDescription>
+                <CardDescription>{t('clientDashboard.yourActivity')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-primary">{totalVisits}</div>
-                    <div className="text-sm text-muted-foreground">Total Visits</div>
+                    <div className="text-sm text-muted-foreground">{t('clientDashboard.totalVisitsCount')}</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-primary">{checkInsLast30Days}</div>
-                    <div className="text-sm text-muted-foreground">Last 30 Days</div>
+                    <div className="text-sm text-muted-foreground">{t('clientDashboard.last30Days')}</div>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <div className="text-2xl font-bold text-primary">{favoriteTimeSlot}</div>
-                    <div className="text-sm text-muted-foreground">Favorite Time</div>
+                    <div className="text-sm text-muted-foreground">{t('clientDashboard.favoriteTimeSlot')}</div>
                   </div>
                 </div>
                 {lastVisitDate && <div className="mt-4 p-3 rounded-lg bg-accent/50 flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      Last visit: <span className="font-medium">{lastVisitDate}</span>
+                      {t('clientDashboard.lastVisitDate')} <span className="font-medium">{lastVisitDate}</span>
                     </span>
                   </div>}
               </CardContent>
@@ -1141,9 +1141,9 @@ export default function ClientDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5" />
-                    Current Order
+                    {t('clientDashboard.currentOrder')}
                   </CardTitle>
-                  <CardDescription>Items in your current cart</CardDescription>
+                  <CardDescription>{t('clientDashboard.itemsInCart')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -1153,7 +1153,7 @@ export default function ClientDashboard() {
                       </div>)}
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between items-center font-bold">
-                        <span>Total</span>
+                        <span>{t('clientDashboard.total')}</span>
                         <span>{formatCurrency(getCartTotal())}</span>
                       </div>
                     </div>
@@ -1166,7 +1166,7 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
-                  Recent Orders
+                  {t('clientDashboard.recentOrders')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1194,39 +1194,39 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Advanced Settings
+                  {t('clientDashboard.advancedSettings')}
                 </CardTitle>
-                <CardDescription>Manage your account preferences</CardDescription>
+                <CardDescription>{t('clientDashboard.managePreferences')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Account Information</Label>
+                  <Label>{t('clientDashboard.accountInformation')}</Label>
                   <div className="grid gap-2 text-sm">
                     <div className="flex justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground">Barcode</span>
+                      <span className="text-muted-foreground">{t('clientDashboard.barcode')}</span>
                       <span className="font-medium">{clientData?.barcode}</span>
                     </div>
                     <div className="flex justify-between p-2 rounded bg-muted/50">
-                      <span className="text-muted-foreground">Client ID</span>
+                      <span className="text-muted-foreground">{t('clientDashboard.clientId')}</span>
                       <span className="font-mono text-xs">{clientData?.id?.slice(0, 8)}...</span>
                     </div>
                     {lastTableNumber && <div className="flex justify-between p-2 rounded bg-muted/50">
-                        <span className="text-muted-foreground">Last Table</span>
-                        <span className="font-medium">Table {lastTableNumber}</span>
+                        <span className="text-muted-foreground">{t('clientDashboard.lastTable')}</span>
+                        <span className="font-medium">{t('clientDashboard.table')} {lastTableNumber}</span>
                       </div>}
                   </div>
                 </div>
 
                 <div className="pt-4 border-t">
-                  <Label className="mb-3 block">Account Actions</Label>
+                  <Label className="mb-3 block">{t('clientDashboard.accountActions')}</Label>
                   <div className="space-y-2">
                     <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/client-settings')}>
                       <User className="h-4 w-4 mr-2" />
-                      Edit Profile
+                      {t('clientDashboard.editProfile')}
                     </Button>
                     <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/client-settings')}>
                       <Package className="h-4 w-4 mr-2" />
-                      Manage Preferences
+                      {t('clientDashboard.managePreferencesBtn')}
                     </Button>
                   </div>
                 </div>
@@ -1238,7 +1238,7 @@ export default function ClientDashboard() {
               <CardContent className="pt-6">
                 <Button variant="destructive" onClick={handleLogout} className="w-full" size="lg">
                   <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
+                  {t('clientDashboard.signOut')}
                 </Button>
               </CardContent>
             </Card>
