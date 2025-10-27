@@ -4,16 +4,48 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Scan, Clock, User, CheckCircle, XCircle, Loader2, Ticket } from 'lucide-react';
+import { Scan, Clock, User, CheckCircle, XCircle, Loader2, Ticket, Banknote, CreditCard, Building2, Laptop } from 'lucide-react';
 import { TicketSelector } from './TicketSelector';
+import { formatCurrency } from '@/lib/currency';
 
 interface ScanResult {
   barcode: string;
   userName: string;
   action: 'checked_in' | 'checked_out';
   timestamp: string;
+}
+
+interface ReceiptData {
+  receiptNumber: string;
+  customerName: string;
+  customerEmail: string;
+  userId: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }>;
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentMethod: string;
+  date: string;
+  checkInTime: string;
+  duration: number;
+  membership?: {
+    plan_name: string;
+    discount_percentage: number;
+  } | null;
+  assignedTicket?: {
+    name: string;
+    price: number;
+    ticket_type: string;
+  } | null;
 }
 
 interface ToggleResult {
@@ -45,7 +77,9 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
   const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
-  const [checkoutClient, setCheckoutClient] = useState<{ name: string } | null>(null);
+  const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -107,25 +141,11 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
           setShowTicketDialog(true);
           setBarcode('');
         } else {
-          // MANDATORY: Show checkout confirmation - this cannot be bypassed
-          setCheckoutClient({
-            name: result.client!.full_name
-          });
-          setShowCheckoutConfirmation(true);
+          // MANDATORY: Prepare checkout confirmation with receipt details
+          const clientId = result.client!.id;
+          setPendingCheckoutClient(clientId);
+          await prepareCheckoutReceipt(clientId, result.client!.full_name, result.client!.email);
           setBarcode('');
-
-          const scanResult: ScanResult = {
-            barcode: barcode.trim(),
-            userName: result.client!.full_name,
-            action,
-            timestamp: new Date().toISOString()
-          };
-
-          setLatestScan(scanResult);
-          setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
-          
-          // Emit event to refresh active sessions
-          window.dispatchEvent(new CustomEvent('client-status-changed'));
         }
         
         setDebugInfo(result.debug);
@@ -153,6 +173,227 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
     } finally {
       setProcessing(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const prepareCheckoutReceipt = async (clientId: string, clientName: string, clientEmail?: string) => {
+    try {
+      // Get current check-in session time
+      const { data: checkInData } = await supabase
+        .from('check_ins')
+        .select('checked_in_at')
+        .eq('client_id', clientId)
+        .eq('status', 'checked_in')
+        .is('checked_out_at', null)
+        .order('checked_in_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const checkInTime = checkInData?.checked_in_at;
+
+      // Determine the time range for orders
+      let startTime: string;
+      if (checkInTime) {
+        startTime = checkInTime;
+      } else {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('updated_at')
+          .eq('id', clientId)
+          .single();
+        
+        startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+      }
+
+      // Check if client has an active membership
+      const { data: membership } = await supabase
+        .from('client_memberships')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // Fetch all completed/served orders in the session time range
+      const { data: orders } = await supabase
+        .from('session_line_items')
+        .select('*')
+        .eq('user_id', clientId)
+        .in('status', ['completed', 'served', 'ready'])
+        .gte('created_at', startTime)
+        .lte('created_at', new Date().toISOString())
+        .order('created_at', { ascending: true });
+
+      let receiptItems: any[] = orders?.map(order => ({
+        name: order.item_name,
+        quantity: order.quantity,
+        price: order.price,
+        total: order.price * order.quantity
+      })) || [];
+
+      const duration = checkInTime 
+        ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
+        : 0;
+
+      // Check for assigned ticket in this session
+      const ticketLookbackTime = new Date(new Date(startTime).getTime() - 10000).toISOString();
+      const { data: assignedTicket } = await supabase
+        .from('client_tickets')
+        .select(`
+          *,
+          ticket:drinks!client_tickets_ticket_id_fkey(name, price, ticket_type)
+        `)
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .gte('purchase_date', ticketLookbackTime)
+        .order('purchase_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // If no membership, add the assigned ticket
+      if (!membership) {
+        if (assignedTicket?.ticket) {
+          receiptItems = [
+            {
+              name: assignedTicket.ticket.name,
+              quantity: 1,
+              price: assignedTicket.ticket.price,
+              total: assignedTicket.ticket.price
+            },
+            ...receiptItems
+          ];
+        } else {
+          // Fallback: fetch default day use ticket
+          const { data: ticketData } = await supabase
+            .from('drinks')
+            .select('name, price')
+            .eq('category', 'day_use_ticket')
+            .eq('is_available', true)
+            .limit(1)
+            .maybeSingle();
+
+          if (ticketData) {
+            receiptItems = [
+              {
+                name: ticketData.name,
+                quantity: 1,
+                price: ticketData.price,
+                total: ticketData.price
+              },
+              ...receiptItems
+            ];
+          }
+        }
+      }
+
+      // Calculate total
+      const orderTotal = receiptItems.reduce((sum, item) => sum + item.total, 0);
+      
+      // Prepare receipt data
+      setReceiptData({
+        receiptNumber: `RCP-${Date.now()}`,
+        customerName: clientName,
+        customerEmail: clientEmail || '',
+        userId: clientId,
+        items: receiptItems,
+        subtotal: orderTotal,
+        discount: 0,
+        total: orderTotal,
+        paymentMethod: 'cash',
+        date: new Date().toLocaleDateString(),
+        checkInTime: checkInTime ? new Date(checkInTime).toLocaleTimeString() : '',
+        duration: duration,
+        membership: membership ? {
+          plan_name: membership.plan_name,
+          discount_percentage: membership.discount_percentage
+        } : null,
+        assignedTicket: assignedTicket?.ticket ? {
+          name: assignedTicket.ticket.name,
+          price: assignedTicket.ticket.price,
+          ticket_type: assignedTicket.ticket.ticket_type
+        } : null
+      });
+
+      // Reset payment method selection
+      setSelectedPaymentMethod("");
+      
+      // Show confirmation dialog
+      setShowCheckoutConfirmation(true);
+    } catch (error) {
+      console.error('Error preparing checkout receipt:', error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare checkout details",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const confirmCheckout = async () => {
+    if (!pendingCheckoutClient || !receiptData) return;
+
+    if (!selectedPaymentMethod) {
+      toast({
+        title: "Payment Required",
+        description: "Please select a payment method",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Create receipt if there are items
+      if (receiptData.items.length > 0 || receiptData.total > 0) {
+        const { error: receiptError } = await supabase
+          .from('receipts')
+          .insert({
+            receipt_number: receiptData.receiptNumber,
+            user_id: receiptData.userId,
+            total_amount: receiptData.total,
+            amount: receiptData.total,
+            payment_method: selectedPaymentMethod,
+            transaction_type: 'checkout',
+            line_items: receiptData.items,
+            status: 'completed'
+          });
+
+        if (receiptError) throw receiptError;
+      }
+
+      // Checkout the client
+      const { error } = await supabase
+        .from('clients')
+        .update({ active: false })
+        .eq('id', pendingCheckoutClient);
+
+      if (error) throw error;
+
+      const scanResult: ScanResult = {
+        barcode: '',
+        userName: receiptData.customerName,
+        action: 'checked_out',
+        timestamp: new Date().toISOString()
+      };
+
+      setLatestScan(scanResult);
+      setRecentScans(prev => [scanResult, ...prev].slice(0, 5));
+      
+      setShowCheckoutConfirmation(false);
+      setPendingCheckoutClient(null);
+      
+      toast({
+        title: "Checkout Complete",
+        description: `${receiptData.customerName} has been checked out successfully`,
+      });
+      
+      // Emit event to refresh active sessions
+      window.dispatchEvent(new CustomEvent('client-status-changed'));
+    } catch (error) {
+      console.error('Error checking out client:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Failed to complete checkout",
+        variant: "destructive"
+      });
     }
   };
 
@@ -237,29 +478,107 @@ const BarcodeScanner = ({ scannedByUserId }: BarcodeScannerProps) => {
       </Dialog>
 
       <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Checkout Successful
-            </DialogTitle>
+            <DialogTitle>Checkout Confirmation</DialogTitle>
             <DialogDescription>
-              Client has been checked out successfully
+              Review the checkout details and select payment method
             </DialogDescription>
           </DialogHeader>
-          {checkoutClient && (
+          {receiptData && (
             <div className="space-y-4">
-              <div className="p-6 bg-success/10 border border-success/30 rounded-lg text-center">
-                <XCircle className="h-12 w-12 mx-auto mb-3 text-success" />
-                <h3 className="text-lg font-semibold text-foreground">{checkoutClient.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">Has been checked out</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Customer:</span>
+                  <span className="font-medium">{receiptData.customerName}</span>
+                </div>
+                {receiptData.checkInTime && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Check-in Time:</span>
+                    <span>{receiptData.checkInTime}</span>
+                  </div>
+                )}
+                {receiptData.duration > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span>{receiptData.duration} minutes</span>
+                  </div>
+                )}
               </div>
-              <Button 
-                onClick={() => setShowCheckoutConfirmation(false)} 
-                className="w-full"
-              >
-                Done
-              </Button>
+
+              {receiptData.items.length > 0 && (
+                <div className="border rounded-lg p-4 space-y-2">
+                  <h4 className="font-medium text-sm">Items</h4>
+                  {receiptData.items.map((item, index) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span>{item.name} x{item.quantity}</span>
+                      <span className="font-medium">{formatCurrency(item.total)}</span>
+                    </div>
+                  ))}
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total</span>
+                      <span>{formatCurrency(receiptData.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Payment Method</Label>
+                <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="h-4 w-4" />
+                        Cash
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="card">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Card
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="bank_transfer">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Bank Transfer
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="digital_wallet">
+                      <div className="flex items-center gap-2">
+                        <Laptop className="h-4 w-4" />
+                        Digital Wallet
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCheckoutConfirmation(false);
+                    setPendingCheckoutClient(null);
+                    setReceiptData(null);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={confirmCheckout}
+                  disabled={!selectedPaymentMethod}
+                  className="flex-1"
+                >
+                  Confirm Checkout
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
