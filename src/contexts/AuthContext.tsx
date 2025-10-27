@@ -74,26 +74,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Auth state changed:', event, session?.user?.email);
         
-        // Check if client session exists in localStorage
-        const clientSession = localStorage.getItem('clientData');
-        if (clientSession) {
-          // Prioritize client authentication - don't override with management auth
-          console.log('Client session exists, maintaining client authentication');
-          return;
-        }
-        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Only fetch role for Supabase management users when no client session exists
+        // Management user logged in - clear client data and fetch role
         if (session?.user) {
+          // Clear client data when management user logs in
+          if (clientData) {
+            console.log('Management user logged in, clearing client session');
+            setClientData(null);
+            localStorage.removeItem('clientData');
+          }
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else {
-          setUserRole(null);
+          // No Supabase session - preserve client data if exists
+          const clientSession = localStorage.getItem('clientData');
+          if (!clientSession) {
+            setUserRole(null);
+          }
           setIsLoading(false);
         }
       }
@@ -102,15 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     const getSession = async () => {
       try {
-        // Check if client session exists in localStorage
-        const clientSession = localStorage.getItem('clientData');
-        if (clientSession) {
-          // Prioritize client authentication - skip Supabase session check
-          console.log('Client session exists, skipping Supabase auth check');
-          setIsLoading(false);
-          return;
-        }
-        
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
@@ -119,14 +112,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Management user session found
+          // Management user session found - clear any client data
+          const clientSession = localStorage.getItem('clientData');
+          if (clientSession) {
+            console.log('Management session exists, clearing client data');
+            localStorage.removeItem('clientData');
+            setClientData(null);
+          }
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else {
-          // No management session
+          // No management session - client data already restored from localStorage
           setIsLoading(false);
         }
       } catch (error) {
