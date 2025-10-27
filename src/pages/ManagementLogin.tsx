@@ -8,6 +8,7 @@ import { Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,6 +19,7 @@ const ManagementLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { clearClientAuth } = useAuth();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -28,10 +30,8 @@ const ManagementLogin = () => {
 
       // CRITICAL: Clear any client session BEFORE Supabase login
       console.log('🧹 Clearing client session before management login');
+      clearClientAuth();
       localStorage.removeItem('clientData');
-      
-      // Force a small delay to ensure localStorage is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
