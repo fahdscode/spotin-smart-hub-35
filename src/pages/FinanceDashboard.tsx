@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User, CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import SpotinHeader from '@/components/SpotinHeader';
 import { LogoutButton } from '@/components/LogoutButton';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +24,11 @@ const FinanceDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
+  });
+  const [useCustomRange, setUseCustomRange] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -74,7 +82,7 @@ const FinanceDashboard = () => {
     fetchFinancialData();
     fetchCategories();
     fetchVendors();
-  }, [selectedMonth]);
+  }, [selectedMonth, dateRange, useCustomRange]);
 
   const fetchCategories = async () => {
     const { data } = await supabase
@@ -99,8 +107,15 @@ const FinanceDashboard = () => {
   const fetchFinancialData = async () => {
     setLoading(true);
     try {
-      const monthStart = startOfMonth(new Date(selectedMonth));
-      const monthEnd = endOfMonth(new Date(selectedMonth));
+      let monthStart: Date, monthEnd: Date;
+      
+      if (useCustomRange && dateRange.from && dateRange.to) {
+        monthStart = dateRange.from;
+        monthEnd = dateRange.to;
+      } else {
+        monthStart = startOfMonth(new Date(selectedMonth));
+        monthEnd = endOfMonth(new Date(selectedMonth));
+      }
 
       await Promise.all([
         fetchIncomeData(monthStart, monthEnd),
@@ -453,21 +468,91 @@ const FinanceDashboard = () => {
               <Plus className="h-4 w-4 mr-2" />
               Add Expense
             </Button>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => {
-                  const date = subMonths(new Date(), i);
-                  return (
-                    <SelectItem key={i} value={format(date, 'yyyy-MM')}>
-                      {format(date, 'MMMM yyyy')}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            
+            {/* Date Filter Toggle */}
+            <div className="flex items-center gap-2 border-l pl-2 ml-2">
+              <Button
+                variant={useCustomRange ? "outline" : "default"}
+                size="sm"
+                onClick={() => setUseCustomRange(false)}
+              >
+                Month
+              </Button>
+              <Button
+                variant={useCustomRange ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseCustomRange(true)}
+              >
+                Custom Range
+              </Button>
+            </div>
+
+            {/* Month Selector */}
+            {!useCustomRange && (
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const date = subMonths(new Date(), i);
+                    return (
+                      <SelectItem key={i} value={format(date, 'yyyy-MM')}>
+                        {format(date, 'MMMM yyyy')}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Custom Date Range Picker */}
+            {useCustomRange && (
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[280px] justify-start text-left font-normal",
+                        !dateRange.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                            {format(dateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={{ from: dateRange.from, to: dateRange.to }}
+                      onSelect={(range) => {
+                        setDateRange({
+                          from: range?.from,
+                          to: range?.to
+                        });
+                      }}
+                      numberOfMonths={2}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
             <Button variant="outline" size="sm" onClick={fetchFinancialData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
