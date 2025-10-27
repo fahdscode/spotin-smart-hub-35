@@ -472,6 +472,7 @@ export type Database = {
           is_active: boolean
           job_title: string
           last_name: string
+          last_table_number: string | null
           password_hash: string
           phone: string
           updated_at: string
@@ -490,6 +491,7 @@ export type Database = {
           is_active?: boolean
           job_title: string
           last_name: string
+          last_table_number?: string | null
           password_hash: string
           phone: string
           updated_at?: string
@@ -508,6 +510,7 @@ export type Database = {
           is_active?: boolean
           job_title?: string
           last_name?: string
+          last_table_number?: string | null
           password_hash?: string
           phone?: string
           updated_at?: string

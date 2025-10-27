@@ -117,8 +117,8 @@ const BaristaDashboard = () => {
           status: order.status as any,
           created_at: order.created_at,
           customerName: client?.full_name || 'Unknown Client',
-          location: 'Station Pickup',
-          notes: `Order #${order.id.slice(-8)}`
+          table_number: order.table_number,
+          notes: order.notes
         };
       }) || [];
       

@@ -78,6 +78,7 @@ export default function ClientDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState<boolean>(false);
+  const [lastTableNumber, setLastTableNumber] = useState<string>('');
   
   // Analytics data
   const [lastVisitDate, setLastVisitDate] = useState<string | null>(null);
@@ -97,6 +98,7 @@ export default function ClientDashboard() {
     if (clientData?.id) {
       fetchAllData(clientData.id);
       fetchCheckInStatus(clientData.id);
+      fetchLastTableNumber(clientData.id);
       setLoading(false);
 
       // Set up real-time subscription for client status updates
@@ -466,6 +468,25 @@ export default function ClientDashboard() {
     setRecentTransactions(mockTransactions);
   };
 
+  const fetchLastTableNumber = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('last_table_number')
+        .eq('id', clientId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.last_table_number) {
+        setLastTableNumber(data.last_table_number);
+        setTableNumber(data.last_table_number);
+      }
+    } catch (error) {
+      console.error('Error fetching last table number:', error);
+    }
+  };
+
   const addToCart = (drink: Drink, goToCart = false) => {
     if (!isCheckedIn) {
       toast({
@@ -629,6 +650,14 @@ export default function ClientDashboard() {
       if (errors.length > 0) {
         console.error('Order placement errors:', errors);
         throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
+      }
+
+      // Update client's last table number
+      if (clientData?.id && tableNumber.trim()) {
+        await supabase
+          .from('clients')
+          .update({ last_table_number: tableNumber.trim() })
+          .eq('id', clientData.id);
       }
 
       setCart([]);
@@ -1057,7 +1086,7 @@ export default function ClientDashboard() {
                     <Input
                       id="tableNumber"
                       type="text"
-                      placeholder="Enter your table number"
+                      placeholder={lastTableNumber ? `Last used: ${lastTableNumber}` : "Enter your table number"}
                       value={tableNumber}
                       onChange={(e) => setTableNumber(e.target.value)}
                       className="text-center text-lg font-semibold"
