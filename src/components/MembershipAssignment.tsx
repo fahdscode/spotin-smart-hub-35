@@ -31,28 +31,32 @@ const MembershipAssignment = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPlan, setSelectedPlan] = useState('');
   const [loading, setLoading] = useState(false);
+  const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const { toast } = useToast();
 
-  const membershipPlans: MembershipPlan[] = [
-    {
-      id: 'basic',
-      plan_name: 'Basic Membership',
-      discount_percentage: 10,
-      perks: ['10% off drinks', 'Priority seating', 'Monthly newsletter']
-    },
-    {
-      id: 'premium',
-      plan_name: 'Premium Membership',
-      discount_percentage: 20,
-      perks: ['20% off drinks', 'Free 2 hours room booking/month', 'Event priority access', 'Free guest passes']
-    },
-    {
-      id: 'vip',
-      plan_name: 'VIP Membership',
-      discount_percentage: 30,
-      perks: ['30% off everything', 'Unlimited room access', 'Personal concierge', 'Exclusive events']
+  useEffect(() => {
+    fetchMembershipPlans();
+  }, []);
+
+  const fetchMembershipPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('membership_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (error) throw error;
+      setMembershipPlans(data || []);
+    } catch (error) {
+      console.error('Error fetching membership plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load membership plans",
+        variant: "destructive",
+      });
     }
-  ];
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MembershipPlan {
   id: string;
@@ -18,59 +19,14 @@ interface MembershipPlan {
   discount_percentage: number;
   perks: string[];
   is_active: boolean;
-  duration_type: 'weekly' | 'monthly' | '6months' | 'annual';
+  duration_months: number;
   price: number;
   created_at: string;
 }
 
 const MembershipPlansManagement = () => {
   const { toast } = useToast();
-  const [plans, setPlans] = useState<MembershipPlan[]>([
-    {
-      id: "1",
-      plan_name: "Basic Weekly",
-      description: "Essential workspace access for a week",
-      discount_percentage: 5,
-      perks: ["5% discount on drinks", "Basic Wi-Fi", "Access to common areas"],
-      is_active: true,
-      duration_type: 'weekly',
-      price: 25,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "2", 
-      plan_name: "Premium Monthly",
-      description: "Enhanced workspace experience for a month",
-      discount_percentage: 15,
-      perks: ["15% discount on all services", "Priority booking", "Free coffee daily", "Meeting room credits"],
-      is_active: true,
-      duration_type: 'monthly',
-      price: 199,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "3",
-      plan_name: "Enterprise Semi-Annual",
-      description: "Complete 6-month workspace solution for teams",
-      discount_percentage: 25,
-      perks: ["25% discount on all services", "Dedicated desk space", "Unlimited meeting rooms", "24/7 access", "Personal assistant"],
-      is_active: true,
-      duration_type: '6months',
-      price: 999,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "4",
-      plan_name: "Annual VIP",
-      description: "Ultimate annual membership with maximum benefits",
-      discount_percentage: 35,
-      perks: ["35% discount on all services", "Private office access", "Unlimited everything", "Concierge service", "Event hosting privileges"],
-      is_active: true,
-      duration_type: 'annual',
-      price: 1899,
-      created_at: new Date().toISOString()
-    }
-  ]);
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -83,9 +39,32 @@ const MembershipPlansManagement = () => {
     discount_percentage: 0,
     perks: "",
     is_active: true,
-    duration_type: 'monthly' as 'weekly' | 'monthly' | '6months' | 'annual',
+    duration_months: 1,
     price: 0
   });
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('membership_plans')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPlans(data || []);
+    } catch (error: any) {
+      console.error('Error fetching plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load membership plans",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,29 +73,34 @@ const MembershipPlansManagement = () => {
     try {
       const perksArray = formData.perks.split(',').map(p => p.trim()).filter(p => p);
       
-      const planData: MembershipPlan = {
-        id: editingPlan?.id || Date.now().toString(),
+      const planData = {
         plan_name: formData.plan_name,
         description: formData.description,
         discount_percentage: formData.discount_percentage,
         perks: perksArray,
         is_active: formData.is_active,
-        duration_type: formData.duration_type,
-        price: formData.price,
-        created_at: editingPlan?.created_at || new Date().toISOString()
+        duration_months: formData.duration_months,
+        price: formData.price
       };
 
       if (editingPlan) {
-        setPlans(prev => prev.map(plan => 
-          plan.id === editingPlan.id ? planData : plan
-        ));
+        const { error } = await supabase
+          .from('membership_plans')
+          .update(planData)
+          .eq('id', editingPlan.id);
+
+        if (error) throw error;
         
         toast({
           title: "Success",
           description: "Membership plan updated successfully",
         });
       } else {
-        setPlans(prev => [planData, ...prev]);
+        const { error } = await supabase
+          .from('membership_plans')
+          .insert([planData]);
+
+        if (error) throw error;
         
         toast({
           title: "Success",
@@ -124,6 +108,7 @@ const MembershipPlansManagement = () => {
         });
       }
 
+      await fetchPlans();
       resetForm();
       setIsDialogOpen(false);
     } catch (error: any) {
@@ -141,11 +126,11 @@ const MembershipPlansManagement = () => {
     setEditingPlan(plan);
     setFormData({
       plan_name: plan.plan_name,
-      description: plan.description,
+      description: plan.description || "",
       discount_percentage: plan.discount_percentage,
       perks: plan.perks.join(', '),
       is_active: plan.is_active,
-      duration_type: plan.duration_type,
+      duration_months: plan.duration_months,
       price: plan.price
     });
     setIsDialogOpen(true);
@@ -155,7 +140,14 @@ const MembershipPlansManagement = () => {
     if (!confirm("Are you sure you want to delete this membership plan?")) return;
 
     try {
-      setPlans(prev => prev.filter(plan => plan.id !== planId));
+      const { error } = await supabase
+        .from('membership_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      await fetchPlans();
       
       toast({
         title: "Success",
@@ -177,7 +169,7 @@ const MembershipPlansManagement = () => {
       discount_percentage: 0,
       perks: "",
       is_active: true,
-      duration_type: 'monthly',
+      duration_months: 1,
       price: 0
     });
     setEditingPlan(null);
@@ -209,14 +201,12 @@ const MembershipPlansManagement = () => {
     }
   };
 
-  const getDurationLabel = (durationType: string) => {
-    switch (durationType) {
-      case 'weekly': return 'Weekly';
-      case 'monthly': return 'Monthly';
-      case '6months': return '6 Months';
-      case 'annual': return 'Annual';
-      default: return 'Monthly';
-    }
+  const getDurationLabel = (durationMonths: number) => {
+    if (durationMonths === 1) return 'Monthly';
+    if (durationMonths === 3) return '3 Months';
+    if (durationMonths === 6) return '6 Months';
+    if (durationMonths === 12) return 'Annual';
+    return `${durationMonths} Months`;
   };
 
   const filteredPlans = plans.filter(plan =>
@@ -284,26 +274,26 @@ const MembershipPlansManagement = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="duration_type">Duration</Label>
+                      <Label htmlFor="duration_months">Duration (Months)</Label>
                       <Select
-                        value={formData.duration_type}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, duration_type: value as any }))}
+                        value={formData.duration_months.toString()}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, duration_months: parseInt(value) }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select duration" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-input z-50">
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="6months">6 Months</SelectItem>
-                          <SelectItem value="annual">Annual</SelectItem>
+                          <SelectItem value="1">1 Month</SelectItem>
+                          <SelectItem value="3">3 Months</SelectItem>
+                          <SelectItem value="6">6 Months</SelectItem>
+                          <SelectItem value="12">12 Months</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="price">Price ($)</Label>
+                    <Label htmlFor="price">Price (EGP)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -311,7 +301,7 @@ const MembershipPlansManagement = () => {
                       step="0.01"
                       value={formData.price}
                       onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                      placeholder={`Price for ${getDurationLabel(formData.duration_type).toLowerCase()} plan`}
+                      placeholder="Enter plan price"
                       required
                     />
                   </div>
@@ -386,10 +376,10 @@ const MembershipPlansManagement = () => {
                         <p className="text-muted-foreground mb-3">{plan.description}</p>
                         
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <span className="font-medium">{plan.price} EGP/{getDurationLabel(plan.duration_type).toLowerCase()}</span>
+                          <span className="font-medium">{plan.price} EGP</span>
                           <span>{plan.discount_percentage}% discount on services</span>
                           <Badge variant="secondary" className="text-xs">
-                            {getDurationLabel(plan.duration_type)}
+                            {getDurationLabel(plan.duration_months)}
                           </Badge>
                         </div>
                         
