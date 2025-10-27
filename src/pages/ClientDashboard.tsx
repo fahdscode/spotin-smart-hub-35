@@ -13,7 +13,7 @@ import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { ActiveTicketCard } from '@/components/ActiveTicketCard';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin } from 'lucide-react';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
@@ -66,6 +66,8 @@ export default function ClientDashboard() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [lastOrders, setLastOrders] = useState<LastOrder[]>([]);
   const [favoriteDrinks, setFavoriteDrinks] = useState<Drink[]>([]);
+  const [bestSellingProducts, setBestSellingProducts] = useState<Drink[]>([]);
+  const [categories, setCategories] = useState<Array<{id: string; name: string; count: number}>>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Profile data
@@ -173,6 +175,8 @@ export default function ClientDashboard() {
         const availableDrinks = drinksData.filter(d => d.category !== 'day_use_ticket');
         setDrinks(availableDrinks);
         loadFavoritesFromOrders(clientId, availableDrinks);
+        loadBestSellingProducts(availableDrinks);
+        loadCategories(availableDrinks);
       }
 
       // Fetch last orders
@@ -255,6 +259,64 @@ export default function ClientDashboard() {
       console.error('Error loading favorites:', error);
       setFavoriteDrinks([]);
     }
+  };
+
+  const loadBestSellingProducts = async (availableDrinks: Drink[]) => {
+    try {
+      // Get all completed/served orders to find best sellers
+      const { data: orders } = await supabase
+        .from('session_line_items')
+        .select('item_name, quantity')
+        .in('status', ['completed', 'served']);
+
+      if (orders && orders.length > 0) {
+        // Count total quantity sold for each item
+        const itemSales = orders.reduce((acc: Record<string, number>, order) => {
+          const itemName = order.item_name;
+          acc[itemName] = (acc[itemName] || 0) + order.quantity;
+          return acc;
+        }, {});
+
+        // Sort by sales and get top 6
+        const topItems = Object.entries(itemSales)
+          .sort(([, a], [, b]) => (b as number) - (a as number))
+          .slice(0, 6)
+          .map(([name]) => name);
+
+        // Match with available drinks
+        const bestSellers = availableDrinks.filter(drink => topItems.includes(drink.name));
+        setBestSellingProducts(bestSellers);
+      } else {
+        // If no orders, show random products
+        const randomProducts = availableDrinks
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 6);
+        setBestSellingProducts(randomProducts);
+      }
+    } catch (error) {
+      console.error('Error loading best sellers:', error);
+      setBestSellingProducts([]);
+    }
+  };
+
+  const loadCategories = (availableDrinks: Drink[]) => {
+    // Group drinks by category and count
+    const categoryMap = availableDrinks.reduce((acc: Record<string, number>, drink) => {
+      const category = drink.category || 'Other';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Convert to array and sort by count
+    const categoryArray = Object.entries(categoryMap)
+      .map(([name, count]) => ({
+        id: name,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        count: count as number
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    setCategories(categoryArray);
   };
 
   const fetchCheckInsLast30Days = async (clientId: string) => {
@@ -863,6 +925,75 @@ export default function ClientDashboard() {
                 </Card>
               )}
 
+
+              {/* Categories Section */}
+              {categories.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Browse by Category
+                    </CardTitle>
+                    <CardDescription>
+                      Explore our menu categories
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {categories.map((category) => (
+                        <Button
+                          key={category.id}
+                          variant="outline"
+                          className="h-auto flex-col items-start p-4 hover:bg-primary/5 hover:border-primary"
+                          onClick={() => {
+                            setCurrentView('order');
+                            setSearchQuery(category.name.toLowerCase());
+                          }}
+                        >
+                          <div className="font-semibold text-base">{category.name}</div>
+                          <div className="text-sm text-muted-foreground">{category.count} items</div>
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Best Selling Products */}
+              {bestSellingProducts.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-5 w-5 text-yellow-500" />
+                      Best Sellers
+                    </CardTitle>
+                    <CardDescription>
+                      Most popular items this month
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {bestSellingProducts.map((drink) => (
+                        <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                          <div className="flex-1">
+                            <p className="font-medium">{drink.name}</p>
+                            <p className="text-sm text-muted-foreground">{drink.description}</p>
+                            <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(drink.price)}</p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            onClick={() => addToCart(drink, false)}
+                            disabled={!isCheckedIn}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Favorites */}
               {favoriteDrinks.length > 0 && (
