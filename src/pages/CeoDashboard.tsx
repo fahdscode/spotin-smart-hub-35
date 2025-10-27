@@ -15,6 +15,7 @@ import FinanceReports from "@/components/FinanceReports";
 import BillManagement from "@/components/BillManagement";
 import CashierSession from "@/components/CashierSession";
 import VendorManagement from "@/components/VendorManagement";
+import TopProductsSales from "@/components/TopProductsSales";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -658,8 +659,11 @@ const CeoDashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
+            {/* Top Products Sales */}
+            <TopProductsSales />
+
             {/* Enhanced Business Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <MetricCard title="Avg Order Value" value={formatCurrency(businessMetrics.avgOrderValue)} change="+8.2%" icon={DollarSign} variant="success" />
               <MetricCard title="Customer Satisfaction" value={`${satisfactionData.averageRating}/5`} change="+0.3" icon={Smile} variant="info" />
               <MetricCard title="Repeat Customer Rate" value={`${businessMetrics.repeatCustomerRate}%`} change="+5%" icon={Users} variant="success" />

@@ -1730,8 +1730,16 @@ export type Database = {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: Json
       }
+      get_product_sales_trends: {
+        Args: { p_end_date?: string; p_start_date?: string; p_top_n?: number }
+        Returns: Json
+      }
       get_receptionist_active_sessions: { Args: never; Returns: Json }
       get_receptionist_daily_registrations: { Args: never; Returns: number }
+      get_top_products_by_sales: {
+        Args: { p_end_date?: string; p_limit?: number; p_start_date?: string }
+        Returns: Json
+      }
       get_user_role: { Args: { check_user_id?: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_staff: { Args: never; Returns: boolean }
