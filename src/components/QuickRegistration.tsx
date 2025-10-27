@@ -27,7 +27,7 @@ export const QuickRegistration = ({ onSuccess }: QuickRegistrationProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.jobTitle || !formData.howDidYouFindUs) {
+    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.jobTitle) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -47,7 +47,7 @@ export const QuickRegistration = ({ onSuccess }: QuickRegistrationProps) => {
         p_email: formData.email || null,
         p_password_hash: passwordHash,
         p_job_title: formData.jobTitle,
-        p_how_did_you_find_us: formData.howDidYouFindUs
+        p_how_did_you_find_us: formData.howDidYouFindUs || 'Not specified'
       });
 
       if (error) throw error;
@@ -145,11 +145,10 @@ export const QuickRegistration = ({ onSuccess }: QuickRegistrationProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="howDidYouFindUs">How did you find us? *</Label>
+        <Label htmlFor="howDidYouFindUs">How did you find us? (optional)</Label>
         <Select
           value={formData.howDidYouFindUs}
           onValueChange={(value) => setFormData({ ...formData, howDidYouFindUs: value })}
-          required
         >
           <SelectTrigger id="howDidYouFindUs">
             <SelectValue placeholder="Select an option" />
