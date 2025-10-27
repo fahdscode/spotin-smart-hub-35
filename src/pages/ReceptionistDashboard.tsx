@@ -43,12 +43,6 @@ const ReceptionistDashboard = () => {
   const [hasActiveCashierSession, setHasActiveCashierSession] = useState<boolean>(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const quickActions = [{
-    title: "Check-IN/OUT",
-    description: "Scan to check in or out",
-    icon: QrCode,
-    action: "checkin",
-    variant: "success" as const
-  }, {
     title: "Quick Registration",
     description: "Register new client",
     icon: UserCheck,
@@ -309,7 +303,7 @@ const ReceptionistDashboard = () => {
                         <Card className={`hover:shadow-card transition-all duration-200 cursor-pointer group ${!hasActiveCashierSession ? 'opacity-50 pointer-events-none' : ''}`}>
                           <CardContent className="p-4">
                             <div className="flex flex-col items-center text-center gap-3">
-                              <div className={`p-3 rounded-lg ${action.variant === "success" ? "bg-success/10 text-success" : action.variant === "info" ? "bg-info/10 text-info" : action.variant === "secondary" ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}>
+                              <div className={`p-3 rounded-lg ${action.variant === "info" ? "bg-info/10 text-info" : action.variant === "secondary" ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}>
                                 <action.icon className="h-6 w-6" />
                               </div>
                               <div>
@@ -320,17 +314,6 @@ const ReceptionistDashboard = () => {
                           </CardContent>
                         </Card>
                       </DialogTrigger>
-                      {action.action === "checkin" && <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Check-IN/OUT Scanner</DialogTitle>
-                            <DialogDescription>
-                              Scan a client's barcode to automatically check them in or out
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-6">
-                            <BarcodeScanner scannedByUserId={currentUserId || undefined} />
-                          </div>
-                        </DialogContent>}
                       {action.action === "register" && <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
                           <DialogHeader>
                             <DialogTitle>Quick Client Registration</DialogTitle>
