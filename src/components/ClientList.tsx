@@ -224,8 +224,9 @@ const ClientList = () => {
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
 
-        // Check for assigned ticket in this session
-        console.log('🎫 Looking for ticket assigned at or after:', startTime);
+        // Check for assigned ticket in this session (look back a few seconds to account for timing)
+        const ticketLookbackTime = new Date(new Date(startTime).getTime() - 10000).toISOString(); // 10 seconds before
+        console.log('🎫 Looking for ticket assigned between:', ticketLookbackTime, 'and now');
         const { data: assignedTicket, error: ticketError } = await supabase
           .from('client_tickets')
           .select(`
@@ -234,8 +235,8 @@ const ClientList = () => {
           `)
           .eq('client_id', clientId)
           .eq('is_active', true)
-          .gte('checked_in_at', startTime)
-          .order('checked_in_at', { ascending: false })
+          .gte('purchase_date', ticketLookbackTime)
+          .order('purchase_date', { ascending: false })
           .limit(1)
           .maybeSingle();
 
@@ -264,6 +265,7 @@ const ClientList = () => {
               .select('name, price')
               .eq('category', 'day_use_ticket')
               .eq('is_available', true)
+              .limit(1)
               .maybeSingle();
 
             if (ticketData) {
