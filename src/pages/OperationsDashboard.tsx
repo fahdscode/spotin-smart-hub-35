@@ -27,7 +27,13 @@ import { useStockData } from "@/hooks/useStockData";
 import { Skeleton } from "@/components/ui/skeleton";
 const OperationsDashboard = () => {
   const navigate = useNavigate();
-  const { stockItems, loading, getCriticalStockCount, getTotalInventoryValue, getStockStatusCounts } = useStockData();
+  const {
+    stockItems,
+    loading,
+    getCriticalStockCount,
+    getTotalInventoryValue,
+    getStockStatusCounts
+  } = useStockData();
   const [restockAmount, setRestockAmount] = useState<{
     [key: string]: number;
   }>({});
@@ -123,33 +129,32 @@ const OperationsDashboard = () => {
       }));
     }
   };
-
   const handleGenerateStockReport = () => {
-    const reportDate = new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const reportDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    
+
     // Create CSV content
     let csvContent = "Stock Report\n";
     csvContent += `Generated: ${reportDate}\n\n`;
     csvContent += "Item Name,Category,Unit,Current Quantity,Min Quantity,Status,Cost per Unit,Total Value\n";
-    
     stockItems.forEach(item => {
       const totalValue = (item.current_quantity * (item.cost_per_unit || 0)).toFixed(2);
       csvContent += `"${item.name}","${item.category}","${item.unit}",${item.current_quantity},${item.min_quantity},"${item.status}",${item.cost_per_unit || 0},${totalValue}\n`;
     });
-    
     csvContent += `\n\nSummary\n`;
     csvContent += `Total Items,${stockItems.length}\n`;
     csvContent += `Critical Stock,${statusCounts.critical}\n`;
     csvContent += `Low Stock,${statusCounts.low}\n`;
     csvContent += `Well Stocked,${statusCounts.good}\n`;
     csvContent += `Total Inventory Value,${getTotalInventoryValue().toFixed(2)} EGP\n`;
-    
+
     // Create download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], {
+      type: 'text/csv;charset=utf-8;'
+    });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -158,20 +163,15 @@ const OperationsDashboard = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     toast.success("Stock report generated successfully!");
   };
-
   const statusCounts = getStockStatusCounts();
   return <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
       <div className="container mx-auto p-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} size="sm">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
+          
           <div>
             <h2 className="text-2xl font-bold text-foreground">Operations Manager</h2>
             <p className="text-muted-foreground">Stock management, inventory control, and expense tracking</p>
@@ -180,45 +180,17 @@ const OperationsDashboard = () => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {loading ? (
-            <>
+          {loading ? <>
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
-            </>
-          ) : (
-            <>
-              <MetricCard 
-                title="Low Stock Alerts" 
-                value={getCriticalStockCount()} 
-                change={`${getCriticalStockCount()} items need attention`} 
-                icon={AlertTriangle} 
-                variant="warning" 
-              />
-              <MetricCard 
-                title="Monthly Expenses" 
-                value="27,629 EGP" 
-                change="85.2% of budget" 
-                icon={DollarSign} 
-                variant="info" 
-              />
-              <MetricCard 
-                title="Pending Orders" 
-                value="7" 
-                change="3 arriving today" 
-                icon={Truck} 
-                variant="default" 
-              />
-              <MetricCard 
-                title="Inventory Value" 
-                value={`${getTotalInventoryValue().toLocaleString()} EGP`} 
-                change="+2.1% from last month" 
-                icon={Package} 
-                variant="success" 
-              />
-            </>
-          )}
+            </> : <>
+              <MetricCard title="Low Stock Alerts" value={getCriticalStockCount()} change={`${getCriticalStockCount()} items need attention`} icon={AlertTriangle} variant="warning" />
+              <MetricCard title="Monthly Expenses" value="27,629 EGP" change="85.2% of budget" icon={DollarSign} variant="info" />
+              <MetricCard title="Pending Orders" value="7" change="3 arriving today" icon={Truck} variant="default" />
+              <MetricCard title="Inventory Value" value={`${getTotalInventoryValue().toLocaleString()} EGP`} change="+2.1% from last month" icon={Package} variant="success" />
+            </>}
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
@@ -253,16 +225,10 @@ const OperationsDashboard = () => {
                     <CardDescription>Current stock status and reorder alerts</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {loading ? (
-                      <div className="space-y-4">
-                        {[...Array(3)].map((_, i) => (
-                          <Skeleton key={i} className="h-24" />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {stockItems.map(item => (
-                          <Card key={item.id} className={`p-4 ${item.status === "critical" ? "border-destructive bg-destructive/5" : item.status === "low" ? "border-warning bg-warning/5" : ""}`}>
+                    {loading ? <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+                      </div> : <div className="space-y-4">
+                        {stockItems.map(item => <Card key={item.id} className={`p-4 ${item.status === "critical" ? "border-destructive bg-destructive/5" : item.status === "low" ? "border-warning bg-warning/5" : ""}`}>
                             <div className="flex items-center justify-between mb-3">
                               <div>
                                 <h4 className="font-semibold">{item.name}</h4>
@@ -278,30 +244,20 @@ const OperationsDashboard = () => {
                                 <span>Current: {item.current_quantity} {item.unit}</span>
                                 <span>Min: {item.min_quantity} {item.unit}</span>
                               </div>
-                              <Progress value={(item.current_quantity / item.maximum) * 100} className="h-2" />
+                              <Progress value={item.current_quantity / item.maximum * 100} className="h-2" />
                             </div>
 
-                            {(item.status === "critical" || item.status === "low") && (
-                              <div className="flex gap-2 mt-3">
-                                <Input 
-                                  type="number" 
-                                  placeholder="Qty to restock" 
-                                  value={restockAmount[item.id] || ""} 
-                                  onChange={e => setRestockAmount(prev => ({
-                                    ...prev,
-                                    [item.id]: parseInt(e.target.value) || 0
-                                  }))} 
-                                  className="flex-1" 
-                                />
+                            {(item.status === "critical" || item.status === "low") && <div className="flex gap-2 mt-3">
+                                <Input type="number" placeholder="Qty to restock" value={restockAmount[item.id] || ""} onChange={e => setRestockAmount(prev => ({
+                          ...prev,
+                          [item.id]: parseInt(e.target.value) || 0
+                        }))} className="flex-1" />
                                 <Button variant="accent" size="sm" onClick={() => handleRestock(item.id)}>
                                   Order
                                 </Button>
-                              </div>
-                            )}
-                          </Card>
-                        ))}
-                      </div>
-                    )}
+                              </div>}
+                          </Card>)}
+                      </div>}
                   </CardContent>
                 </Card>
               </div>
@@ -313,14 +269,11 @@ const OperationsDashboard = () => {
                   <CardDescription>Overall inventory status</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {loading ? (
-                    <div className="space-y-3">
+                  {loading ? <div className="space-y-3">
                       <Skeleton className="h-12" />
                       <Skeleton className="h-12" />
                       <Skeleton className="h-12" />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
+                    </div> : <div className="space-y-3">
                       <div className="flex justify-between items-center p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                         <span className="text-sm font-medium">Critical Stock</span>
                         <span className="font-bold text-destructive">
@@ -339,8 +292,7 @@ const OperationsDashboard = () => {
                           {statusCounts.good}
                         </span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
                   <div className="border-t pt-4">
                     <Button variant="professional" className="w-full mb-2" onClick={handleGenerateStockReport}>
