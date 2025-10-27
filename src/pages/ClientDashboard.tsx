@@ -69,6 +69,7 @@ export default function ClientDashboard() {
   const [bestSellingProducts, setBestSellingProducts] = useState<Drink[]>([]);
   const [categories, setCategories] = useState<Array<{id: string; name: string; count: number}>>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
   // Profile data
   const [checkInsLast30Days, setCheckInsLast30Days] = useState<number>(0);
@@ -693,10 +694,12 @@ export default function ClientDashboard() {
     }
   };
 
-  const filteredDrinks = drinks.filter(drink =>
-    drink.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    drink.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDrinks = drinks.filter(drink => {
+    const matchesSearch = drink.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      drink.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || drink.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleLogout = () => {
     // Logout is handled by the LogoutButton component
@@ -1007,6 +1010,34 @@ export default function ClientDashboard() {
                 className="pl-10"
               />
             </div>
+
+            {/* Categories Filter */}
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Categories</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory('all')}
+                    className="rounded-full"
+                  >
+                    All Items
+                  </Button>
+                  {categories.map((category) => (
+                    <Button
+                      key={category.id}
+                      variant={selectedCategory === category.id ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className="rounded-full"
+                    >
+                      {category.name} ({category.count})
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Cart Summary */}
             {cart.length > 0 && (
