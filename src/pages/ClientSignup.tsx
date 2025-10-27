@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Phone, Lock, Check, AlertCircle, Calendar, Users } from "lucide-react";
+import { Coffee, User, Phone, Lock, Check, AlertCircle, Calendar, Users, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import spotinLogo from "@/assets/spotin-logo-main.png";
 import LanguageSelector from "@/components/LanguageSelector";
+import RTLWrapper from "@/components/RTLWrapper";
 
 // Form validation schema
 const signupSchema = z.object({
@@ -236,37 +237,44 @@ const ClientSignup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-8">
-        {/* Language selector */}
-        <div className="flex justify-end">
-          <LanguageSelector />
-        </div>
-        
-        {/* Logo and Header */}
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
+    <RTLWrapper>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl space-y-6 animate-fade-in">
+          {/* Language selector */}
+          <div className="flex justify-end">
+            <LanguageSelector />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">{t('clientSignup.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('clientSignup.subtitle')}</p>
-        </div>
+          
+          {/* Logo and Header */}
+          <div className="text-center space-y-3">
+            <div className="flex justify-center mb-2">
+              <img src={spotinLogo} alt="SpotIn Logo" className="h-20 w-auto" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">{t('clientSignup.title')}</h1>
+            <p className="text-muted-foreground text-base">{t('clientSignup.subtitle')}</p>
+          </div>
 
-        {/* Benefits */}
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="flex flex-col items-center space-y-2">
-            <Coffee className="h-6 w-6 text-primary" />
-            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.orderDrinks')}</span>
+          {/* Benefits */}
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="flex flex-col items-center space-y-2 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Coffee className="h-5 w-5 text-primary" />
+              </div>
+              <span className="text-xs font-medium text-foreground">{t('clientSignup.benefits.orderDrinks')}</span>
+            </div>
+            <div className="flex flex-col items-center space-y-2 p-3 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors">
+              <div className="p-2 rounded-full bg-accent/10">
+                <User className="h-5 w-5 text-accent" />
+              </div>
+              <span className="text-xs font-medium text-foreground">{t('clientSignup.benefits.bookRooms')}</span>
+            </div>
+            <div className="flex flex-col items-center space-y-2 p-3 rounded-lg bg-success/5 hover:bg-success/10 transition-colors">
+              <div className="p-2 rounded-full bg-success/10">
+                <Check className="h-5 w-5 text-success" />
+              </div>
+              <span className="text-xs font-medium text-foreground">{t('clientSignup.benefits.quickCheckin')}</span>
+            </div>
           </div>
-          <div className="flex flex-col items-center space-y-2">
-            <User className="h-6 w-6 text-primary" />
-            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.bookRooms')}</span>
-          </div>
-          <div className="flex flex-col items-center space-y-2">
-            <Check className="h-6 w-6 text-primary" />
-            <span className="text-sm text-muted-foreground">{t('clientSignup.benefits.quickCheckin')}</span>
-          </div>
-        </div>
 
         {/* Signup Form */}
         <Card className="shadow-xl">
@@ -277,213 +285,272 @@ const ClientSignup = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">{t('clientSignup.firstName')}</Label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      placeholder={t('clientSignup.firstName')}
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      className={errors.firstName ? "border-destructive" : ""}
-                    />
-                    {errors.firstName && (
-                      <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName" className="text-sm font-medium">{t('clientSignup.firstName')}</Label>
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        placeholder={t('clientSignup.firstName')}
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        className={`h-11 transition-all ${errors.firstName ? "border-destructive focus-visible:ring-destructive" : "focus-visible:ring-primary"}`}
+                      />
+                      {errors.firstName && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.firstName}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName" className="text-sm font-medium">{t('clientSignup.lastName')}</Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        placeholder={t('clientSignup.lastName')}
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        className={`h-11 transition-all ${errors.lastName ? "border-destructive focus-visible:ring-destructive" : "focus-visible:ring-primary"}`}
+                      />
+                      {errors.lastName && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.lastName}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div>
-                    <Label htmlFor="lastName">{t('clientSignup.lastName')}</Label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      placeholder={t('clientSignup.lastName')}
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      className={errors.lastName ? "border-destructive" : ""}
-                    />
-                    {errors.lastName && (
-                      <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
-                    )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="gender">{t('clientSignup.gender')}</Label>
-                    <Select value={formData.gender} onValueChange={(value) => handleSelectChange('gender', value)}>
-                      <SelectTrigger className={errors.gender ? "border-destructive" : ""}>
-                        <SelectValue placeholder={t('clientSignup.gender')} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gender" className="text-sm font-medium">{t('clientSignup.gender')}</Label>
+                      <Select value={formData.gender} onValueChange={(value) => handleSelectChange('gender', value)}>
+                        <SelectTrigger className={`h-11 ${errors.gender ? "border-destructive" : ""}`}>
+                          <SelectValue placeholder={t('clientSignup.gender')} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          <SelectItem value="male">{t('clientSignup.male')}</SelectItem>
+                          <SelectItem value="female">{t('clientSignup.female')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.gender && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.gender}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="birthday" className="text-sm font-medium">{t('clientSignup.birthday')}</Label>
+                      <Input
+                        id="birthday"
+                        name="birthday"
+                        type="date"
+                        value={formData.birthday}
+                        onChange={handleInputChange}
+                        className={`h-11 ${errors.birthday ? "border-destructive" : ""}`}
+                        max={new Date(Date.now() - 16 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                      />
+                      {errors.birthday && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.birthday}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />
+                      {t('clientSignup.phoneNumber')}
+                    </Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder={t('clientSignup.phoneNumber')}
+                      value={formData.phone}
+                      onChange={(e) => {
+                        const cleanedValue = e.target.value.replace(/\D/g, '');
+                        handleInputChange({ target: { name: 'phone', value: cleanedValue } } as any);
+                      }}
+                      className={`h-11 ${errors.phone ? "border-destructive" : ""}`}
+                      dir="ltr"
+                    />
+                    {errors.phone && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      {t('clientSignup.emailOptional')}
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder={t('clientSignup.emailOptional')}
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={`h-11 ${errors.email ? "border-destructive" : ""}`}
+                      dir="ltr"
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      {t('clientSignup.password')}
+                    </Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder={t('clientSignup.password')}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className={`h-11 ${errors.password ? "border-destructive" : ""}`}
+                    />
+                    {errors.password && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.password}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      {t('clientSignup.confirmPassword')}
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder={t('clientSignup.confirmPassword')}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className={`h-11 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.confirmPassword}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="jobTitle" className="text-sm font-medium flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      {t('clientSignup.jobTitle')}
+                    </Label>
+                    <Input
+                      id="jobTitle"
+                      name="jobTitle"
+                      type="text"
+                      placeholder={t('clientSignup.jobTitle')}
+                      value={formData.jobTitle}
+                      onChange={handleInputChange}
+                      className={`h-11 ${errors.jobTitle ? "border-destructive" : ""}`}
+                    />
+                    {errors.jobTitle && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.jobTitle}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-2 mt-3 p-3 rounded-lg bg-muted/30">
+                      <input
+                        type="checkbox"
+                        id="isStudent"
+                        name="isStudent"
+                        className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                      />
+                      <Label htmlFor="isStudent" className="text-sm font-normal cursor-pointer">{t('clientSignup.isStudent')}</Label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="howDidYouFindUs" className="text-sm font-medium">{t('clientSignup.howDidYouFindUs')}</Label>
+                    <Select value={formData.howDidYouFindUs} onValueChange={(value) => handleSelectChange('howDidYouFindUs', value)}>
+                      <SelectTrigger className={`h-11 ${errors.howDidYouFindUs ? "border-destructive" : ""}`}>
+                        <SelectValue placeholder={t('clientSignup.howDidYouFindUs')} />
                       </SelectTrigger>
-                      <SelectContent className="bg-background border z-50">
-                        <SelectItem value="male">{t('clientSignup.male')}</SelectItem>
-                        <SelectItem value="female">{t('clientSignup.female')}</SelectItem>
+                      <SelectContent className="bg-background border z-50 max-h-[300px]">
+                        <SelectItem value="social_media">{t('clientSignup.findUsOptions.socialMedia')}</SelectItem>
+                        <SelectItem value="friend_referral">{t('clientSignup.findUsOptions.friendReferral')}</SelectItem>
+                        <SelectItem value="google_search">{t('clientSignup.findUsOptions.googleSearch')}</SelectItem>
+                        <SelectItem value="instagram">{t('clientSignup.findUsOptions.instagram')}</SelectItem>
+                        <SelectItem value="facebook">{t('clientSignup.findUsOptions.facebook')}</SelectItem>
+                        <SelectItem value="linkedin">{t('clientSignup.findUsOptions.linkedin')}</SelectItem>
+                        <SelectItem value="walking_by">{t('clientSignup.findUsOptions.walkingBy')}</SelectItem>
+                        <SelectItem value="event">{t('clientSignup.findUsOptions.event')}</SelectItem>
+                        <SelectItem value="website">{t('clientSignup.findUsOptions.website')}</SelectItem>
+                        <SelectItem value="other">{t('clientSignup.findUsOptions.other')}</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.gender && (
-                      <p className="text-sm text-destructive mt-1">{errors.gender}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="birthday">{t('clientSignup.birthday')}</Label>
-                    <Input
-                      id="birthday"
-                      name="birthday"
-                      type="date"
-                      value={formData.birthday}
-                      onChange={handleInputChange}
-                      className={errors.birthday ? "border-destructive" : ""}
-                      max={new Date(Date.now() - 16 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                    />
-                    {errors.birthday && (
-                      <p className="text-sm text-destructive mt-1">{errors.birthday}</p>
+                    {errors.howDidYouFindUs && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.howDidYouFindUs}
+                      </p>
                     )}
                   </div>
                 </div>
-                
-                <div>
-                  <Label htmlFor="phone">{t('clientSignup.phoneNumber')}</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder={t('clientSignup.phoneNumber')}
-                    value={formData.phone}
-                    onChange={(e) => {
-                      const cleanedValue = e.target.value.replace(/\D/g, '');
-                      handleInputChange({ target: { name: 'phone', value: cleanedValue } } as any);
-                    }}
-                    className={errors.phone ? "border-destructive" : ""}
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-destructive mt-1">{errors.phone}</p>
-                  )}
-                </div>
 
-                <div>
-                  <Label htmlFor="email">{t('clientSignup.emailOptional')}</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder={t('clientSignup.emailOptional')}
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={errors.email ? "border-destructive" : ""}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 text-base bg-primary hover:bg-primary/90 font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {t('auth.signingUp')}
+                    </span>
+                  ) : (
+                    t('clientSignup.createAccount')
                   )}
-                </div>
-
-                <div>
-                  <Label htmlFor="password">{t('clientSignup.password')}</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder={t('clientSignup.password')}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className={errors.password ? "border-destructive" : ""}
-                  />
-                  {errors.password && (
-                    <p className="text-sm text-destructive mt-1">{errors.password}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="confirmPassword">{t('clientSignup.confirmPassword')}</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder={t('clientSignup.confirmPassword')}
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    className={errors.confirmPassword ? "border-destructive" : ""}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="jobTitle">{t('clientSignup.jobTitle')}</Label>
-                  <Input
-                    id="jobTitle"
-                    name="jobTitle"
-                    type="text"
-                    placeholder={t('clientSignup.jobTitle')}
-                    value={formData.jobTitle}
-                    onChange={handleInputChange}
-                    className={errors.jobTitle ? "border-destructive" : ""}
-                  />
-                  {errors.jobTitle && (
-                    <p className="text-sm text-destructive mt-1">{errors.jobTitle}</p>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 mt-2">
-                    <input
-                      type="checkbox"
-                      id="isStudent"
-                      name="isStudent"
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor="isStudent" className="text-sm font-normal">{t('clientSignup.isStudent')}</Label>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="howDidYouFindUs">{t('clientSignup.howDidYouFindUs')}</Label>
-                  <Select value={formData.howDidYouFindUs} onValueChange={(value) => handleSelectChange('howDidYouFindUs', value)}>
-                    <SelectTrigger className={errors.howDidYouFindUs ? "border-destructive" : ""}>
-                      <SelectValue placeholder={t('clientSignup.howDidYouFindUs')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border z-50">
-                      <SelectItem value="social_media">{t('clientSignup.findUsOptions.socialMedia')}</SelectItem>
-                      <SelectItem value="friend_referral">{t('clientSignup.findUsOptions.friendReferral')}</SelectItem>
-                      <SelectItem value="google_search">{t('clientSignup.findUsOptions.googleSearch')}</SelectItem>
-                      <SelectItem value="instagram">{t('clientSignup.findUsOptions.instagram')}</SelectItem>
-                      <SelectItem value="facebook">{t('clientSignup.findUsOptions.facebook')}</SelectItem>
-                      <SelectItem value="linkedin">{t('clientSignup.findUsOptions.linkedin')}</SelectItem>
-                      <SelectItem value="walking_by">{t('clientSignup.findUsOptions.walkingBy')}</SelectItem>
-                      <SelectItem value="event">{t('clientSignup.findUsOptions.event')}</SelectItem>
-                      <SelectItem value="website">{t('clientSignup.findUsOptions.website')}</SelectItem>
-                      <SelectItem value="other">{t('clientSignup.findUsOptions.other')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.howDidYouFindUs && (
-                    <p className="text-sm text-destructive mt-1">{errors.howDidYouFindUs}</p>
-                  )}
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold"
-              >
-                {isLoading ? t('auth.signingUp') : t('clientSignup.createAccount')}
-              </Button>
+                </Button>
             </form>
 
-            <div className="mt-4 text-center space-y-2">
-              <a
-                href="/client-login"
-                className="text-sm text-primary hover:text-primary/90 transition-colors font-medium"
-              >
-                {t('clientSignup.alreadyHaveAccount')} {t('clientSignup.loginHere')} →
-              </a>
-            </div>
+              <div className="mt-6 pt-4 border-t text-center">
+                <p className="text-sm text-muted-foreground mb-2">
+                  {t('clientSignup.alreadyHaveAccount')}
+                </p>
+                <a
+                  href="/client-login"
+                  className="text-sm text-primary hover:text-primary/80 font-medium transition-colors inline-flex items-center gap-1"
+                >
+                  {t('clientSignup.loginHere')}
+                  <span className="text-lg">→</span>
+                </a>
+              </div>
           </CardContent>
         </Card>
       </div>
     </div>
+    </RTLWrapper>
   );
 };
 
