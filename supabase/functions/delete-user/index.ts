@@ -86,39 +86,79 @@ serve(async (req) => {
       .from('profiles')
       .select('email, full_name, role')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    // Delete from admin_users table first (if exists)
-    await supabaseAdmin
+    console.log('Starting user deletion process for:', userId);
+
+    // Delete related data in order (from dependent to independent)
+    // This prevents foreign key constraint violations
+    
+    // 1. Delete from admin_users table (if exists)
+    console.log('Deleting from admin_users...');
+    const { error: adminError } = await supabaseAdmin
       .from('admin_users')
       .delete()
       .eq('user_id', userId);
+    
+    if (adminError) {
+      console.log('Admin users deletion error (may not exist):', adminError);
+    }
 
-    // Delete from profiles table
-    await supabaseAdmin
+    // 2. Delete from profiles table
+    console.log('Deleting from profiles...');
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('user_id', userId);
+    
+    if (profileError) {
+      console.error('Profile deletion error:', profileError);
+      throw new Error(`Failed to delete profile: ${profileError.message}`);
+    }
 
-    // Try to delete the user from auth (may not exist for all profiles)
-    try {
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      // Only throw error if it's not "user not found"
-      if (deleteError && deleteError.status !== 404) {
-        console.error('Error deleting user from auth:', deleteError);
-        throw deleteError;
+    // 3. Delete other related records that might have foreign keys to auth.users
+    // Check_ins
+    console.log('Deleting check-ins...');
+    await supabaseAdmin
+      .from('check_ins')
+      .delete()
+      .eq('user_id', userId);
+
+    // Memberships
+    console.log('Deleting memberships...');
+    await supabaseAdmin
+      .from('memberships')
+      .delete()
+      .eq('user_id', userId);
+
+    // Feedback
+    console.log('Deleting feedback...');
+    await supabaseAdmin
+      .from('feedback')
+      .delete()
+      .eq('user_id', userId);
+
+    // User analytics
+    console.log('Deleting user analytics...');
+    await supabaseAdmin
+      .from('user_analytics')
+      .delete()
+      .eq('user_id', userId);
+
+    // 4. Finally, delete the user from auth.users
+    console.log('Deleting from auth.users...');
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    
+    if (deleteError) {
+      console.error('Error deleting user from auth:', deleteError);
+      // If the error is "user not found", it's okay - profile was still deleted
+      if (deleteError.status === 404 || deleteError.message?.includes('not found')) {
+        console.log('User not found in auth.users (already deleted or never existed)');
+      } else {
+        throw new Error(`Failed to delete user from auth: ${deleteError.message}`);
       }
-      
-      // If user not found in auth, it's okay - profile was still deleted
-      if (deleteError && deleteError.status === 404) {
-        console.log('User not found in auth.users, but profile was deleted successfully');
-      }
-    } catch (authDeleteError: any) {
-      // If it's not a "user not found" error, throw it
-      if (authDeleteError.status !== 404) {
-        throw authDeleteError;
-      }
+    } else {
+      console.log('Successfully deleted user from auth.users');
     }
 
     // Log the deletion event
