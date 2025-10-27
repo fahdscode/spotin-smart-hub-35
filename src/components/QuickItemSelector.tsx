@@ -71,10 +71,8 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
 
   useEffect(() => {
     // Filter products based on search term and category
-    // Exclude day_use_ticket category as those are tickets, not products
     let filtered = products.filter(product => 
       product.is_available &&
-      product.category !== 'day_use_ticket' &&
       (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
        product.description?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -150,29 +148,20 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
               </div>
             </div>
 
-            {/* Category Filter - Show only categories that have products */}
+            {/* Category Filter */}
             <div className="flex gap-2 flex-wrap">
-              {categories
-                .filter(category => 
-                  // Only show categories that have matching products
-                  products.some(p => 
-                    p.category?.toLowerCase() === category.name.toLowerCase() &&
-                    p.category !== 'day_use_ticket' &&
-                    p.is_available
-                  )
-                )
-                .map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.name ? "default" : "outline"}
-                    onClick={() => setSelectedCategory(category.name)}
-                    className="gap-2"
-                    size="sm"
-                  >
-                    {category.icon && <span>{category.icon}</span>}
-                    {category.name}
-                  </Button>
-                ))}
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.name ? "default" : "outline"}
+                  onClick={() => setSelectedCategory(category.name)}
+                  className="gap-2"
+                  size="sm"
+                >
+                  {category.icon && <span>{category.icon}</span>}
+                  {category.name}
+                </Button>
+              ))}
             </div>
           </div>
 
