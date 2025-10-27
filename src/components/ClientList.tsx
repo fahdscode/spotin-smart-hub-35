@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +42,7 @@ const ClientList = () => {
   const [drinks, setDrinks] = useState<any[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showProductSelector, setShowProductSelector] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -855,65 +857,81 @@ const ClientList = () => {
               </div>
 
               {/* Add Product Section */}
-              <div className="border rounded-lg p-4 bg-muted/50">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Items to Checkout
-                </h3>
-                
-                {/* Search Bar */}
-                <div className="mb-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search products..."
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                {/* Category Filters */}
-                <div className="mb-3 flex gap-2 flex-wrap">
-                  {categories.map((category) => (
+              <Collapsible open={showProductSelector} onOpenChange={setShowProductSelector}>
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger asChild>
                     <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category)}
-                      className="capitalize"
+                      variant="ghost"
+                      className="w-full justify-between p-4 h-auto hover:bg-muted/50"
                     >
-                      {category}
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span className="font-semibold">Add Items to Checkout</span>
+                      </div>
+                      {showProductSelector ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </Button>
-                  ))}
-                </div>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="p-4 bg-muted/50 space-y-3">
+                      {/* Search Bar */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search products..."
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
 
-                {/* Products Grid */}
-                <ScrollArea className="h-[200px]">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {filteredDrinks.map((drink) => (
-                      <Button
-                        key={drink.id}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addItemToCheckout(drink.id)}
-                        className="justify-start text-left h-auto py-2"
-                      >
-                        <div className="truncate w-full">
-                          <p className="font-medium text-xs truncate">{drink.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
+                      {/* Category Filters */}
+                      <div className="flex gap-2 flex-wrap">
+                        {categories.map((category) => (
+                          <Button
+                            key={category}
+                            variant={selectedCategory === category ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedCategory(category)}
+                            className="capitalize"
+                          >
+                            {category}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Products Grid */}
+                      <ScrollArea className="h-[200px]">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {filteredDrinks.map((drink) => (
+                            <Button
+                              key={drink.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addItemToCheckout(drink.id)}
+                              className="justify-start text-left h-auto py-2"
+                            >
+                              <div className="truncate w-full">
+                                <p className="font-medium text-xs truncate">{drink.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
+                              </div>
+                            </Button>
+                          ))}
                         </div>
-                      </Button>
-                    ))}
-                  </div>
-                  {filteredDrinks.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No products found
+                        {filteredDrinks.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            No products found
+                          </div>
+                        )}
+                      </ScrollArea>
                     </div>
-                  )}
-                </ScrollArea>
-              </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
 
               <div className="border rounded-lg overflow-hidden">
                 <div className="bg-muted p-3">
