@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useLocalizedFields } from '@/hooks/useLocalizedFields';
 
 // Remove this interface as we'll use the one from AuthContext
 
@@ -57,6 +58,7 @@ export default function ClientDashboard() {
   const { toast } = useToast();
   const { clientData, isAuthenticated, userRole, clearClientAuth, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
+  const { getProductName, getProductDescription } = useLocalizedFields();
   
   // Prevent accidental logout from back/refresh buttons
   usePreventAccidentalLogout();
@@ -522,13 +524,13 @@ export default function ClientDashboard() {
     if (existingItem) {
       setCart(cart.map(item => 
         item.id === drink.id 
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: item.quantity + 1, name: getProductName(drink) }
           : item
       ));
     } else {
       setCart([...cart, {
         id: drink.id,
-        name: drink.name,
+        name: getProductName(drink),
         price: drink.price,
         quantity: 1,
         note: orderNotes[drink.id] || ''
@@ -536,8 +538,8 @@ export default function ClientDashboard() {
     }
     
     toast({
-      title: "Added to cart",
-      description: `${drink.name} added to your order`
+      title: t('clientDashboard.addedToCart'),
+      description: `${getProductName(drink)} ${t('clientDashboard.addedToOrder')}`
     });
 
     if (goToCart) {
@@ -566,11 +568,11 @@ export default function ClientDashboard() {
     const newCartItems: CartItem[] = [];
     
     order.items.forEach(item => {
-      const drink = drinks.find(d => d.name === item.item_name && d.is_available);
+      const drink = drinks.find(d => getProductName(d) === item.item_name && d.is_available);
       if (drink) {
         newCartItems.push({
           id: drink.id,
-          name: drink.name,
+          name: getProductName(drink),
           price: drink.price,
           quantity: item.quantity
         });
@@ -746,8 +748,10 @@ export default function ClientDashboard() {
   };
 
   const filteredDrinks = drinks.filter(drink => {
-    const matchesSearch = drink.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      drink.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const productName = getProductName(drink).toLowerCase();
+    const productDesc = getProductDescription(drink)?.toLowerCase() || '';
+    const matchesSearch = productName.includes(searchQuery.toLowerCase()) ||
+      productDesc.includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || drink.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -1057,8 +1061,8 @@ export default function ClientDashboard() {
                       {bestSellingProducts.map((drink) => (
                         <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                           <div className="flex-1">
-                            <p className="font-medium">{drink.name}</p>
-                            <p className="text-sm text-muted-foreground">{drink.description}</p>
+                            <p className="font-medium">{getProductName(drink)}</p>
+                            <p className="text-sm text-muted-foreground">{getProductDescription(drink)}</p>
                             <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(drink.price)}</p>
                           </div>
                           <Button 
@@ -1090,7 +1094,7 @@ export default function ClientDashboard() {
                       {favoriteDrinks.map((drink) => (
                         <div key={drink.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                           <div>
-                            <p className="font-medium">{drink.name}</p>
+                            <p className="font-medium">{getProductName(drink)}</p>
                             <p className="text-sm text-muted-foreground">{formatCurrency(drink.price)}</p>
                           </div>
                           <Button size="sm" onClick={() => addToCart(drink, true)}>
@@ -1269,8 +1273,8 @@ export default function ClientDashboard() {
                   <CardContent className="pt-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold">{drink.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{drink.description}</p>
+                        <h3 className="font-semibold">{getProductName(drink)}</h3>
+                        <p className="text-sm text-muted-foreground mb-2">{getProductDescription(drink)}</p>
                         <div className="flex items-center gap-2">
                           <span className="font-bold">{formatCurrency(drink.price)}</span>
                           <Badge variant="outline">{drink.category}</Badge>
