@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // Remove this interface as we'll use the one from AuthContext
 
@@ -55,6 +56,7 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientData, isAuthenticated, userRole, clearClientAuth, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   
   // Prevent accidental logout from back/refresh buttons
   usePreventAccidentalLogout();
@@ -861,7 +863,7 @@ export default function ClientDashboard() {
             type="button"
           >
             <Coffee className="h-4 w-4 mr-2" />
-            Home
+            {t('dashboard.quickActions')}
           </Button>
           <Button
             variant={currentView === 'order' ? 'default' : 'outline'}
@@ -875,7 +877,7 @@ export default function ClientDashboard() {
             type="button"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            Order
+            {t('clientDashboard.orderDrinks')}
             {cart.length > 0 && (
               <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                 {cart.length}
@@ -892,7 +894,7 @@ export default function ClientDashboard() {
             type="button"
           >
             <Calendar className="h-4 w-4 mr-2" />
-            Events
+            {t('clientDashboard.viewEvents')}
           </Button>
           <Button
             variant={currentView === 'profile' ? 'default' : 'outline'}
@@ -904,7 +906,7 @@ export default function ClientDashboard() {
             type="button"
           >
             <User className="h-4 w-4 mr-2" />
-            Profile
+            {t('clientDashboard.myProfile')}
           </Button>
         </div>
       </div>
@@ -923,8 +925,8 @@ export default function ClientDashboard() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h1 className="text-2xl font-bold">Welcome back, {clientData?.full_name?.split(' ')[0]}!</h1>
-                    <p className="text-muted-foreground">Ready to order your favorites?</p>
+                    <h1 className="text-2xl font-bold">{t('clientDashboard.welcomeBack')}, {clientData?.full_name?.split(' ')[0]}!</h1>
+                    <p className="text-muted-foreground">{t('clientDashboard.quickOrder')}</p>
                     <Badge variant="secondary" className="mt-2">
                       {membershipStatus}
                     </Badge>
@@ -949,13 +951,13 @@ export default function ClientDashboard() {
                     )}
                   </div>
                   <div className={`text-lg font-bold ${isCheckedIn ? 'text-success' : 'text-destructive'}`}>
-                    {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                    {isCheckedIn ? t('clientDashboard.checkedIn') : t('clientDashboard.notCheckedIn')}
                   </div>
                   {isCheckedIn && checkInTime && (
-                    <p className="text-sm text-success">Since {checkInTime}</p>
+                    <p className="text-sm text-success">{t('clientDashboard.checkedInAt')} {checkInTime}</p>
                   )}
                   {!isCheckedIn && (
-                    <p className="text-sm text-muted-foreground mt-2">Visit reception to check in</p>
+                    <p className="text-sm text-muted-foreground mt-2">{t('clientDashboard.checkIn')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -963,14 +965,14 @@ export default function ClientDashboard() {
                 <CardContent className="pt-6 text-center">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
                   <div className="text-2xl font-bold">{checkInsLast30Days}</div>
-                  <p className="text-sm text-muted-foreground">Check-ins this month</p>
+                  <p className="text-sm text-muted-foreground">{t('clientDashboard.checkInsLast30Days')}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-primary" />
                   <div className="text-2xl font-bold">{cart.length}</div>
-                  <p className="text-sm text-muted-foreground">Items in cart</p>
+                  <p className="text-sm text-muted-foreground">{t('clientDashboard.cart')}</p>
                 </CardContent>
               </Card>
             </div>
@@ -1004,10 +1006,10 @@ export default function ClientDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <RotateCcw className="h-5 w-5" />
-                      Reorder Last Visit
+                      {t('clientDashboard.lastOrders')}
                     </CardTitle>
                     <CardDescription>
-                      Quickly reorder from your recent visits
+                      {t('clientDashboard.quickOrder')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -1044,10 +1046,10 @@ export default function ClientDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Star className="h-5 w-5 text-yellow-500" />
-                      Best Sellers
+                      {t('clientDashboard.bestSellers')}
                     </CardTitle>
                     <CardDescription>
-                      Most popular items this month
+                      {t('clientDashboard.categories')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1065,7 +1067,7 @@ export default function ClientDashboard() {
                             disabled={!isCheckedIn}
                           >
                             <Plus className="h-4 w-4 mr-1" />
-                            Add
+                            {t('clientDashboard.addToCart')}
                           </Button>
                         </div>
                       ))}
@@ -1080,7 +1082,7 @@ export default function ClientDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Heart className="h-5 w-5" />
-                      Your Favorites
+                      {t('clientDashboard.favorites')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1093,7 +1095,7 @@ export default function ClientDashboard() {
                           </div>
                           <Button size="sm" onClick={() => addToCart(drink, true)}>
                             <Plus className="h-4 w-4 mr-1" />
-                            Add
+                            {t('clientDashboard.addToCart')}
                           </Button>
                         </div>
                       ))}
