@@ -74,37 +74,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Auth state changed:', event, session?.user?.email);
         
+        // Check if client session exists FIRST
+        const clientSession = localStorage.getItem('clientData');
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Management user actively logging in - clear client data
-        if (session?.user && event === 'SIGNED_IN') {
-          console.log('Management user actively logged in, clearing client session');
-          setClientData(null);
-          localStorage.removeItem('clientData');
+        // Management user ACTIVELY logging in (not page refresh) - clear client data
+        if (session?.user && event === 'SIGNED_IN' && !clientSession) {
+          console.log('Management user actively logged in');
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else if (session?.user && event === 'INITIAL_SESSION') {
-          // Initial session found - check if client data exists
-          const clientSession = localStorage.getItem('clientData');
+          // Initial session found on page load
           if (clientSession) {
-            // Client session takes priority over management session
-            console.log('Client session exists, ignoring management session');
+            // Client session takes priority - don't fetch management role
+            console.log('Client session exists, ignoring management session on page load');
             setIsLoading(false);
           } else {
             // No client session, proceed with management session
+            console.log('No client session, fetching management role');
             setTimeout(() => {
               if (isMounted) {
                 fetchUserRole(session.user.id);
               }
             }, 0);
           }
-        } else {
+        } else if (!session?.user) {
           // No Supabase session - preserve client data if exists
-          const clientSession = localStorage.getItem('clientData');
           if (!clientSession) {
             setUserRole(null);
           }
