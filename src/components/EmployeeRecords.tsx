@@ -22,6 +22,7 @@ interface Employee {
   payment_frequency: string;
   bank_account: string | null;
   tax_id: string | null;
+  national_id: string | null;
   start_date: string;
   end_date: string | null;
   is_active: boolean;
@@ -43,7 +44,6 @@ export default function EmployeeRecords() {
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   
   const [formData, setFormData] = useState({
-    employee_id: "",
     employee_name: "",
     position: "",
     department: "",
@@ -51,6 +51,7 @@ export default function EmployeeRecords() {
     payment_frequency: "monthly",
     bank_account: "",
     tax_id: "",
+    national_id: "",
     start_date: new Date().toISOString().split('T')[0],
     notes: ""
   });
@@ -115,7 +116,6 @@ export default function EmployeeRecords() {
   const handleAddEmployee = async () => {
     try {
       const { error } = await supabase.from('payroll').insert({
-        employee_id: formData.employee_id || null,
         employee_name: formData.employee_name,
         position: formData.position,
         department: formData.department || null,
@@ -123,6 +123,7 @@ export default function EmployeeRecords() {
         payment_frequency: formData.payment_frequency,
         bank_account: formData.bank_account || null,
         tax_id: formData.tax_id || null,
+        national_id: formData.national_id || null,
         start_date: formData.start_date,
         notes: formData.notes || null,
         is_active: true
@@ -147,7 +148,6 @@ export default function EmployeeRecords() {
       const { error } = await supabase
         .from('payroll')
         .update({
-          employee_id: formData.employee_id || null,
           employee_name: formData.employee_name,
           position: formData.position,
           department: formData.department || null,
@@ -155,6 +155,7 @@ export default function EmployeeRecords() {
           payment_frequency: formData.payment_frequency,
           bank_account: formData.bank_account || null,
           tax_id: formData.tax_id || null,
+          national_id: formData.national_id || null,
           start_date: formData.start_date,
           notes: formData.notes || null
         })
@@ -193,7 +194,6 @@ export default function EmployeeRecords() {
   const openEditDialog = (employee: Employee) => {
     setEditingEmployee(employee);
     setFormData({
-      employee_id: employee.employee_id || "",
       employee_name: employee.employee_name,
       position: employee.position,
       department: employee.department || "",
@@ -201,6 +201,7 @@ export default function EmployeeRecords() {
       payment_frequency: employee.payment_frequency,
       bank_account: employee.bank_account || "",
       tax_id: employee.tax_id || "",
+      national_id: employee.national_id || "",
       start_date: employee.start_date,
       notes: employee.notes || ""
     });
@@ -214,7 +215,6 @@ export default function EmployeeRecords() {
 
   const resetForm = () => {
     setFormData({
-      employee_id: "",
       employee_name: "",
       position: "",
       department: "",
@@ -222,6 +222,7 @@ export default function EmployeeRecords() {
       payment_frequency: "monthly",
       bank_account: "",
       tax_id: "",
+      national_id: "",
       start_date: new Date().toISOString().split('T')[0],
       notes: ""
     });
@@ -353,20 +354,22 @@ export default function EmployeeRecords() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="employee_id">Employee ID</Label>
-                <Input
-                  id="employee_id"
-                  value={formData.employee_id}
-                  onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                  placeholder="EMP001"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="employee_name">Full Name *</Label>
                 <Input
                   id="employee_name"
                   value={formData.employee_name}
                   onChange={(e) => setFormData({ ...formData, employee_name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="national_id">National ID *</Label>
+                <Input
+                  id="national_id"
+                  value={formData.national_id}
+                  onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+                  placeholder="14-digit National ID"
+                  maxLength={14}
                   required
                 />
               </div>
@@ -520,8 +523,8 @@ export default function EmployeeRecords() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Bank Account</p>
-                  <p className="text-base">{viewingEmployee.bank_account || 'N/A'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">National ID</p>
+                  <p className="text-base">{viewingEmployee.national_id || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Tax ID</p>
@@ -530,16 +533,22 @@ export default function EmployeeRecords() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <p className="text-sm font-medium text-muted-foreground">Bank Account</p>
+                  <p className="text-base">{viewingEmployee.bank_account || 'N/A'}</p>
+                </div>
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">Start Date</p>
                   <p className="text-base">{new Date(viewingEmployee.start_date).toLocaleDateString()}</p>
                 </div>
-                {viewingEmployee.end_date && (
+              </div>
+              {viewingEmployee.end_date && (
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">End Date</p>
                     <p className="text-base">{new Date(viewingEmployee.end_date).toLocaleDateString()}</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
               {viewingEmployee.notes && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Notes</p>

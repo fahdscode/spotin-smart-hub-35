@@ -966,6 +966,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean
+          national_id: string | null
           net_salary: number | null
           notes: string | null
           payment_frequency: string
@@ -986,6 +987,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean
+          national_id?: string | null
           net_salary?: number | null
           notes?: string | null
           payment_frequency?: string
@@ -1006,6 +1008,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean
+          national_id?: string | null
           net_salary?: number | null
           notes?: string | null
           payment_frequency?: string
@@ -1630,6 +1633,7 @@ export type Database = {
         Returns: string
       }
       generate_client_code: { Args: never; Returns: string }
+      generate_employee_id: { Args: never; Returns: string }
       generate_reset_token: { Args: { p_phone: string }; Returns: Json }
       generate_unique_barcode: { Args: never; Returns: string }
       get_available_tickets: { Args: never; Returns: Json }
