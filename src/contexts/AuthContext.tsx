@@ -77,16 +77,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer role fetching to prevent deadlock
+        // Only fetch role for Supabase management users
         if (session?.user) {
+          // Clear client data only when management user logs in
+          if (clientData) {
+            setClientData(null);
+            localStorage.removeItem('clientData');
+          }
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else {
-          // Only clear management role, keep client data
-          if (userRole !== 'client') {
+          // No Supabase session - preserve client data if exists
+          if (!clientData) {
             setUserRole(null);
           }
           setIsLoading(false);
@@ -105,12 +110,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Management user session found
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else {
+          // No management session - client data already restored from localStorage
           setIsLoading(false);
         }
       } catch (error) {
@@ -148,12 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       setAuthError(null);
-      
-      // Clear any existing client data when checking for management role
-      if (clientData) {
-        setClientData(null);
-        localStorage.removeItem('clientData');
-      }
       
       const { data: adminUser, error } = await supabase
         .from('admin_users')
