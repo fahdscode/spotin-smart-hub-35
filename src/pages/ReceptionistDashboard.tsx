@@ -366,37 +366,8 @@ const ReceptionistDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Scanner */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle>Quick Scanner</CardTitle>
-                  <CardDescription>Fast check-in/out</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search by name, email, or client code" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" disabled={!hasActiveCashierSession} />
-                  </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="professional" className="w-full" disabled={!hasActiveCashierSession}>
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Scan QR Code
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                      <DialogHeader>
-                        <DialogTitle>QR Code Scanner</DialogTitle>
-                      </DialogHeader>
-                      <BarcodeScanner scannedByUserId={currentUserId || undefined} />
-                    </DialogContent>
-                  </Dialog>
-                </CardContent>
-              </Card>
-
-              {/* Active Sessions Summary */}
-              <Card className="lg:col-span-2">
+            {/* Active Sessions Summary */}
+            <Card>
                 <CardHeader>
                   <CardTitle>Active Sessions Summary</CardTitle>
                   <CardDescription>Currently checked-in clients</CardDescription>
@@ -420,7 +391,6 @@ const ReceptionistDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
           </TabsContent>
 
           <TabsContent value="clients" className="space-y-6">
