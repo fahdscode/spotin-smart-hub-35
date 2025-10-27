@@ -96,6 +96,7 @@ export type Database = {
         Row: {
           amount: number
           bill_number: string
+          category: string | null
           created_at: string
           created_by: string
           due_date: string
@@ -108,6 +109,7 @@ export type Database = {
         Insert: {
           amount?: number
           bill_number: string
+          category?: string | null
           created_at?: string
           created_by: string
           due_date: string
@@ -120,6 +122,7 @@ export type Database = {
         Update: {
           amount?: number
           bill_number?: string
+          category?: string | null
           created_at?: string
           created_by?: string
           due_date?: string
@@ -138,6 +141,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      budgets: {
+        Row: {
+          actual_amount: number
+          budget_type: string
+          category: string
+          created_at: string
+          id: string
+          month_year: string
+          notes: string | null
+          planned_amount: number
+          updated_at: string
+        }
+        Insert: {
+          actual_amount?: number
+          budget_type: string
+          category: string
+          created_at?: string
+          id?: string
+          month_year: string
+          notes?: string | null
+          planned_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          actual_amount?: number
+          budget_type?: string
+          category?: string
+          created_at?: string
+          id?: string
+          month_year?: string
+          notes?: string | null
+          planned_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       cashier_sessions: {
         Row: {
@@ -622,6 +661,36 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           comment: string | null
@@ -654,6 +723,68 @@ export type Database = {
           visit_date?: string
         }
         Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_recurring: boolean | null
+          payment_method: string | null
+          recurring_frequency: string | null
+          reference_number: string | null
+          tags: string[] | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          payment_method?: string | null
+          recurring_frequency?: string | null
+          reference_number?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          payment_method?: string | null
+          recurring_frequency?: string | null
+          reference_number?: string | null
+          tags?: string[] | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       login_attempts: {
         Row: {

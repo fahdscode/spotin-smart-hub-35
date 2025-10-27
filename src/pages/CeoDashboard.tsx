@@ -413,6 +413,10 @@ const CeoDashboard = () => {
                     <TrendingUp className="h-6 w-6" />
                     <span className="text-sm">CRM</span>
                   </Button>
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/finance")}>
+                    <DollarSign className="h-6 w-6" />
+                    <span className="text-sm">Finance</span>
+                  </Button>
                   <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/client")}>
                     <Star className="h-6 w-6" />
                     <span className="text-sm">Client Portal</span>

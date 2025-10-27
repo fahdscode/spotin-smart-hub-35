@@ -17,6 +17,7 @@ import OperationsDashboard from "./pages/OperationsDashboard";
 import BaristaDashboard from "./pages/BaristaDashboard";
 import CrmDashboard from "./pages/CrmDashboard";
 import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
+import FinanceDashboard from "./pages/FinanceDashboard";
 import ClientSignup from "./pages/ClientSignup";
 import PasswordReset from "./pages/PasswordReset";
 import SuperAdminSetup from "./pages/SuperAdminSetup";
@@ -79,6 +80,11 @@ const App = () => (
               <Route path="/community-manager" element={
                 <ProtectedRoute requiredRole={["community_manager", "ceo", "admin"]} redirectTo="/management-login">
                   <CommunityManagerDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/finance" element={
+                <ProtectedRoute requiredRole={["ceo", "admin", "operations_manager"]} redirectTo="/management-login">
+                  <FinanceDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/management-profile" element={
