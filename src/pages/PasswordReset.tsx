@@ -42,8 +42,8 @@ const PasswordReset = () => {
       if (error) {
         console.error('Reset token error:', error);
         toast({
-          title: t('common.error'),
-          description: "Phone number not found",
+          title: t('passwordReset.error'),
+          description: t('passwordReset.failedToSendCode'),
           variant: "destructive"
         });
         setIsLoading(false);
@@ -53,22 +53,22 @@ const PasswordReset = () => {
       const result = data as any;
       if (result.success) {
         toast({
-          title: "Reset Code Sent",
-          description: `Reset code: ${result.token} (expires in 15 minutes)`,
+          title: t('passwordReset.codeSent'),
+          description: t('passwordReset.codeSentDesc') + `: ${result.token}`,
         });
         setStep("reset");
       } else {
         toast({
-          title: t('common.error'),
-          description: result.error || "Phone number not found",
+          title: t('passwordReset.error'),
+          description: t('passwordReset.failedToSendCode'),
           variant: "destructive"
         });
       }
     } catch (error: any) {
       console.error('Request reset error:', error);
       toast({
-        title: t('common.error'),
-        description: "Failed to generate reset code",
+        title: t('passwordReset.error'),
+        description: t('passwordReset.failedToSendCode'),
         variant: "destructive"
       });
     }
@@ -80,8 +80,8 @@ const PasswordReset = () => {
     
     if (newPassword !== confirmPassword) {
       toast({
-        title: t('common.error'),
-        description: t('auth.passwordsMatch'),
+        title: t('passwordReset.error'),
+        description: t('passwordReset.passwordsDontMatch'),
         variant: "destructive"
       });
       return;
@@ -89,8 +89,8 @@ const PasswordReset = () => {
 
     if (newPassword.length < 6) {
       toast({
-        title: t('common.error'), 
-        description: t('auth.passwordMinLength'),
+        title: t('passwordReset.error'), 
+        description: t('passwordReset.passwordTooShort'),
         variant: "destructive"
       });
       return;
@@ -98,8 +98,8 @@ const PasswordReset = () => {
 
     if (!resetToken || resetToken.length !== 6) {
       toast({
-        title: t('common.error'),
-        description: "Please enter the 6-digit reset code",
+        title: t('passwordReset.error'),
+        description: t('passwordReset.codeRequired'),
         variant: "destructive"
       });
       return;
@@ -118,8 +118,8 @@ const PasswordReset = () => {
       if (error) {
         console.error('Password reset error:', error);
         toast({
-          title: t('common.error'),
-          description: "Invalid or expired reset code",
+          title: t('passwordReset.error'),
+          description: t('passwordReset.failedToReset'),
           variant: "destructive"
         });
         setIsLoading(false);
@@ -129,8 +129,8 @@ const PasswordReset = () => {
       const result = data as any;
       if (result.success) {
         toast({
-          title: t('common.success'),
-          description: "Password reset successfully! You can now login with your new password.",
+          title: t('passwordReset.passwordResetSuccess'),
+          description: t('passwordReset.passwordResetSuccessDesc'),
         });
         
         // Navigate to login after successful reset
@@ -139,16 +139,16 @@ const PasswordReset = () => {
         }, 2000);
       } else {
         toast({
-          title: t('common.error'),
-          description: result.error || "Failed to reset password",
+          title: t('passwordReset.error'),
+          description: t('passwordReset.failedToReset'),
           variant: "destructive"
         });
       }
     } catch (error: any) {
       console.error('Reset error:', error);
       toast({
-        title: t('common.error'),
-        description: "Failed to reset password",
+        title: t('passwordReset.error'),
+        description: t('passwordReset.failedToReset'),
         variant: "destructive"
       });
     }
@@ -166,12 +166,12 @@ const PasswordReset = () => {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl">
-              {step === "request" ? "Reset Password" : "Enter Reset Code"}
+              {step === "request" ? t('passwordReset.title') : t('passwordReset.verificationCode')}
             </CardTitle>
             <CardDescription>
               {step === "request" 
-                ? "Enter your phone number to receive a reset code" 
-                : "Enter the 6-digit code sent to your phone"}
+                ? t('passwordReset.subtitle')
+                : t('passwordReset.enterCode')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -180,7 +180,7 @@ const PasswordReset = () => {
                 <div>
                   <Input
                     type="tel"
-                    placeholder={t('auth.phone')}
+                    placeholder={t('passwordReset.phoneNumber')}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     maxLength={11}
@@ -189,7 +189,7 @@ const PasswordReset = () => {
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary-hover">
                   {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Send Reset Code
+                  {isLoading ? t('passwordReset.sending') : t('passwordReset.sendCode')}
                 </Button>
               </form>
             ) : (
@@ -197,7 +197,7 @@ const PasswordReset = () => {
                 <div>
                   <Input
                     type="text"
-                    placeholder="6-digit reset code"
+                    placeholder={t('passwordReset.verificationCode')}
                     value={resetToken}
                     onChange={(e) => setResetToken(e.target.value.replace(/\D/g, ''))}
                     maxLength={6}
@@ -207,7 +207,7 @@ const PasswordReset = () => {
                 <div>
                   <Input
                     type="password"
-                    placeholder={t('auth.newPassword')}
+                    placeholder={t('passwordReset.newPassword')}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -216,7 +216,7 @@ const PasswordReset = () => {
                 <div>
                   <Input
                     type="password"
-                    placeholder={t('auth.confirmPassword')}
+                    placeholder={t('passwordReset.confirmNewPassword')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -229,7 +229,7 @@ const PasswordReset = () => {
                   </Button>
                   <Button type="submit" disabled={isLoading} className="flex-1 bg-primary hover:bg-primary-hover">
                     {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Reset Password
+                    {isLoading ? t('passwordReset.resetting') : t('passwordReset.resetPassword')}
                   </Button>
                 </div>
               </form>
@@ -237,7 +237,7 @@ const PasswordReset = () => {
             
             <div className="mt-4 text-center">
               <a href="/client-login" className="text-sm text-primary hover:text-primary-hover transition-colors">
-                {t('common.back')} to Login
+                {t('passwordReset.backToLogin')}
               </a>
             </div>
           </CardContent>

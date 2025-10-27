@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CairoClock from "@/components/CairoClock";
 import spotinLogo from "@/assets/spotin-logo.png";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface SpotinHeaderProps {
   showClock?: boolean;
@@ -79,6 +80,8 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
         
         <div className="flex items-center gap-4">
           {showClock && <CairoClock />}
+          
+          <LanguageSelector />
           
           <ThemeToggle />
           

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Bell, Lock, User, Mail, Phone, Shield, Trash2, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,7 @@ export default function ClientSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { clientData, isAuthenticated, clearClientAuth } = useAuth();
+  const { t } = useTranslation();
   
   // Profile Settings
   const [fullName, setFullName] = useState('');
@@ -75,14 +77,14 @@ export default function ClientSettings() {
       if (error) throw error;
 
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully",
+        title: t('clientSettings.profileUpdated'),
+        description: t('clientSettings.profileUpdateSuccess'),
       });
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.failedToUpdate'),
         variant: "destructive",
       });
     } finally {
@@ -93,8 +95,8 @@ export default function ClientSettings() {
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all password fields",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.fillAllFields'),
         variant: "destructive",
       });
       return;
@@ -102,8 +104,8 @@ export default function ClientSettings() {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "New passwords do not match",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.passwordsDontMatch'),
         variant: "destructive",
       });
       return;
@@ -111,8 +113,8 @@ export default function ClientSettings() {
 
     if (newPassword.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.passwordTooShort'),
         variant: "destructive",
       });
       return;
@@ -132,8 +134,8 @@ export default function ClientSettings() {
       if (error) throw error;
 
       toast({
-        title: "Password Changed",
-        description: "Your password has been changed successfully",
+        title: t('clientSettings.passwordChanged'),
+        description: t('clientSettings.passwordChangeSuccess'),
       });
       
       setCurrentPassword('');
@@ -142,8 +144,8 @@ export default function ClientSettings() {
     } catch (error) {
       console.error('Error changing password:', error);
       toast({
-        title: "Error",
-        description: "Failed to change password",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.failedToChangePassword'),
         variant: "destructive",
       });
     } finally {
@@ -158,16 +160,16 @@ export default function ClientSettings() {
     try {
       // In a real implementation, you would call an edge function to properly delete the account
       toast({
-        title: "Account Deletion Requested",
-        description: "Please contact support to complete account deletion",
+        title: t('clientSettings.accountDeletionRequested'),
+        description: t('clientSettings.contactSupportToDelete'),
       });
       
       setShowDeleteDialog(false);
     } catch (error) {
       console.error('Error deleting account:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete account",
+        title: t('clientSettings.error'),
+        description: t('clientSettings.failedToDelete'),
         variant: "destructive",
       });
     } finally {
@@ -186,13 +188,13 @@ export default function ClientSettings() {
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
+          {t('clientSettings.backToDashboard')}
         </Button>
 
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Manage your account settings and preferences</p>
+            <h1 className="text-3xl font-bold">{t('clientSettings.title')}</h1>
+            <p className="text-muted-foreground">{t('clientSettings.subtitle')}</p>
           </div>
 
           {/* Profile Information */}
@@ -200,55 +202,55 @@ export default function ClientSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Profile Information
+                {t('clientSettings.profileInfo')}
               </CardTitle>
-              <CardDescription>Update your personal information</CardDescription>
+              <CardDescription>{t('clientSettings.updatePersonalInfo')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">{t('clientSettings.fullName')}</Label>
                 <Input
                   id="fullName"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
+                  placeholder={t('clientSettings.fullName')}
                 />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  Email
+                  {t('clientSettings.email')}
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t('clientSettings.email')}
                 />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="phone" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Phone Number
+                  {t('clientSettings.phone')}
                 </Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your phone number"
+                  placeholder={t('clientSettings.phone')}
                   disabled
                 />
                 <p className="text-xs text-muted-foreground">
-                  Contact support to change your phone number
+                  {t('clientSettings.contactSupport')}
                 </p>
               </div>
 
               <Button onClick={handleUpdateProfile} disabled={loading}>
-                Save Changes
+                {t('clientSettings.saveChanges')}
               </Button>
             </CardContent>
           </Card>
@@ -258,16 +260,16 @@ export default function ClientSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Notification Preferences
+                {t('clientSettings.notificationPreferences')}
               </CardTitle>
-              <CardDescription>Choose what notifications you want to receive</CardDescription>
+              <CardDescription>{t('clientSettings.chooseNotifications')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
+                  <Label>{t('clientSettings.emailNotifications')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Receive email updates about your account
+                    {t('clientSettings.emailNotificationsDesc')}
                   </p>
                 </div>
                 <Switch
@@ -280,9 +282,9 @@ export default function ClientSettings() {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Order Updates</Label>
+                  <Label>{t('clientSettings.orderUpdates')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Get notified when your orders are ready
+                    {t('clientSettings.orderUpdatesDesc')}
                   </p>
                 </div>
                 <Switch
@@ -295,9 +297,9 @@ export default function ClientSettings() {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Event Notifications</Label>
+                  <Label>{t('clientSettings.eventNotifications')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Get updates about upcoming events
+                    {t('clientSettings.eventNotificationsDesc')}
                   </p>
                 </div>
                 <Switch
@@ -313,46 +315,46 @@ export default function ClientSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5" />
-                Security
+                {t('clientSettings.security')}
               </CardTitle>
-              <CardDescription>Manage your password and security settings</CardDescription>
+              <CardDescription>{t('clientSettings.securityDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
+                <Label htmlFor="currentPassword">{t('clientSettings.currentPassword')}</Label>
                 <Input
                   id="currentPassword"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
+                  placeholder={t('clientSettings.currentPassword')}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">{t('clientSettings.newPassword')}</Label>
                 <Input
                   id="newPassword"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
+                  placeholder={t('clientSettings.newPassword')}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">{t('clientSettings.confirmNewPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
+                  placeholder={t('clientSettings.confirmNewPassword')}
                 />
               </div>
 
               <Button onClick={handleChangePassword} disabled={loading}>
-                Change Password
+                {t('clientSettings.changePassword')}
               </Button>
             </CardContent>
           </Card>
@@ -362,14 +364,14 @@ export default function ClientSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <Shield className="h-5 w-5" />
-                Danger Zone
+                {t('clientSettings.dangerZone')}
               </CardTitle>
-              <CardDescription>Irreversible account actions</CardDescription>
+              <CardDescription>{t('clientSettings.irreversibleActions')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Once you delete your account, there is no going back. Please be certain.
+                  {t('clientSettings.deleteAccountWarning')}
                 </p>
                 <Button
                   variant="destructive"
@@ -377,7 +379,7 @@ export default function ClientSettings() {
                   className="w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
+                  {t('clientSettings.deleteAccount')}
                 </Button>
               </div>
             </CardContent>
@@ -389,19 +391,18 @@ export default function ClientSettings() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('clientSettings.deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your account
-              and remove your data from our servers.
+              {t('clientSettings.deleteConfirmDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Account
+              {t('clientSettings.deleteAccount')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

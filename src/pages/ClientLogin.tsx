@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import spotinLogo from "@/assets/spotin-logo-main.png";
+import LanguageSelector from "@/components/LanguageSelector";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -165,6 +166,11 @@ const ClientLogin = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
+        {/* Language selector */}
+        <div className="flex justify-end">
+          <LanguageSelector />
+        </div>
+        
         {/* Logo */}
         <div className="flex justify-center">
           <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />

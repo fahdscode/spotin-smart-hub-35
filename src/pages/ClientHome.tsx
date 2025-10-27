@@ -4,6 +4,7 @@ import { Coffee, Calendar, LogIn, UserPlus, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import spotinLogo from "@/assets/spotin-logo-main.png";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const ClientHome = () => {
   const navigate = useNavigate();
@@ -30,7 +31,12 @@ const ClientHome = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
-        {/* Logo at top */}
+        {/* Language selector at top right */}
+        <div className="flex justify-end mb-4">
+          <LanguageSelector />
+        </div>
+        
+        {/* Logo */}
         <div className="flex justify-center mb-8">
           <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
         </div>
