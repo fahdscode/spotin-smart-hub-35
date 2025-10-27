@@ -199,7 +199,7 @@ const ClientLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Input type="tel" placeholder="Phone Number (e.g., 1234567890)" value={phone} onChange={handlePhoneChange} className={`h-12 rounded-xl border-2 transition-colors ${errors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'}`} required />
+                <Input type="tel" placeholder="Phone Number (e.g., 01143431650)" value={phone} onChange={handlePhoneChange} className={`h-12 rounded-xl border-2 transition-colors ${errors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'}`} required />
                 {errors.phone && <div className="flex items-center gap-2 text-red-600 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {errors.phone}
