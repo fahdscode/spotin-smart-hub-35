@@ -1592,6 +1592,10 @@ export type Database = {
         Args: { p_barcode: string; p_scanned_by_user_id?: string }
         Returns: Json
       }
+      verify_client_password: {
+        Args: { p_password: string; p_phone: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
