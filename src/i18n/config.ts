@@ -27,11 +27,18 @@ i18n
     }
   });
 
-// Set HTML dir attribute based on language
+// Set HTML dir attribute and font based on language
 i18n.on('languageChanged', (lng) => {
   const dir = lng === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.dir = dir;
   document.documentElement.lang = lng;
+  
+  // Apply Cairo font for Arabic
+  if (lng === 'ar') {
+    document.documentElement.classList.add('font-cairo');
+  } else {
+    document.documentElement.classList.remove('font-cairo');
+  }
 });
 
 export default i18n;

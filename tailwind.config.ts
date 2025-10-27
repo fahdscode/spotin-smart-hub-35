@@ -5,10 +5,6 @@ export default {
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
-    extend: {
-      fontFamily: {
-        'cairo': ['Cairo', 'sans-serif'],
-      },
     container: {
       center: true,
       padding: "2rem",
@@ -17,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'sans': ['system-ui', '-apple-system', 'sans-serif'],
+        'cairo': ['Cairo', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
