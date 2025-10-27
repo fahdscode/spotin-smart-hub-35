@@ -98,32 +98,31 @@ const ClientList = () => {
           .eq('is_active', true)
           .maybeSingle();
 
-        // Fetch orders from the current session
-        let ordersQuery = supabase
-          .from('session_line_items')
-          .select('*')
-          .eq('user_id', clientId)
-          .in('status', ['pending', 'completed', 'served', 'ready'])
-          .order('created_at', { ascending: true });
-
-        // Only filter by check-in time if we have a valid check-in time
+        // Fetch orders ONLY from the current session (between check-in and now)
+        let receiptItems: any[] = [];
+        
         if (checkInTime) {
-          ordersQuery = ordersQuery.gte('created_at', checkInTime);
-        }
+          // Only fetch orders created after the check-in time
+          const { data: orders } = await supabase
+            .from('session_line_items')
+            .select('*')
+            .eq('user_id', clientId)
+            .in('status', ['pending', 'completed', 'served', 'ready'])
+            .gte('created_at', checkInTime)
+            .lte('created_at', new Date().toISOString())
+            .order('created_at', { ascending: true });
 
-        const { data: orders } = await ordersQuery;
+          receiptItems = orders?.map(order => ({
+            name: order.item_name,
+            quantity: order.quantity,
+            price: order.price,
+            total: order.price * order.quantity
+          })) || [];
+        }
 
         const duration = checkInTime 
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
-
-        // Prepare receipt items from all orders (including from before if no check-in time)
-        let receiptItems = orders?.map(order => ({
-          name: order.item_name,
-          quantity: order.quantity,
-          price: order.price,
-          total: order.price * order.quantity
-        })) || [];
 
         // If no membership, add day use ticket
         if (!membership) {
