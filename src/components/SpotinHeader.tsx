@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import CairoClock from "@/components/CairoClock";
 import spotinLogo from "@/assets/spotin-logo.png";
 
@@ -12,6 +17,53 @@ interface SpotinHeaderProps {
 }
 const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
   const navigate = useNavigate();
+  const { signOut, userRole } = useAuth();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [activeClientsCount, setActiveClientsCount] = useState(0);
+
+  const checkActiveClients = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_receptionist_active_sessions');
+      if (error) throw error;
+
+      const sessions = Array.isArray(data) ? data : [];
+      const count = sessions.length;
+      setActiveClientsCount(count);
+      
+      if (count > 0) {
+        setShowConfirmDialog(true);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error checking active clients:', error);
+      toast.error("Error checking active clients");
+      return true;
+    }
+  };
+
+  const handleSignOut = async () => {
+    const canLogout = await checkActiveClients();
+    if (canLogout) {
+      performLogout();
+    }
+  };
+
+  const performLogout = async () => {
+    try {
+      await signOut();
+      toast.success("Successfully logged out");
+      navigate(userRole === 'client' ? '/client-login' : '/management-login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error("Error logging out");
+    }
+  };
+
+  const handleConfirmLogout = () => {
+    setShowConfirmDialog(false);
+    performLogout();
+  };
   
   return <header className="bg-gradient-primary text-white p-6 shadow-custom-lg">
       <div className="container flex items-center justify-between mx-0 px-0">
@@ -42,22 +94,44 @@ const SpotinHeader = ({ showClock = false }: SpotinHeaderProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => navigate('/client-dashboard')}>
+              <DropdownMenuItem onClick={() => navigate('/management-profile')}>
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/management-settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Active Clients Detected</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-semibold text-foreground">
+                There {activeClientsCount === 1 ? 'is' : 'are'} currently <span className="text-destructive">{activeClientsCount}</span> active client{activeClientsCount === 1 ? '' : 's'} checked in.
+              </p>
+              <p>
+                Are you sure you want to end your session? Please ensure all clients are properly checked out before logging out.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>;
 };
 export default SpotinHeader;

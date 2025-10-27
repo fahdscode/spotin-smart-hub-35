@@ -20,6 +20,8 @@ import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import ClientSignup from "./pages/ClientSignup";
 import PasswordReset from "./pages/PasswordReset";
 import SuperAdminSetup from "./pages/SuperAdminSetup";
+import ManagementProfile from "./pages/ManagementProfile";
+import ManagementSettings from "./pages/ManagementSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,16 @@ const App = () => (
               <Route path="/community-manager" element={
                 <ProtectedRoute requiredRole={["community_manager", "ceo", "admin"]} redirectTo="/management-login">
                   <CommunityManagerDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/management-profile" element={
+                <ProtectedRoute requiredRole={["receptionist", "barista", "community_manager", "operations_manager", "ceo", "admin"]} redirectTo="/management-login">
+                  <ManagementProfile />
+                </ProtectedRoute>
+              } />
+              <Route path="/management-settings" element={
+                <ProtectedRoute requiredRole={["receptionist", "barista", "community_manager", "operations_manager", "ceo", "admin"]} redirectTo="/management-login">
+                  <ManagementSettings />
                 </ProtectedRoute>
               } />
               
