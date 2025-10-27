@@ -54,7 +54,7 @@ interface LastOrder {
 export default function ClientDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { clientData, isAuthenticated, userRole, clearClientAuth } = useAuth();
+  const { clientData, isAuthenticated, userRole, clearClientAuth, isLoading: authLoading } = useAuth();
   
   // Prevent accidental logout from back/refresh buttons
   usePreventAccidentalLogout();
@@ -93,9 +93,14 @@ export default function ClientDashboard() {
   const [showSatisfactionPopup, setShowSatisfactionPopup] = useState<boolean>(false);
 
   useEffect(() => {
+    // Wait for auth to fully load before making navigation decisions
+    if (authLoading) {
+      return;
+    }
+    
+    // ProtectedRoute already handles auth, this is just for data fetching
     if (!isAuthenticated || userRole !== 'client') {
       setLoading(false);
-      navigate('/client-login');
       return;
     }
     
