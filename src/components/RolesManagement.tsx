@@ -223,11 +223,41 @@ const RolesManagement = () => {
 
   const updateUserPassword = async (userId: string, newPassword: string) => {
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: newPassword
-      });
+      // Validate password
+      if (newPassword.length < 6) {
+        toast({
+          title: "Validation Error",
+          description: "Password must be at least 6 characters",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `https://nfmkqrtfjrqqcraslahm.supabase.co/functions/v1/update-user-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            newPassword
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update password');
+      }
 
       toast({
         title: "Success",
@@ -236,11 +266,11 @@ const RolesManagement = () => {
 
       setIsPasswordDialogOpen(false);
       setSelectedProfileForPassword(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating password:', error);
       toast({
         title: "Error",
-        description: "Failed to update password",
+        description: error.message || "Failed to update password",
         variant: "destructive",
       });
     }
