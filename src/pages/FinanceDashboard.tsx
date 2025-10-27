@@ -1418,6 +1418,11 @@ const FinanceDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Payroll Tab */}
+          <TabsContent value="payroll">
+            <PayrollManagement />
+          </TabsContent>
         </Tabs>
 
         {/* Add Expense Dialog */}
@@ -1638,11 +1643,6 @@ const FinanceDashboard = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Payroll Tab */}
-        <TabsContent value="payroll">
-          <PayrollManagement />
-        </TabsContent>
       </div>
     </div>
   );
