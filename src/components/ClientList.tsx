@@ -39,6 +39,8 @@ interface Client {
 const ClientList = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [drinks, setDrinks] = useState<any[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,6 +121,16 @@ const ClientList = () => {
 
     toast.success(`Added ${drink.name} to checkout`);
   };
+
+  // Get unique categories from drinks
+  const categories = ["all", ...Array.from(new Set(drinks.map(d => d.category)))];
+
+  // Filter drinks based on search and category
+  const filteredDrinks = drinks.filter(drink => {
+    const matchesSearch = drink.name.toLowerCase().includes(productSearch.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || drink.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
@@ -848,22 +860,59 @@ const ClientList = () => {
                   <Plus className="h-4 w-4" />
                   Add Items to Checkout
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {drinks.map((drink) => (
+                
+                {/* Search Bar */}
+                <div className="mb-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search products..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                {/* Category Filters */}
+                <div className="mb-3 flex gap-2 flex-wrap">
+                  {categories.map((category) => (
                     <Button
-                      key={drink.id}
-                      variant="outline"
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "outline"}
                       size="sm"
-                      onClick={() => addItemToCheckout(drink.id)}
-                      className="justify-start text-left"
+                      onClick={() => setSelectedCategory(category)}
+                      className="capitalize"
                     >
-                      <div className="truncate">
-                        <p className="font-medium text-xs truncate">{drink.name}</p>
-                        <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
-                      </div>
+                      {category}
                     </Button>
                   ))}
                 </div>
+
+                {/* Products Grid */}
+                <ScrollArea className="h-[200px]">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {filteredDrinks.map((drink) => (
+                      <Button
+                        key={drink.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addItemToCheckout(drink.id)}
+                        className="justify-start text-left h-auto py-2"
+                      >
+                        <div className="truncate w-full">
+                          <p className="font-medium text-xs truncate">{drink.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                  {filteredDrinks.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      No products found
+                    </div>
+                  )}
+                </ScrollArea>
               </div>
 
               <div className="border rounded-lg overflow-hidden">
