@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, DollarSign, UserCheck } from "lucide-react";
+import { ArrowLeft, QrCode, Search, Users, Calendar, UserPlus, CheckCircle, XCircle, DoorOpen, CalendarDays, Activity, DollarSign, UserCheck, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ const ReceptionistDashboard = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [newRegistrationsCount, setNewRegistrationsCount] = useState<number>(0);
-  const [availableDesks, setAvailableDesks] = useState<number>(0);
+  const [upcomingEvent, setUpcomingEvent] = useState<any>(null);
   const [roomBookings, setRoomBookings] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
@@ -165,6 +165,27 @@ const ReceptionistDashboard = () => {
       }
     };
 
+    // Fetch upcoming event
+    const fetchUpcomingEvent = async () => {
+      try {
+        const today = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('is_active', true)
+          .gte('event_date', today.split('T')[0])
+          .order('event_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        if (error) throw error;
+        setUpcomingEvent(data);
+      } catch (error) {
+        console.error('Error fetching upcoming event:', error);
+        setUpcomingEvent(null);
+      }
+    };
+
     // Check for active cashier session
     const checkCashierSession = async () => {
       try {
@@ -191,6 +212,7 @@ const ReceptionistDashboard = () => {
         fetchActiveSessions(),
         fetchDailyRegistrations(),
         fetchRoomBookings(),
+        fetchUpcomingEvent(),
         checkCashierSession()
       ]);
       setLoading(false);
@@ -238,6 +260,7 @@ const ReceptionistDashboard = () => {
       fetchActiveSessions();
       fetchDailyRegistrations();
       fetchRoomBookings();
+      fetchUpcomingEvent();
     }, 30000);
 
     return () => {
@@ -247,13 +270,6 @@ const ReceptionistDashboard = () => {
       clearInterval(interval);
     };
   }, []);
-
-  // Update available desks when active sessions change
-  useEffect(() => {
-    const totalDesks = 50; // Assuming total desk capacity
-    const occupiedDesks = activeSessions.length;
-    setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
-  }, [activeSessions]);
 
 
   return (
@@ -283,10 +299,10 @@ const ReceptionistDashboard = () => {
             variant="success" 
           />
           <MetricCard 
-            title="Available Desks" 
-            value={loading ? "..." : availableDesks.toString()} 
-            change={activeSessions.length > 0 ? '-' + activeSessions.length : '0'} 
-            icon={CheckCircle} 
+            title="Upcoming Event" 
+            value={loading ? "..." : upcomingEvent ? upcomingEvent.title : "None"} 
+            change={upcomingEvent ? new Date(upcomingEvent.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'} 
+            icon={CalendarClock} 
             variant="info" 
           />
           <MetricCard 
