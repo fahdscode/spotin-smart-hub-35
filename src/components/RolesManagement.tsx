@@ -96,15 +96,54 @@ const RolesManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: string, isAdmin: boolean) => {
     try {
-      const { error } = await supabase
+      const isStaffRole = ['admin', 'ceo', 'operations_manager', 'finance_manager', 'community_manager', 'receptionist', 'barista'].includes(newRole);
+      const adminStatus = isAdmin || newRole === 'admin' || newRole === 'ceo';
+
+      // Update profiles table
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           role: newRole,
-          is_admin: isAdmin || newRole === 'admin' || newRole === 'ceo'
+          is_admin: adminStatus
         })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Synchronize admin_users table
+      if (isStaffRole) {
+        // Get user email from profiles
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileData) {
+          // Upsert into admin_users
+          const { error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({
+              user_id: userId,
+              email: profileData.email,
+              full_name: profileData.full_name,
+              role: newRole,
+              is_active: true
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (adminError) throw adminError;
+        }
+      } else {
+        // If changing to client role, remove from admin_users
+        const { error: deleteError } = await supabase
+          .from('admin_users')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteError) throw deleteError;
+      }
 
       await fetchProfiles();
       
