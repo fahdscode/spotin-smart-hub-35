@@ -37,8 +37,9 @@ const signupSchema = z.object({
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
   confirmPassword: z.string(),
   jobTitle: z.string()
-    .min(2, "Job title must be at least 2 characters")
-    .max(100, "Job title must be less than 100 characters"),
+    .max(100, "Job title must be less than 100 characters")
+    .optional()
+    .or(z.literal("")),
   howDidYouFindUs: z.string()
     .min(2, "Please tell us how you found us")
     .max(200, "Response must be less than 200 characters"),
@@ -134,7 +135,7 @@ const ClientSignup = () => {
         p_phone: formData.phone,
         p_email: formData.email || null,
         p_password_hash: passwordHash,
-        p_job_title: formData.jobTitle,
+        p_job_title: formData.jobTitle || 'Not specified',
         p_how_did_you_find_us: formData.howDidYouFindUs
       });
 
@@ -403,7 +404,7 @@ const ClientSignup = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="jobTitle">Job Title / Profession</Label>
+                  <Label htmlFor="jobTitle">Job Title / Profession (optional)</Label>
                   <Input
                     id="jobTitle"
                     name="jobTitle"
