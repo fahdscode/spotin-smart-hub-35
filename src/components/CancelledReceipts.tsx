@@ -38,24 +38,36 @@ const CancelledReceipts = () => {
   const fetchCancelledReceipts = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching cancelled receipts...');
+      
       const { data, error } = await supabase
         .from('receipts')
         .select('*')
         .eq('status', 'cancelled')
         .order('cancelled_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('📊 Cancelled receipts query result:', { data, error });
+
+      if (error) {
+        console.error('❌ Error fetching cancelled receipts:', error);
+        throw error;
+      }
 
       const cancelledReceipts = data || [];
+      console.log(`✅ Found ${cancelledReceipts.length} cancelled receipts`);
       setReceipts(cancelledReceipts as any);
 
       // Fetch staff names
       const staffIds = [...new Set(cancelledReceipts.map(r => r.cancelled_by).filter(Boolean))];
+      console.log('👥 Staff IDs to fetch:', staffIds);
+      
       if (staffIds.length > 0) {
-        const { data: staffData } = await supabase
+        const { data: staffData, error: staffError } = await supabase
           .from('admin_users')
           .select('user_id, full_name')
           .in('user_id', staffIds);
+
+        console.log('👨‍💼 Staff data fetched:', { staffData, staffError });
 
         const staffMap: { [key: string]: string } = {};
         staffData?.forEach(staff => {
@@ -66,11 +78,15 @@ const CancelledReceipts = () => {
 
       // Fetch client names
       const clientIds = [...new Set(cancelledReceipts.map(r => r.user_id).filter(Boolean))];
+      console.log('👤 Client IDs to fetch:', clientIds);
+      
       if (clientIds.length > 0) {
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('id, full_name')
           .in('id', clientIds);
+
+        console.log('👨‍👩‍👧‍👦 Client data fetched:', { clientData, clientError });
 
         const clientMap: { [key: string]: string } = {};
         clientData?.forEach(client => {
@@ -79,7 +95,7 @@ const CancelledReceipts = () => {
         setClientNames(clientMap);
       }
     } catch (error) {
-      console.error('Error fetching cancelled receipts:', error);
+      console.error('💥 Error in fetchCancelledReceipts:', error);
       toast.error('Failed to load cancelled receipts');
     } finally {
       setLoading(false);
