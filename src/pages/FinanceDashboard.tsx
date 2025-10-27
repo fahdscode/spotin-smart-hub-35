@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import SpotinHeader from '@/components/SpotinHeader';
 import { LogoutButton } from '@/components/LogoutButton';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +21,32 @@ const FinanceDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showAddIncome, setShowAddIncome] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  
+  // Form state for new expense
+  const [newExpense, setNewExpense] = useState({
+    transaction_date: format(new Date(), 'yyyy-MM-dd'),
+    category: '',
+    amount: '',
+    description: '',
+    payment_method: 'cash',
+    vendor_id: '',
+    reference_number: ''
+  });
+
+  // Form state for new income
+  const [newIncome, setNewIncome] = useState({
+    transaction_date: format(new Date(), 'yyyy-MM-dd'),
+    category: '',
+    amount: '',
+    description: '',
+    payment_method: 'cash',
+    reference_number: ''
+  });
   
   // Financial metrics state
   const [metrics, setMetrics] = useState({
@@ -41,7 +71,29 @@ const FinanceDashboard = () => {
 
   useEffect(() => {
     fetchFinancialData();
+    fetchCategories();
+    fetchVendors();
   }, [selectedMonth]);
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('expense_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (data) setCategories(data);
+  };
+
+  const fetchVendors = async () => {
+    const { data } = await supabase
+      .from('vendors')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (data) setVendors(data);
+  };
 
   const fetchFinancialData = async () => {
     setLoading(true);
@@ -54,7 +106,8 @@ const FinanceDashboard = () => {
         fetchExpenseData(monthStart, monthEnd),
         fetchBudgetData(monthStart),
         fetchCashFlowData(),
-        fetchVendorPayments(monthStart, monthEnd)
+        fetchVendorPayments(monthStart, monthEnd),
+        fetchTransactions(monthStart, monthEnd)
       ]);
     } catch (error) {
       console.error('Error fetching financial data:', error);
@@ -62,6 +115,17 @@ const FinanceDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTransactions = async (start: Date, end: Date) => {
+    const { data } = await supabase
+      .from('financial_transactions')
+      .select('*, vendors(name)')
+      .gte('transaction_date', format(start, 'yyyy-MM-dd'))
+      .lte('transaction_date', format(end, 'yyyy-MM-dd'))
+      .order('transaction_date', { ascending: false });
+
+    if (data) setTransactions(data);
   };
 
   const fetchIncomeData = async (start: Date, end: Date) => {
@@ -213,6 +277,133 @@ const FinanceDashboard = () => {
     // Implementation for export functionality
   };
 
+  const handleAddExpense = async () => {
+    // Validation
+    if (!newExpense.category || !newExpense.amount || !newExpense.transaction_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const amount = parseFloat(newExpense.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (newExpense.description.length > 500) {
+      toast.error('Description must be less than 500 characters');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('financial_transactions')
+        .insert({
+          transaction_date: newExpense.transaction_date,
+          transaction_type: 'expense',
+          category: newExpense.category,
+          amount: amount,
+          description: newExpense.description.trim(),
+          payment_method: newExpense.payment_method,
+          vendor_id: newExpense.vendor_id || null,
+          reference_number: newExpense.reference_number.trim() || null,
+          created_by: user?.id
+        });
+
+      if (error) throw error;
+
+      toast.success('Expense added successfully');
+      setShowAddExpense(false);
+      setNewExpense({
+        transaction_date: format(new Date(), 'yyyy-MM-dd'),
+        category: '',
+        amount: '',
+        description: '',
+        payment_method: 'cash',
+        vendor_id: '',
+        reference_number: ''
+      });
+      fetchFinancialData();
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense');
+    }
+  };
+
+  const handleAddIncome = async () => {
+    // Validation
+    if (!newIncome.category || !newIncome.amount || !newIncome.transaction_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const amount = parseFloat(newIncome.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    if (newIncome.description.length > 500) {
+      toast.error('Description must be less than 500 characters');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('financial_transactions')
+        .insert({
+          transaction_date: newIncome.transaction_date,
+          transaction_type: 'income',
+          category: newIncome.category,
+          amount: amount,
+          description: newIncome.description.trim(),
+          payment_method: newIncome.payment_method,
+          reference_number: newIncome.reference_number.trim() || null,
+          created_by: user?.id
+        });
+
+      if (error) throw error;
+
+      toast.success('Income added successfully');
+      setShowAddIncome(false);
+      setNewIncome({
+        transaction_date: format(new Date(), 'yyyy-MM-dd'),
+        category: '',
+        amount: '',
+        description: '',
+        payment_method: 'cash',
+        reference_number: ''
+      });
+      fetchFinancialData();
+    } catch (error) {
+      console.error('Error adding income:', error);
+      toast.error('Failed to add income');
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Transaction deleted successfully');
+      fetchFinancialData();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Failed to delete transaction');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <SpotinHeader showClock />
@@ -233,6 +424,14 @@ const FinanceDashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button onClick={() => setShowAddIncome(true)} className="bg-green-600 hover:bg-green-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Income
+            </Button>
+            <Button onClick={() => setShowAddExpense(true)} className="bg-red-600 hover:bg-red-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Expense
+            </Button>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -317,6 +516,7 @@ const FinanceDashboard = () => {
             <TabsTrigger value="budget">Budget</TabsTrigger>
             <TabsTrigger value="tax">Tax</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
+            <TabsTrigger value="transactions">All Transactions</TabsTrigger>
           </TabsList>
 
           {/* Profit & Loss Report */}
@@ -764,7 +964,297 @@ const FinanceDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* All Transactions Tab */}
+          <TabsContent value="transactions" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Transactions</CardTitle>
+                    <CardDescription>Complete transaction history for {format(new Date(selectedMonth), 'MMMM yyyy')}</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => exportReport('Transactions')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {transactions.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No transactions for this month</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {transactions.map((txn: any) => (
+                      <div key={txn.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`font-semibold ${txn.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                              {txn.category}
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              txn.transaction_type === 'income' ? 'bg-green-100 text-green-700 dark:bg-green-900/20' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/20'
+                            }`}>
+                              {txn.transaction_type}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {format(new Date(txn.transaction_date), 'MMM dd, yyyy')} • {txn.payment_method}
+                            {txn.vendors?.name && ` • ${txn.vendors.name}`}
+                          </div>
+                          {txn.description && (
+                            <div className="text-xs text-muted-foreground mt-1">{txn.description}</div>
+                          )}
+                          {txn.reference_number && (
+                            <div className="text-xs text-muted-foreground">Ref: {txn.reference_number}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          <div className="text-right">
+                            <div className={`font-bold text-lg ${txn.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                              {txn.transaction_type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteTransaction(txn.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Add Expense Dialog */}
+        <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Expense</DialogTitle>
+              <DialogDescription>Record a new expense transaction</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="expense-date">Date *</Label>
+                  <Input
+                    id="expense-date"
+                    type="date"
+                    value={newExpense.transaction_date}
+                    onChange={(e) => setNewExpense({ ...newExpense, transaction_date: e.target.value })}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="expense-amount">Amount (EGP) *</Label>
+                  <Input
+                    id="expense-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={newExpense.amount}
+                    onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="expense-category">Category *</Label>
+                <Select value={newExpense.category} onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}>
+                  <SelectTrigger id="expense-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="expense-vendor">Vendor (Optional)</Label>
+                <Select value={newExpense.vendor_id} onValueChange={(value) => setNewExpense({ ...newExpense, vendor_id: value })}>
+                  <SelectTrigger id="expense-vendor">
+                    <SelectValue placeholder="Select vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="expense-payment">Payment Method</Label>
+                <Select value={newExpense.payment_method} onValueChange={(value) => setNewExpense({ ...newExpense, payment_method: value })}>
+                  <SelectTrigger id="expense-payment">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="mobile_payment">Mobile Payment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="expense-reference">Reference Number (Optional)</Label>
+                <Input
+                  id="expense-reference"
+                  placeholder="Invoice #, Receipt #, etc."
+                  value={newExpense.reference_number}
+                  onChange={(e) => setNewExpense({ ...newExpense, reference_number: e.target.value.slice(0, 100) })}
+                  maxLength={100}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="expense-description">Description (Optional)</Label>
+                <Textarea
+                  id="expense-description"
+                  placeholder="Additional notes..."
+                  value={newExpense.description}
+                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value.slice(0, 500) })}
+                  rows={3}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {newExpense.description.length}/500 characters
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddExpense(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddExpense} className="bg-red-600 hover:bg-red-700">
+                Add Expense
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Income Dialog */}
+        <Dialog open={showAddIncome} onOpenChange={setShowAddIncome}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Income</DialogTitle>
+              <DialogDescription>Record a new income transaction</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="income-date">Date *</Label>
+                  <Input
+                    id="income-date"
+                    type="date"
+                    value={newIncome.transaction_date}
+                    onChange={(e) => setNewIncome({ ...newIncome, transaction_date: e.target.value })}
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="income-amount">Amount (EGP) *</Label>
+                  <Input
+                    id="income-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={newIncome.amount}
+                    onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="income-category">Category *</Label>
+                <Select value={newIncome.category} onValueChange={(value) => setNewIncome({ ...newIncome, category: value })}>
+                  <SelectTrigger id="income-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sales">Sales</SelectItem>
+                    <SelectItem value="Memberships">Memberships</SelectItem>
+                    <SelectItem value="Room Bookings">Room Bookings</SelectItem>
+                    <SelectItem value="Events">Events</SelectItem>
+                    <SelectItem value="Other Income">Other Income</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="income-payment">Payment Method</Label>
+                <Select value={newIncome.payment_method} onValueChange={(value) => setNewIncome({ ...newIncome, payment_method: value })}>
+                  <SelectTrigger id="income-payment">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="mobile_payment">Mobile Payment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="income-reference">Reference Number (Optional)</Label>
+                <Input
+                  id="income-reference"
+                  placeholder="Receipt #, Transaction #, etc."
+                  value={newIncome.reference_number}
+                  onChange={(e) => setNewIncome({ ...newIncome, reference_number: e.target.value.slice(0, 100) })}
+                  maxLength={100}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="income-description">Description (Optional)</Label>
+                <Textarea
+                  id="income-description"
+                  placeholder="Additional notes..."
+                  value={newIncome.description}
+                  onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value.slice(0, 500) })}
+                  rows={3}
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {newIncome.description.length}/500 characters
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddIncome(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddIncome} className="bg-green-600 hover:bg-green-700">
+                Add Income
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
