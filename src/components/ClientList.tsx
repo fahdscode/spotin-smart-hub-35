@@ -406,11 +406,10 @@ const ClientList = () => {
 
     try {
       const client = clients.find(c => c.id === pendingCheckoutClient);
+      const { data: { user } } = await supabase.auth.getUser();
 
       // If receipt was already created, cancel it in the database
       if (receiptData?.receiptId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        
         const { error } = await supabase
           .from('receipts')
           .update({
@@ -422,6 +421,26 @@ const ClientList = () => {
           .eq('id', receiptData.receiptId);
 
         if (error) throw error;
+      } else if (receiptData?.items && receiptData.items.length > 0) {
+        // If receipt wasn't created yet but there are items, create a cancelled receipt
+        const { error: insertError } = await supabase
+          .from('receipts')
+          .insert({
+            receipt_number: receiptData.receiptNumber,
+            user_id: receiptData.userId,
+            total_amount: receiptData.total,
+            amount: receiptData.subtotal,
+            payment_method: receiptData.paymentMethod || 'cash',
+            transaction_type: 'sale',
+            line_items: receiptData.items,
+            status: 'cancelled',
+            cancellation_reason: cancellationReason,
+            cancelled_at: new Date().toISOString(),
+            cancelled_by: user?.id,
+            receipt_date: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
       }
 
       // If restock option is selected, restock the inventory
