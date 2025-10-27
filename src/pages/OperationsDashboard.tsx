@@ -11,7 +11,6 @@ import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
 import DayUseTicketControls from "@/components/DayUseTicketControls";
-import MembershipManagement from "@/components/MembershipManagement";
 import RoomsManagement from "@/components/RoomsManagement";
 import MembershipPlansManagement from "@/components/MembershipPlansManagement";
 import ProductPricing from "@/components/ProductPricing";
@@ -184,7 +183,7 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-12">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
@@ -193,7 +192,6 @@ const OperationsDashboard = () => {
             <TabsTrigger value="pricing">Products</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
-            <TabsTrigger value="memberships">Memberships</TabsTrigger>
             <TabsTrigger value="tickets">
               <Ticket className="h-4 w-4 mr-2" />
               Tickets
@@ -352,11 +350,6 @@ const OperationsDashboard = () => {
           {/* Rooms Tab */}
           <TabsContent value="rooms" className="space-y-6">
             <RoomsManagement />
-          </TabsContent>
-
-          {/* Memberships Tab */}
-          <TabsContent value="memberships" className="space-y-6">
-            <MembershipManagement />
           </TabsContent>
 
           {/* Tickets Tab */}
