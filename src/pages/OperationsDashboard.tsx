@@ -203,7 +203,7 @@ const OperationsDashboard = () => {
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="bills">Bills</TabsTrigger>
-            <TabsTrigger value="usage">Usage Report</TabsTrigger>
+            
             <TabsTrigger value="pricing">Products</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
@@ -332,10 +332,6 @@ const OperationsDashboard = () => {
             <BillManagement />
           </TabsContent>
 
-          {/* Ingredient Usage Report Tab */}
-          <TabsContent value="usage" className="space-y-6">
-            <IngredientUsageReport />
-          </TabsContent>
 
           {/* Product Pricing Tab */}
           <TabsContent value="pricing" className="space-y-6">
