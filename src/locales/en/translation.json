@@ -117,6 +117,8 @@
     "cart": "Cart",
     "checkout": "Checkout",
     "addToCart": "Add to Cart",
+    "addedToCart": "Added to cart",
+    "addedToOrder": "added to your order",
     "removeFromCart": "Remove from Cart",
     "emptyCart": "Your cart is empty",
     "totalPrice": "Total",
@@ -147,7 +149,8 @@
     "viewBarcode": "View Barcode",
     "orderHistory": "Order History",
     "bookRoom": "Book Room",
-    "viewEvents": "View Events"
+    "viewEvents": "View Events",
+    "quickActions": "Quick Actions"
   },
   "clientSignup": {
     "title": "Join SpotIn",
@@ -259,5 +262,35 @@
     "error": "Error",
     "failedToSendCode": "Failed to send code",
     "failedToReset": "Failed to reset password"
+  },
+  "clientEvents": {
+    "upcomingEvents": "Upcoming Events",
+    "eventsAvailable": "events available",
+    "noEvents": "No Upcoming Events",
+    "checkBackSoon": "Check back soon for exciting community events and workshops!",
+    "today": "Today",
+    "soon": "Soon",
+    "tbd": "TBD",
+    "registered": "registered",
+    "free": "Free",
+    "eventFull": "Event Full",
+    "registerNow": "Register Now",
+    "registerForEvent": "Register for Event",
+    "locationTBD": "Location TBD",
+    "fullName": "Full Name",
+    "yourFullName": "Your full name",
+    "email": "Email",
+    "yourEmail": "Your email address",
+    "phone": "Phone",
+    "yourPhone": "Your phone number",
+    "specialRequests": "Special Requests (Optional)",
+    "specialRequestsPlaceholder": "Any special requirements or dietary restrictions?",
+    "confirmRegistration": "Confirm Registration",
+    "eventFullDesc": "This event has reached its capacity.",
+    "registrationSuccess": "Registration Successful!",
+    "registrationSuccessDesc": "You're registered for {{title}}. We'll send you a confirmation email.",
+    "registrationFailed": "Registration Failed",
+    "registrationFailedDesc": "Failed to register for event. Please try again.",
+    "failedToLoad": "Failed to load events"
   }
 }

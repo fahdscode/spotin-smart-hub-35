@@ -117,6 +117,8 @@
     "cart": "السلة",
     "checkout": "إتمام الطلب",
     "addToCart": "أضف للسلة",
+    "addedToCart": "تمت الإضافة للسلة",
+    "addedToOrder": "تمت إضافته للطلب",
     "removeFromCart": "احذف من السلة",
     "emptyCart": "السلة فاضية",
     "totalPrice": "الإجمالي",
@@ -147,7 +149,8 @@
     "viewBarcode": "شوف الباركود",
     "orderHistory": "سجل الطلبات",
     "bookRoom": "احجز قاعة",
-    "viewEvents": "شوف الفعاليات"
+    "viewEvents": "شوف الفعاليات",
+    "quickActions": "إجراءات سريعة"
   },
   "clientSignup": {
     "title": "انضم لسبوت إن",
@@ -259,5 +262,35 @@
     "error": "خطأ",
     "failedToSendCode": "فشل إرسال الكود",
     "failedToReset": "فشلت إعادة تعيين كلمة السر"
+  },
+  "clientEvents": {
+    "upcomingEvents": "الفعاليات القادمة",
+    "eventsAvailable": "فعالية متاحة",
+    "noEvents": "لا توجد فعاليات قادمة",
+    "checkBackSoon": "تابعنا قريباً لفعاليات وورش عمل مثيرة!",
+    "today": "اليوم",
+    "soon": "قريباً",
+    "tbd": "سيحدد لاحقاً",
+    "registered": "مسجل",
+    "free": "مجاناً",
+    "eventFull": "الفعالية ممتلئة",
+    "registerNow": "سجل الآن",
+    "registerForEvent": "التسجيل في الفعالية",
+    "locationTBD": "المكان سيحدد لاحقاً",
+    "fullName": "الاسم بالكامل",
+    "yourFullName": "اسمك الكامل",
+    "email": "البريد الإلكتروني",
+    "yourEmail": "بريدك الإلكتروني",
+    "phone": "الموبايل",
+    "yourPhone": "رقم موبايلك",
+    "specialRequests": "طلبات خاصة (اختياري)",
+    "specialRequestsPlaceholder": "أي متطلبات خاصة أو قيود غذائية؟",
+    "confirmRegistration": "تأكيد التسجيل",
+    "eventFullDesc": "الفعالية وصلت للحد الأقصى.",
+    "registrationSuccess": "تم التسجيل بنجاح!",
+    "registrationSuccessDesc": "تم تسجيلك في {{title}}. هنبعتلك إيميل تأكيد.",
+    "registrationFailed": "فشل التسجيل",
+    "registrationFailedDesc": "فشل التسجيل في الفعالية. حاول تاني.",
+    "failedToLoad": "فشل تحميل الفعاليات"
   }
 }
