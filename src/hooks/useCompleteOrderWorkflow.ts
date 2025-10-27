@@ -35,7 +35,7 @@ export const useCompleteOrderWorkflow = () => {
       setProcessing(true);
 
       // Step 1: Create order items in session_line_items
-      console.log('Step 1: Creating order items...');
+      // Step 1: Creating order items
       const orderItems = workflowData.items.map(item => ({
         name: item.name,
         quantity: item.quantity,
@@ -45,7 +45,7 @@ export const useCompleteOrderWorkflow = () => {
       await createOrder(orderItems, workflowData.userId);
 
       // Step 2: Process payment and create receipt
-      console.log('Step 2: Processing payment...');
+      // Step 2: Processing payment
       const paymentData = {
         userId: workflowData.userId,
         items: workflowData.items.map(item => ({
@@ -64,11 +64,11 @@ export const useCompleteOrderWorkflow = () => {
       const paymentResult = await processPayment(paymentData);
 
       // Step 3: Update stock for products that consume ingredients
-      console.log('Step 3: Updating stock...');
+      // Step 3: Updating stock
       await updateStockForOrder(workflowData.items);
 
       // Step 4: Generate receipt
-      console.log('Step 4: Creating receipt...');
+      // Step 4: Creating receipt
       const receiptData = {
         receiptNumber: generateReceiptNumber(),
         customerName: workflowData.customerName,

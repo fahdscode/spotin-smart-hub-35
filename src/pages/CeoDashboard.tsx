@@ -32,70 +32,29 @@ const CeoDashboard = () => {
 
   // State for analytics data
   const [satisfactionData, setSatisfactionData] = useState({
-    averageRating: 4.2,
-    totalFeedback: 156,
+    averageRating: 0,
+    totalFeedback: 0,
     ratingDistribution: [
-      { rating: 5, count: 78, emoji: '😁' },
-      { rating: 4, count: 45, emoji: '😊' },
-      { rating: 3, count: 21, emoji: '🙂' },
-      { rating: 2, count: 8, emoji: '😐' },
-      { rating: 1, count: 4, emoji: '😞' },
+      { rating: 5, count: 0, emoji: '😁' },
+      { rating: 4, count: 0, emoji: '😊' },
+      { rating: 3, count: 0, emoji: '🙂' },
+      { rating: 2, count: 0, emoji: '😐' },
+      { rating: 1, count: 0, emoji: '😞' },
     ]
   });
 
   const [businessMetrics, setBusinessMetrics] = useState({
-    avgOrderValue: 45.5,
-    totalOrders: 1247,
-    repeatCustomerRate: 68,
-    totalRevenue: 27500,
-    activeMembers: 147,
-    occupancyRate: 78,
-    eventsThisMonth: 23
+    avgOrderValue: 0,
+    totalOrders: 0,
+    repeatCustomerRate: 0,
+    totalRevenue: 0,
+    activeMembers: 0,
+    occupancyRate: 0,
+    eventsThisMonth: 0
   });
 
-  const [demographicData, setDemographicData] = useState({
-    genderDistribution: [
-      { gender: 'Male', percentage: 52, count: 76 },
-      { gender: 'Female', percentage: 45, count: 66 },
-      { gender: 'Other', percentage: 3, count: 5 }
-    ],
-    ageGroups: [
-      { group: '18-25', percentage: 28, count: 41 },
-      { group: '26-35', percentage: 45, count: 66 },
-      { group: '36-45', percentage: 18, count: 26 },
-      { group: '46+', percentage: 9, count: 14 }
-    ]
-  });
-
-  // Chart data
-  const [peakHoursData, setPeakHoursData] = useState([
-    { hour: '6AM', visitors: 5 },
-    { hour: '7AM', visitors: 12 },
-    { hour: '8AM', visitors: 25 },
-    { hour: '9AM', visitors: 45 },
-    { hour: '10AM', visitors: 38 },
-    { hour: '11AM', visitors: 52 },
-    { hour: '12PM', visitors: 65 },
-    { hour: '1PM', visitors: 58 },
-    { hour: '2PM', visitors: 72 },
-    { hour: '3PM', visitors: 68 },
-    { hour: '4PM', visitors: 55 },
-    { hour: '5PM', visitors: 42 },
-    { hour: '6PM', visitors: 35 },
-    { hour: '7PM', visitors: 28 },
-    { hour: '8PM', visitors: 18 },
-    { hour: '9PM', visitors: 12 }
-  ]);
-
-  const [dailyRevenueData, setDailyRevenueData] = useState([
-    { date: 'Mon', revenue: 2450, orders: 32 },
-    { date: 'Tue', revenue: 2890, orders: 38 },
-    { date: 'Wed', revenue: 3200, orders: 42 },
-    { date: 'Thu', revenue: 3650, orders: 48 },
-    { date: 'Fri', revenue: 4200, orders: 55 },
-    { date: 'Sat', revenue: 3800, orders: 51 },
-    { date: 'Sun', revenue: 2900, orders: 39 }
-  ]);
+  const [peakHoursData, setPeakHoursData] = useState<Array<{ hour: string; visitors: number }>>([]);
+  const [dailyRevenueData, setDailyRevenueData] = useState<Array<{ date: string; revenue: number; orders: number }>>([]);
 
   const CHART_COLORS = {
     primary: 'hsl(var(--primary))',
@@ -115,7 +74,9 @@ const CeoDashboard = () => {
     try {
       await Promise.all([
         fetchSatisfactionData(),
-        fetchBusinessMetrics()
+        fetchBusinessMetrics(),
+        fetchPeakHoursData(),
+        fetchDailyRevenueData()
       ]);
     } finally {
       setIsLoading(false);
@@ -183,30 +144,122 @@ const CeoDashboard = () => {
 
   const fetchBusinessMetrics = async () => {
     try {
+      const [ordersData, clientsData, eventsData, checkInsData] = await Promise.all([
+        supabase
+          .from('session_line_items')
+          .select('price, quantity, user_id, created_at')
+          .gte('created_at', dateRange.from.toISOString())
+          .lte('created_at', dateRange.to.toISOString())
+          .eq('status', 'completed'),
+        supabase
+          .from('clients')
+          .select('id, active')
+          .eq('is_active', true),
+        supabase
+          .from('events')
+          .select('id')
+          .gte('event_date', format(dateRange.from, 'yyyy-MM-dd'))
+          .lte('event_date', format(dateRange.to, 'yyyy-MM-dd'))
+          .eq('is_active', true),
+        supabase
+          .from('check_ins')
+          .select('id, status')
+          .gte('created_at', dateRange.from.toISOString())
+          .lte('created_at', dateRange.to.toISOString())
+          .eq('status', 'checked_in')
+      ]);
+
+      if (ordersData.data && ordersData.data.length > 0) {
+        const totalRevenue = ordersData.data.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const avgOrder = totalRevenue / ordersData.data.length;
+        const uniqueCustomers = new Set(ordersData.data.map(item => item.user_id)).size;
+        const totalOrders = ordersData.data.length;
+        const repeatRate = totalOrders > uniqueCustomers ? ((totalOrders - uniqueCustomers) / totalOrders) * 100 : 0;
+
+        const activeMembers = clientsData.data?.filter(c => c.active).length || 0;
+        const totalClients = clientsData.data?.length || 1;
+        const occupancyRate = (activeMembers / totalClients) * 100;
+
+        setBusinessMetrics({
+          avgOrderValue: Number(avgOrder.toFixed(1)),
+          totalOrders,
+          repeatCustomerRate: Number(repeatRate.toFixed(0)),
+          totalRevenue: Number(totalRevenue.toFixed(0)),
+          activeMembers,
+          occupancyRate: Number(occupancyRate.toFixed(0)),
+          eventsThisMonth: eventsData.data?.length || 0
+        });
+      }
+    } catch (error) {
+      // Error already logged
+    }
+  };
+
+  const fetchPeakHoursData = async () => {
+    try {
+      const { data } = await supabase
+        .from('check_ins')
+        .select('checked_in_at')
+        .gte('checked_in_at', dateRange.from.toISOString())
+        .lte('checked_in_at', dateRange.to.toISOString())
+        .eq('status', 'checked_in');
+
+      if (data) {
+        const hourCounts: Record<number, number> = {};
+        data.forEach(item => {
+          const hour = new Date(item.checked_in_at).getHours();
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        });
+
+        const chartData = Array.from({ length: 16 }, (_, i) => {
+          const hour = i + 6;
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour > 12 ? hour - 12 : hour;
+          return {
+            hour: `${displayHour}${ampm}`,
+            visitors: hourCounts[hour] || 0
+          };
+        });
+
+        setPeakHoursData(chartData);
+      }
+    } catch (error) {
+      // Error already logged
+    }
+  };
+
+  const fetchDailyRevenueData = async () => {
+    try {
       const { data } = await supabase
         .from('session_line_items')
-        .select('price, quantity, user_id, created_at')
-        .gte('created_at', dateRange.from.toISOString())
+        .select('price, quantity, created_at')
+        .gte('created_at', subDays(dateRange.to, 6).toISOString())
         .lte('created_at', dateRange.to.toISOString())
         .eq('status', 'completed');
 
-      if (data && data.length > 0) {
-        const totalRevenue = data.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const avgOrder = totalRevenue / data.length;
-        const uniqueCustomers = new Set(data.map(item => item.user_id)).size;
-        const totalOrders = data.length;
-        const repeatRate = ((totalOrders - uniqueCustomers) / totalOrders) * 100;
+      if (data) {
+        const dailyData: Record<string, { revenue: number; orders: number }> = {};
+        
+        data.forEach(item => {
+          const day = format(new Date(item.created_at), 'EEE');
+          if (!dailyData[day]) {
+            dailyData[day] = { revenue: 0, orders: 0 };
+          }
+          dailyData[day].revenue += item.price * item.quantity;
+          dailyData[day].orders += 1;
+        });
 
-        setBusinessMetrics(prev => ({
-          ...prev,
-          avgOrderValue: Number(avgOrder.toFixed(1)),
-          totalOrders: totalOrders,
-          repeatCustomerRate: Number(repeatRate.toFixed(0)),
-          totalRevenue: Number(totalRevenue.toFixed(0))
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const chartData = days.map(day => ({
+          date: day,
+          revenue: Number((dailyData[day]?.revenue || 0).toFixed(0)),
+          orders: dailyData[day]?.orders || 0
         }));
+
+        setDailyRevenueData(chartData);
       }
     } catch (error) {
-      console.error('Error fetching business metrics:', error);
+      // Error already logged
     }
   };
 
@@ -779,43 +832,7 @@ const CeoDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-8">
-                    {/* Gender Distribution */}
-                    <div>
-                      <h4 className="font-semibold mb-4 flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Gender Distribution
-                      </h4>
-                      <div className="space-y-3">
-                        {demographicData.genderDistribution.map((item) => (
-                          <div key={item.gender} className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{item.gender}</span>
-                            <div className="flex items-center gap-3">
-                              <Progress value={item.percentage} className="w-24 h-3" />
-                              <span className="text-sm font-bold w-12 text-right">{item.percentage}%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Age Groups */}
-                    <div>
-                      <h4 className="font-semibold mb-4 flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Age Groups
-                      </h4>
-                      <div className="space-y-3">
-                        {demographicData.ageGroups.map((item) => (
-                          <div key={item.group} className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{item.group}</span>
-                            <div className="flex items-center gap-3">
-                              <Progress value={item.percentage} className="w-24 h-3" />
-                              <span className="text-sm font-bold w-12 text-right">{item.percentage}%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <p className="text-muted-foreground text-center py-8">Demographic analytics coming soon</p>
                   </div>
                 </CardContent>
               </Card>

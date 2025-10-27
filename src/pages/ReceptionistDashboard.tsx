@@ -220,7 +220,7 @@ const ReceptionistDashboard = () => {
     setAvailableDesks(Math.max(0, totalDesks - occupiedDesks));
   }, [activeSessions]);
 
-  const handleCheckOut = (sessionId: string, clientData: any) => {
+  const handleCheckOut = (sessionId: string, clientData: { id: string; clientName: string }) => {
     setSelectedSession({ sessionId, clientData });
     setShowCheckoutConfirmation(true);
   };
@@ -236,7 +236,7 @@ const ReceptionistDashboard = () => {
     return duration * 300; // 300 EGP per hour
   };
 
-  const confirmCheckout = (items: any[], total: number, paymentMethod: string) => {
+  const confirmCheckout = (items: Array<{ id: string; name: string; price: number; quantity: number }>, total: number, paymentMethod: string) => {
     // Remove session from active sessions
     setActiveSessions(prev => prev.filter(session => session.id !== selectedSession.sessionId));
     
