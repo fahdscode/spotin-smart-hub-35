@@ -169,6 +169,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchUserRole = async (userId: string) => {
+    // CRITICAL: Don't fetch management role if client session exists
+    const clientSession = localStorage.getItem('clientData');
+    if (clientSession) {
+      console.log('Client session exists, skipping management role fetch');
+      setIsLoading(false);
+      return;
+    }
+
     // Prevent multiple simultaneous role fetches
     if (roleFetchInProgress) {
       return;
