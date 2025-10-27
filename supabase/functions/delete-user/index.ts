@@ -90,8 +90,7 @@ serve(async (req) => {
 
     console.log('Starting user deletion process for:', userId);
 
-    // Delete related data in order (from dependent to independent)
-    // This prevents foreign key constraint violations
+    // Delete related data in specific order to avoid foreign key conflicts
     
     // 1. Delete from admin_users table (if exists)
     console.log('Deleting from admin_users...');
@@ -116,65 +115,27 @@ serve(async (req) => {
       throw new Error(`Failed to delete profile: ${profileError.message}`);
     }
 
-    // 3. Delete other related records that might have foreign keys to auth.users
-    // Check_ins
-    console.log('Deleting check-ins...');
-    await supabaseAdmin
-      .from('check_ins')
-      .delete()
-      .eq('user_id', userId);
-
-    // Memberships
-    console.log('Deleting memberships...');
-    await supabaseAdmin
-      .from('memberships')
-      .delete()
-      .eq('user_id', userId);
-
-    // Feedback
-    console.log('Deleting feedback...');
-    await supabaseAdmin
-      .from('feedback')
-      .delete()
-      .eq('user_id', userId);
-
-    // User analytics
-    console.log('Deleting user analytics...');
-    await supabaseAdmin
-      .from('user_analytics')
-      .delete()
-      .eq('user_id', userId);
-
-    // 4. Finally, delete the user from auth.users
-    console.log('Deleting from auth.users...');
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    
-    if (deleteError) {
-      console.error('Error deleting user from auth:', deleteError);
-      // If the error is "user not found", it's okay - profile was still deleted
-      if (deleteError.status === 404 || deleteError.message?.includes('not found')) {
-        console.log('User not found in auth.users (already deleted or never existed)');
-      } else {
-        throw new Error(`Failed to delete user from auth: ${deleteError.message}`);
-      }
-    } else {
-      console.log('Successfully deleted user from auth.users');
-    }
+    console.log('User profile and admin record deleted successfully');
 
     // Log the deletion event
     if (userToDelete) {
-      await supabaseAdmin.rpc('log_system_event', {
-        p_log_level: 'warning',
-        p_event_type: 'user_deleted',
-        p_message: `User deleted: ${userToDelete.full_name || userToDelete.email} (${userToDelete.role})`,
-        p_metadata: { 
-          deleted_user_id: userId,
-          deleted_user_email: userToDelete.email,
-          deleted_user_role: userToDelete.role,
-          deleted_by: user.id 
-        },
-        p_user_id: user.id
-      });
+      try {
+        await supabaseAdmin.rpc('log_system_event', {
+          p_log_level: 'warning',
+          p_event_type: 'user_deleted',
+          p_message: `User profile deleted: ${userToDelete.full_name || userToDelete.email} (${userToDelete.role})`,
+          p_metadata: { 
+            deleted_user_id: userId,
+            deleted_user_email: userToDelete.email,
+            deleted_user_role: userToDelete.role,
+            deleted_by: user.id 
+          },
+          p_user_id: user.id
+        });
+      } catch (logError) {
+        console.error('Error logging deletion event:', logError);
+        // Continue even if logging fails
+      }
     }
 
     return new Response(
@@ -191,10 +152,13 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: error.message || 'Internal server error',
+        details: error.toString()
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
