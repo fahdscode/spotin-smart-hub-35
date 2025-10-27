@@ -224,26 +224,53 @@ const ClientList = () => {
           ? Math.round((new Date().getTime() - new Date(checkInTime).getTime()) / 60000) 
           : 0;
 
-        // If no membership, add day use ticket
-        if (!membership) {
-          // Fetch day use ticket price
-          const { data: ticketData } = await supabase
-            .from('drinks')
-            .select('name, price')
-            .eq('category', 'day_use_ticket')
-            .eq('is_available', true)
-            .maybeSingle();
+        // Check for assigned ticket in this session
+        const { data: assignedTicket } = await supabase
+          .from('client_tickets')
+          .select(`
+            *,
+            ticket:drinks(name, price, ticket_type)
+          `)
+          .eq('client_id', clientId)
+          .eq('is_active', true)
+          .gte('checked_in_at', startTime)
+          .order('checked_in_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-          if (ticketData) {
+        // If no membership, add the assigned ticket (or default day use ticket if no ticket assigned)
+        if (!membership) {
+          if (assignedTicket?.ticket) {
+            // Add the specific ticket that was assigned during check-in
             receiptItems = [
               {
-                name: ticketData.name,
+                name: assignedTicket.ticket.name,
                 quantity: 1,
-                price: ticketData.price,
-                total: ticketData.price
+                price: assignedTicket.ticket.price,
+                total: assignedTicket.ticket.price
               },
               ...receiptItems
             ];
+          } else {
+            // Fallback: fetch default day use ticket if no ticket was assigned
+            const { data: ticketData } = await supabase
+              .from('drinks')
+              .select('name, price')
+              .eq('category', 'day_use_ticket')
+              .eq('is_available', true)
+              .maybeSingle();
+
+            if (ticketData) {
+              receiptItems = [
+                {
+                  name: ticketData.name,
+                  quantity: 1,
+                  price: ticketData.price,
+                  total: ticketData.price
+                },
+                ...receiptItems
+              ];
+            }
           }
         }
 
