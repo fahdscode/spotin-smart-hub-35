@@ -74,26 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Auth state changed:', event, session?.user?.email);
         
+        // Check if client session exists in localStorage
+        const clientSession = localStorage.getItem('clientData');
+        if (clientSession) {
+          // Prioritize client authentication - don't override with management auth
+          console.log('Client session exists, maintaining client authentication');
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Only fetch role for Supabase management users
+        // Only fetch role for Supabase management users when no client session exists
         if (session?.user) {
-          // Clear client data only when management user logs in
-          if (clientData) {
-            setClientData(null);
-            localStorage.removeItem('clientData');
-          }
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
             }
           }, 0);
         } else {
-          // No Supabase session - preserve client data if exists
-          if (!clientData) {
-            setUserRole(null);
-          }
+          setUserRole(null);
           setIsLoading(false);
         }
       }
@@ -102,6 +102,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     const getSession = async () => {
       try {
+        // Check if client session exists in localStorage
+        const clientSession = localStorage.getItem('clientData');
+        if (clientSession) {
+          // Prioritize client authentication - skip Supabase session check
+          console.log('Client session exists, skipping Supabase auth check');
+          setIsLoading(false);
+          return;
+        }
+        
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
@@ -117,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }, 0);
         } else {
-          // No management session - client data already restored from localStorage
+          // No management session
           setIsLoading(false);
         }
       } catch (error) {
