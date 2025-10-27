@@ -66,6 +66,8 @@ const ClientList = () => {
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+  const [checkoutSuccessClient, setCheckoutSuccessClient] = useState<{ name: string } | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -143,7 +145,7 @@ const ClientList = () => {
 
   const handleToggleClientStatus = async (clientId: string, currentStatus: boolean) => {
     try {
-      // If checking out, process directly without showing confirmation first
+      // If checking out, show confirmation first
       if (currentStatus) {
         setPendingCheckoutClient(clientId);
         
@@ -314,8 +316,8 @@ const ClientList = () => {
         // Reset payment method selection for new checkout
         setSelectedPaymentMethod("");
         
-        // Process checkout immediately and show success dialog
-        await processCheckoutAndShowSuccess(clientId, client);
+        // Show confirmation dialog
+        setShowCheckoutConfirmation(true);
         return;
       }
 
@@ -332,11 +334,16 @@ const ClientList = () => {
     }
   };
 
-  const processCheckoutAndShowSuccess = async (clientId: string, client: Client | undefined) => {
-    try {
-      if (!receiptData) return;
+  const confirmCheckout = async () => {
+    if (!pendingCheckoutClient || !receiptData) return;
 
-      // Create receipt if there are items or total > 0
+    if (!selectedPaymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
+    try {
+      // Only create receipt if there are items or total > 0
       if (receiptData.items.length > 0 || receiptData.total > 0) {
         const { data: savedReceipt, error: receiptError } = await supabase
           .from('receipts')
@@ -345,7 +352,7 @@ const ClientList = () => {
             user_id: receiptData.userId,
             total_amount: receiptData.total,
             amount: receiptData.total,
-            payment_method: 'cash', // Default payment method for quick checkout
+            payment_method: selectedPaymentMethod,
             transaction_type: 'checkout',
             line_items: receiptData.items,
             status: 'completed'
@@ -358,8 +365,7 @@ const ClientList = () => {
         // Update receipt data with the saved receipt ID
         setReceiptData(prev => ({
           ...prev,
-          receiptId: savedReceipt.id,
-          paymentMethod: 'cash'
+          receiptId: savedReceipt.id
         }));
       }
 
@@ -367,25 +373,30 @@ const ClientList = () => {
       const { error } = await supabase
         .from('clients')
         .update({ active: false })
-        .eq('id', clientId);
+        .eq('id', pendingCheckoutClient);
 
       if (error) throw error;
 
-      setClients(prev => prev.map(c => 
-        c.id === clientId 
-          ? { ...c, active: false }
-          : c
+      setClients(prev => prev.map(client => 
+        client.id === pendingCheckoutClient 
+          ? { ...client, active: false }
+          : client
       ));
       
-      // Show success confirmation dialog
-      setShowCheckoutConfirmation(true);
+      const client = clients.find(c => c.id === pendingCheckoutClient);
+      
+      setShowCheckoutConfirmation(false);
+      
+      // Show checkout success confirmation
+      setCheckoutSuccessClient({
+        name: client?.full_name || 'Client'
+      });
+      setShowCheckoutSuccess(true);
     } catch (error) {
       console.error('Error checking out client:', error);
       toast.error("Failed to checkout client");
-      setPendingCheckoutClient(null);
     }
   };
-
 
   const cancelReceipt = async () => {
     if (!cancellationReason.trim()) {
@@ -1008,31 +1019,245 @@ const ClientList = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Checkout Success Dialog */}
+      {/* Checkout Confirmation Dialog */}
       <Dialog open={showCheckoutConfirmation} onOpenChange={setShowCheckoutConfirmation}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Checkout Successful
-            </DialogTitle>
+            <DialogTitle>Checkout Confirmation</DialogTitle>
             <DialogDescription>
-              {receiptData && `${receiptData.customerName} has been checked out successfully`}
+              Review the checkout summary before proceeding
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3">
-            <Button 
-              onClick={() => {
-                setShowCheckoutConfirmation(false);
-                if (receiptData && (receiptData.items.length > 0 || receiptData.total > 0)) {
-                  setShowReceipt(true);
-                }
-              }}
-              className="w-full"
-            >
-              Done
+          {receiptData && (
+            <div className="space-y-6">
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Customer:</span>
+                  <span>{receiptData.customerName}</span>
+                </div>
+                {receiptData.membership && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Membership:</span>
+                    <Badge variant="default" className="ml-2">
+                      {receiptData.membership.plan_name} ({receiptData.membership.discount_percentage}% discount)
+                    </Badge>
+                  </div>
+                )}
+                {receiptData.assignedTicket && (
+                  <div className="flex justify-between items-center bg-primary/10 p-3 rounded-md -mx-1">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="font-semibold">{receiptData.assignedTicket.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{receiptData.assignedTicket.ticket_type?.replace('_', ' ')}</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-primary">{formatCurrency(receiptData.assignedTicket.price)}</span>
+                  </div>
+                )}
+                {receiptData.checkInTime && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Check-in Time:</span>
+                    <span>{receiptData.checkInTime}</span>
+                  </div>
+                )}
+                {receiptData.duration > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Duration:</span>
+                    <span>{receiptData.duration} minutes</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Add Product Section */}
+              <Collapsible open={showProductSelector} onOpenChange={setShowProductSelector}>
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-4 h-auto hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span className="font-semibold">Add Items to Checkout</span>
+                      </div>
+                      {showProductSelector ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="p-4 bg-muted/50 space-y-3">
+                      {/* Search Bar */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search products..."
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+
+                      {/* Category Filters */}
+                      <div className="flex gap-2 flex-wrap">
+                        {categories.map((category) => (
+                          <Button
+                            key={category}
+                            variant={selectedCategory === category ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedCategory(category)}
+                            className="capitalize"
+                          >
+                            {category}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Products Grid */}
+                      <ScrollArea className="h-[200px]">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {filteredDrinks.map((drink) => (
+                            <Button
+                              key={drink.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addItemToCheckout(drink.id)}
+                              className="justify-start text-left h-auto py-2"
+                            >
+                              <div className="truncate w-full">
+                                <p className="font-medium text-xs truncate">{drink.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatCurrency(drink.price)}</p>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                        {filteredDrinks.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            No products found
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-3">
+                  <h3 className="font-semibold">Items</h3>
+                </div>
+                <div className="divide-y">
+                  {receiptData.items.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No items yet. Add items above to include them in the checkout.
+                    </div>
+                  ) : (
+                    receiptData.items.map((item: any, index: number) => (
+                      <div key={index} className="p-3 flex justify-between items-center">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{formatCurrency(item.total)}</p>
+                          <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Method Selection */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <Label className="text-base font-semibold">Payment Method *</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "visa" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("visa")}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    <span>Visa</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "cash" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("cash")}
+                  >
+                    <Banknote className="h-5 w-5" />
+                    <span>Cash</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "bank_transfer" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("bank_transfer")}
+                  >
+                    <Building2 className="h-5 w-5" />
+                    <span>Bank Transfer</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedPaymentMethod === "hot_desk" ? "default" : "outline"}
+                    className="h-auto py-4 flex flex-col items-center gap-2"
+                    onClick={() => setSelectedPaymentMethod("hot_desk")}
+                  >
+                    <Laptop className="h-5 w-5" />
+                    <span>Hot Desk</span>
+                  </Button>
+                </div>
+                {!selectedPaymentMethod && (
+                  <p className="text-sm text-destructive">Please select a payment method</p>
+                )}
+              </div>
+
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(receiptData.subtotal)}</span>
+                  </div>
+                  {receiptData.discount > 0 && (
+                    <div className="flex justify-between text-success">
+                      <span>Discount:</span>
+                      <span>-{formatCurrency(receiptData.discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(receiptData.total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowCheckoutConfirmation(false)}>
+              Cancel
             </Button>
-          </div>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                setShowCancelDialog(true);
+              }}
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Cancel Receipt
+            </Button>
+            <Button 
+              onClick={confirmCheckout}
+              disabled={!selectedPaymentMethod}
+            >
+              Confirm Checkout
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1210,6 +1435,42 @@ const ClientList = () => {
               Save Changes
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Checkout Success Confirmation Dialog */}
+      <Dialog open={showCheckoutSuccess} onOpenChange={setShowCheckoutSuccess}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-success" />
+              Checkout Successful
+            </DialogTitle>
+            <DialogDescription>
+              Client has been checked out successfully
+            </DialogDescription>
+          </DialogHeader>
+          {checkoutSuccessClient && (
+            <div className="space-y-4">
+              <div className="p-6 bg-success/10 border border-success/30 rounded-lg text-center">
+                <XCircle className="h-12 w-12 mx-auto mb-3 text-success" />
+                <h3 className="text-lg font-semibold text-foreground">{checkoutSuccessClient.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">Has been checked out</p>
+              </div>
+              <Button 
+                onClick={() => {
+                  setShowCheckoutSuccess(false);
+                  // Show receipt if there are items
+                  if (receiptData && (receiptData.items.length > 0 || receiptData.total > 0)) {
+                    setShowReceipt(true);
+                  }
+                }} 
+                className="w-full"
+              >
+                Done
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
