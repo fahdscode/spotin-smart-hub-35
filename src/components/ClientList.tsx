@@ -55,6 +55,7 @@ const ClientList = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [checkoutOnCancel, setCheckoutOnCancel] = useState(false);
+  const [restockOnCancel, setRestockOnCancel] = useState(false);
   const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -383,6 +384,51 @@ const ClientList = () => {
         if (error) throw error;
       }
 
+      // If restock option is selected, restock the inventory
+      if (restockOnCancel && receiptData?.line_items) {
+        try {
+          for (const item of receiptData.line_items) {
+            // Get product ingredients
+            const { data: product } = await supabase
+              .from('drinks')
+              .select('id')
+              .eq('name', item.item_name)
+              .single();
+
+            if (product) {
+              const { data: ingredients } = await supabase
+                .from('product_ingredients')
+                .select('stock_id, quantity_needed')
+                .eq('product_id', product.id);
+
+              if (ingredients) {
+                // Restock each ingredient
+                for (const ingredient of ingredients) {
+                  const quantityToRestock = ingredient.quantity_needed * item.quantity;
+                  
+                  // Get current stock quantity
+                  const { data: stock } = await supabase
+                    .from('stock')
+                    .select('current_quantity')
+                    .eq('id', ingredient.stock_id)
+                    .single();
+                  
+                  if (stock) {
+                    await supabase
+                      .from('stock')
+                      .update({ current_quantity: stock.current_quantity + quantityToRestock })
+                      .eq('id', ingredient.stock_id);
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error restocking items:', error);
+          toast.error("Receipt cancelled but failed to restock some items");
+        }
+      }
+
       // If checkout option is selected, checkout the client
       if (checkoutOnCancel && pendingCheckoutClient) {
         const { error: checkoutError } = await supabase
@@ -413,6 +459,7 @@ const ClientList = () => {
       setShowReceipt(false);
       setCancellationReason("");
       setCheckoutOnCancel(false);
+      setRestockOnCancel(false);
       setPendingCheckoutClient(null);
       setReceiptData(null);
     } catch (error) {
@@ -1047,6 +1094,26 @@ const ClientList = () => {
             
             <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg border">
               <Checkbox
+                id="restock-on-cancel"
+                checked={restockOnCancel}
+                onCheckedChange={(checked) => setRestockOnCancel(checked as boolean)}
+              />
+              <div className="flex-1">
+                <label
+                  htmlFor="restock-on-cancel"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4 text-blue-600" />
+                  Restock items from this order
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Inventory quantities will be restored for items in this receipt
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg border">
+              <Checkbox
                 id="checkout-on-cancel"
                 checked={checkoutOnCancel}
                 onCheckedChange={(checked) => setCheckoutOnCancel(checked as boolean)}
@@ -1070,6 +1137,7 @@ const ClientList = () => {
               setShowCancelDialog(false);
               setCancellationReason("");
               setCheckoutOnCancel(false);
+              setRestockOnCancel(false);
             }}>
               Back
             </Button>
