@@ -163,35 +163,35 @@ const ClientLogin = () => {
       } catch {}
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
+  return <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-orange-500 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 overflow-hidden">
             <img src={spotinLogo} alt="SpotIn Logo" className="h-12 w-12 object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome to SpotIN</h1>
-          <p className="text-gray-600 mt-2">Access your coworking portal</p>
+          <h1 className="text-3xl font-bold text-foreground">Welcome to SpotIN</h1>
+          <p className="text-muted-foreground mt-2">Access your coworking portal</p>
         </div>
 
         {/* Featured Services */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="flex flex-col items-center space-y-2">
-            <Coffee className="h-6 w-6 text-green-600" />
-            <span className="text-sm text-gray-600">Order Drinks</span>
+            <Coffee className="h-6 w-6 text-primary" />
+            <span className="text-sm text-muted-foreground">Order Drinks</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <Calendar className="h-6 w-6 text-orange-600" />
-            <span className="text-sm text-gray-600">Events Registration</span>
+            <Calendar className="h-6 w-6 text-accent" />
+            <span className="text-sm text-muted-foreground">Events Registration</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <Check className="h-6 w-6 text-yellow-600" />
-            <span className="text-sm text-gray-600">Quick Check-in</span>
+            <Check className="h-6 w-6 text-success" />
+            <span className="text-sm text-muted-foreground">Quick Check-in</span>
           </div>
         </div>
 
         {/* Login Form */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Client Login</CardTitle>
             <CardDescription>Enter your credentials to continue</CardDescription>
@@ -199,35 +199,35 @@ const ClientLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Input type="tel" placeholder="Phone Number (e.g., 01143431650)" value={phone} onChange={handlePhoneChange} className={`h-12 rounded-xl border-2 transition-colors ${errors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'}`} required />
-                {errors.phone && <div className="flex items-center gap-2 text-red-600 text-sm">
+                <Input type="tel" placeholder="Phone Number (e.g., 01143431650)" value={phone} onChange={handlePhoneChange} className={`transition-colors ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`} required />
+                {errors.phone && <div className="flex items-center gap-2 text-destructive text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {errors.phone}
                   </div>}
               </div>
               <div className="space-y-2">
-                <Input type="password" placeholder="Password (min 8 characters)" value={password} onChange={handlePasswordChange} className={`h-12 rounded-xl border-2 transition-colors ${errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-green-500'}`} required />
-                {errors.password && <div className="flex items-center gap-2 text-red-600 text-sm">
+                <Input type="password" placeholder="Password (min 8 characters)" value={password} onChange={handlePasswordChange} className={`transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`} required />
+                {errors.password && <div className="flex items-center gap-2 text-destructive text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {errors.password}
                   </div>}
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-orange-500 hover:from-green-600 hover:to-orange-600 text-white font-semibold">
+              <Button type="submit" disabled={isLoading} className="w-full" size="lg">
                 <LogIn className="h-4 w-4 mr-2" />
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
 
-            <div className="mt-6 pt-4 border-t border-gray-200 text-center space-y-2">
-              <a href="/client-signup" className="text-sm text-green-600 hover:text-green-700 transition-colors font-medium">
+            <div className="mt-6 pt-4 border-t text-center space-y-2">
+              <a href="/client-signup" className="text-sm text-primary hover:text-primary-hover transition-colors font-medium">
                 Don't have an account? Sign up →
               </a>
               <br />
-              <a href="/password-reset" className="text-sm text-orange-600 hover:text-orange-700 transition-colors">
+              <a href="/password-reset" className="text-sm text-accent hover:text-accent-hover transition-colors">
                 Forgot password? →
               </a>
               <br />
-              <a href="/management-login" className="text-sm text-blue-600 hover:text-blue-700 transition-colors">
+              <a href="/management-login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Staff Portal →
               </a>
             </div>

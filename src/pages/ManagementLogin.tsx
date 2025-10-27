@@ -125,8 +125,8 @@ const ManagementLogin = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-elegant">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto p-3 rounded-full bg-primary/10">
             <Building2 className="w-8 h-8 text-primary" />
@@ -171,7 +171,7 @@ const ManagementLogin = () => {
               type="submit" 
               className="w-full" 
               disabled={isLoading}
-              variant="professional"
+              size="lg"
             >
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>

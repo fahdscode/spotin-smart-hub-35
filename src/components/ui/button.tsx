@@ -17,7 +17,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-success text-success-foreground hover:bg-success/90 shadow-custom-sm",
         accent: "bg-accent text-accent-foreground hover:bg-accent-hover shadow-custom-sm",
-        professional: "bg-gradient-primary text-white hover:shadow-custom-lg transform hover:scale-[1.02] transition-all duration-200",
+        professional: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-custom-lg transform hover:scale-[1.02] transition-all duration-200",
         card: "bg-card text-card-foreground border border-border hover:shadow-card transition-all duration-200",
       },
       size: {
