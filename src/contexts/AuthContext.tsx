@@ -54,19 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
 
-    // Restore client session from localStorage immediately
-    const clientSession = localStorage.getItem('clientData');
-    if (clientSession) {
-      try {
-        const parsedClient = JSON.parse(clientSession);
-        setClientData(parsedClient);
-        setUserRole('client');
-      } catch (error) {
-        console.error('Error parsing client session:', error);
-        localStorage.removeItem('clientData');
-      }
-    }
-
     // Listen for auth changes FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -74,15 +61,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Auth state changed:', event, session?.user?.email);
         
-        // Check if client session exists FIRST
-        const clientSession = localStorage.getItem('clientData');
-        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Management user ACTIVELY logging in (not page refresh) - clear client data
-        if (session?.user && event === 'SIGNED_IN' && !clientSession) {
-          console.log('Management user actively logged in');
+        // Management user logging in - CLEAR any client data
+        if (session?.user && event === 'SIGNED_IN') {
+          console.log('Management user actively logged in - clearing client session');
+          localStorage.removeItem('clientData');
+          setClientData(null);
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
@@ -90,9 +76,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else if (session?.user && event === 'INITIAL_SESSION') {
           // Initial session found on page load
+          const clientSession = localStorage.getItem('clientData');
           if (clientSession) {
-            // Client session takes priority - don't fetch management role
-            console.log('Client session exists, ignoring management session on page load');
+            // Client session exists - management session is ignored
+            console.log('Client session exists, ignoring management session');
+            try {
+              const parsedClient = JSON.parse(clientSession);
+              setClientData(parsedClient);
+              setUserRole('client');
+            } catch (error) {
+              console.error('Error parsing client session:', error);
+              localStorage.removeItem('clientData');
+            }
             setIsLoading(false);
           } else {
             // No client session, proceed with management session
@@ -104,8 +99,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }, 0);
           }
         } else if (!session?.user) {
-          // No Supabase session - preserve client data if exists
-          if (!clientSession) {
+          // No Supabase session - restore client data if exists
+          const clientSession = localStorage.getItem('clientData');
+          if (clientSession) {
+            try {
+              const parsedClient = JSON.parse(clientSession);
+              setClientData(parsedClient);
+              setUserRole('client');
+            } catch (error) {
+              console.error('Error parsing client session:', error);
+              localStorage.removeItem('clientData');
+            }
+          } else {
             setUserRole(null);
           }
           setIsLoading(false);
