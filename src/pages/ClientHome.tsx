@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Coffee, Calendar, LogIn, UserPlus, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import spotinLogo from "@/assets/spotin-logo-main.png";
 
 const ClientHome = () => {
   const navigate = useNavigate();
@@ -29,6 +30,11 @@ const ClientHome = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
+        {/* Logo at top */}
+        <div className="flex justify-center mb-8">
+          <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
+        </div>
+        
         <div className="text-center mb-12 animate-fade-in">
           <h1 className="text-5xl font-bold text-foreground mb-4">
             {t('clientHome.title')}
