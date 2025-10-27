@@ -90,6 +90,35 @@ const ClientList = () => {
 
         const checkInTime = checkInData?.checked_in_at;
 
+        // Determine the time range for orders
+        let startTime: string;
+        if (checkInTime) {
+          startTime = checkInTime;
+        } else {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('updated_at')
+            .eq('id', clientId)
+            .single();
+          
+          startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+        }
+
+        // Check for pending or preparing orders
+        const { data: pendingOrders } = await supabase
+          .from('session_line_items')
+          .select('*')
+          .eq('user_id', clientId)
+          .in('status', ['pending', 'preparing'])
+          .gte('created_at', startTime)
+          .lte('created_at', new Date().toISOString());
+
+        if (pendingOrders && pendingOrders.length > 0) {
+          toast.error(`Cannot checkout. ${client?.full_name} has ${pendingOrders.length} pending/preparing order(s). Please complete all orders first.`);
+          setPendingCheckoutClient(null);
+          return;
+        }
+
         // Check if client has an active membership
         const { data: membership } = await supabase
           .from('client_memberships')
@@ -100,29 +129,13 @@ const ClientList = () => {
 
         // Fetch orders from the current session
         let receiptItems: any[] = [];
-        
-        // Determine the time range for orders
-        let startTime: string;
-        if (checkInTime) {
-          // If we have a check-in time, use it
-          startTime = checkInTime;
-        } else {
-          // If no check-in time, get orders from when client became active (updated_at)
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('updated_at')
-            .eq('id', clientId)
-            .single();
-          
-          startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
-        }
 
-        // Fetch all orders in the session time range
+        // Fetch all completed/served orders in the session time range
         const { data: orders } = await supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
-          .in('status', ['pending', 'completed', 'served', 'ready'])
+          .in('status', ['completed', 'served', 'ready'])
           .gte('created_at', startTime)
           .lte('created_at', new Date().toISOString())
           .order('created_at', { ascending: true });
