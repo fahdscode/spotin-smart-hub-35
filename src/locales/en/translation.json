@@ -11,8 +11,6 @@
     "features": {
       "drinks": "Order Drinks & Snacks",
       "drinksDesc": "Quick and easy ordering from our cafe",
-      "rooms": "Book Meeting Rooms",
-      "roomsDesc": "Reserve spaces for your meetings",
       "events": "Join Events",
       "eventsDesc": "Connect with our community",
       "checkin": "Quick Check-in",
@@ -29,7 +27,11 @@
     "password": "Password",
     "confirmPassword": "Confirm Password",
     "fullName": "Full Name",
-    "email": "Email Address",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address (Optional)",
+    "jobTitle": "Job Title",
+    "howDidYouFindUs": "How did you find us?",
     "forgotPassword": "Forgot Password?",
     "dontHaveAccount": "Don't have an account?",
     "alreadyHaveAccount": "Already have an account?",
@@ -38,7 +40,19 @@
     "loggingIn": "Signing in...",
     "signingUp": "Creating account...",
     "loginSuccess": "Welcome back!",
-    "signupSuccess": "Account created successfully!"
+    "signupSuccess": "Account created successfully!",
+    "loginError": "Login failed",
+    "signupError": "Registration failed",
+    "phoneRequired": "Phone number is required",
+    "phoneInvalid": "Phone must be 11 digits starting with 01",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordsMatch": "Passwords must match",
+    "fullNameRequired": "Full name is required",
+    "emailInvalid": "Invalid email address",
+    "validationError": "Validation Error",
+    "fixErrors": "Please fix the errors below",
+    "featuredServices": "Featured Services"
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -52,7 +66,12 @@
     "myEvents": "My Events",
     "profile": "Profile",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "featuredServices": "Featured Services",
+    "spaceCafe": "Space Cafe",
+    "communityEvents": "Community Events",
+    "dayPass": "Day Pass",
+    "membership": "Membership"
   },
   "settings": {
     "title": "Settings",

@@ -1,6 +1,6 @@
 {
   "languageSelection": {
-    "title": "أهلاً بك في سبوت إن",
+    "title": "أهلاً بيك في سبوت إن",
     "subtitle": "اختر لغتك المفضلة",
     "english": "English",
     "arabic": "العربية"
@@ -11,8 +11,6 @@
     "features": {
       "drinks": "اطلب مشروبات وسناكس",
       "drinksDesc": "طلب سريع وسهل من الكافيه",
-      "rooms": "احجز قاعة اجتماعات",
-      "roomsDesc": "احجز المكان المناسب لاجتماعاتك",
       "events": "شارك في الفعاليات",
       "eventsDesc": "تواصل مع مجتمعنا",
       "checkin": "تسجيل دخول سريع",
@@ -29,7 +27,11 @@
     "password": "كلمة السر",
     "confirmPassword": "تأكيد كلمة السر",
     "fullName": "الاسم بالكامل",
-    "email": "البريد الإلكتروني",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني (اختياري)",
+    "jobTitle": "المسمى الوظيفي",
+    "howDidYouFindUs": "ازاي عرفت عننا؟",
     "forgotPassword": "نسيت كلمة السر؟",
     "dontHaveAccount": "مالكش حساب؟",
     "alreadyHaveAccount": "عندك حساب؟",
@@ -38,7 +40,19 @@
     "loggingIn": "جاري تسجيل الدخول...",
     "signingUp": "جاري إنشاء الحساب...",
     "loginSuccess": "أهلاً بيك تاني!",
-    "signupSuccess": "تم إنشاء الحساب بنجاح!"
+    "signupSuccess": "تم إنشاء الحساب بنجاح!",
+    "loginError": "فشل تسجيل الدخول",
+    "signupError": "فشل التسجيل",
+    "phoneRequired": "رقم الموبايل مطلوب",
+    "phoneInvalid": "الرقم لازم يكون 11 رقم ويبدأ بـ 01",
+    "passwordRequired": "كلمة السر مطلوبة",
+    "passwordMinLength": "كلمة السر لازم تكون 6 أحرف على الأقل",
+    "passwordsMatch": "كلمات السر مش متطابقة",
+    "fullNameRequired": "الاسم بالكامل مطلوب",
+    "emailInvalid": "البريد الإلكتروني مش صحيح",
+    "validationError": "خطأ في البيانات",
+    "fixErrors": "من فضلك صحح الأخطاء",
+    "featuredServices": "الخدمات المميزة"
   },
   "dashboard": {
     "welcome": "أهلاً",
@@ -52,7 +66,12 @@
     "myEvents": "فعالياتي",
     "profile": "الملف الشخصي",
     "settings": "الإعدادات",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "featuredServices": "الخدمات المميزة",
+    "spaceCafe": "كافيه السبيس",
+    "communityEvents": "فعاليات المجتمع",
+    "dayPass": "تذكرة يوم",
+    "membership": "العضوية"
   },
   "settings": {
     "title": "الإعدادات",

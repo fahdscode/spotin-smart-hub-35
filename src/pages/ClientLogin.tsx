@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, User, Phone, LogIn, Check, AlertCircle, Calendar } from "lucide-react";
+import { Coffee, Phone, LogIn, Check, AlertCircle, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import spotinLogo from "@/assets/spotin-logo.png";
+import spotinLogo from "@/assets/spotin-logo-main.png";
 
 // Form validation schema
 const loginSchema = z.object({
   phone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number must be less than 15 digits").regex(/^\d+$/, "Phone number must contain only digits"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password must be less than 100 characters")
 });
+
 const ClientLogin = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -24,9 +26,12 @@ const ClientLogin = () => {
     phone?: string;
     password?: string;
   }>({});
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setClientAuth } = useAuth();
+  const { t } = useTranslation();
+
   const validateForm = () => {
     try {
       loginSchema.parse({
@@ -50,67 +55,68 @@ const ClientLogin = () => {
       return false;
     }
   };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form first
     if (!validateForm()) {
       toast({
-        title: "Validation Error",
-        description: "Please fix the errors below",
+        title: t('auth.validationError'),
+        description: t('auth.fixErrors'),
         variant: "destructive"
       });
       return;
     }
+
     setIsLoading(true);
+
     try {
-      // Use secure authentication function with rate limiting
-      const {
-        data: authResult,
-        error
-      } = await supabase.rpc('authenticate_client_secure', {
+      const { data: authResult, error } = await supabase.rpc('authenticate_client_secure', {
         client_phone: phone,
         client_password: password,
         p_ip_address: null
       });
+
       if (error) {
         console.error('Authentication error:', error);
         toast({
-          title: "Login Failed",
+          title: t('auth.loginError'),
           description: "An error occurred. Please try again.",
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
+
       const result = authResult as any;
+
       if (!result.success || !result.client) {
         toast({
-          title: "Login Failed",
-          description: result.error || "Invalid phone number or password. Please check your credentials and try again.",
+          title: t('auth.loginError'),
+          description: result.error || "Invalid phone number or password.",
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
 
-      // Verify password with bcryptjs
       const isPasswordValid = await bcrypt.compare(password, result.client.password_hash);
+
       if (!isPasswordValid) {
         toast({
-          title: "Login Failed",
-          description: "Invalid phone number or password. Please check your credentials and try again.",
+          title: t('auth.loginError'),
+          description: "Invalid phone number or password.",
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
+
       toast({
-        title: "Login Successful",
-        description: `Welcome back, ${result.client.full_name}!`
+        title: t('auth.loginSuccess'),
+        description: `${t('dashboard.welcome')}, ${result.client.full_name}!`
       });
 
-      // Store client data using auth context
       const clientData = {
         id: result.client.id,
         client_code: result.client.client_code,
@@ -120,120 +126,131 @@ const ClientLogin = () => {
         barcode: result.client.barcode
       };
       
-      // Use auth context to set client authentication
       setClientAuth(clientData);
-      
-      // Navigate to client dashboard
       navigate('/client');
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
-        title: "Login Error",
-        description: "An error occurred during login. Please try again.",
+        title: t('common.error'),
+        description: "An error occurred during login.",
         variant: "destructive"
       });
     }
+
     setIsLoading(false);
   };
 
-  // Real-time validation
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    const value = e.target.value.replace(/\D/g, '');
     setPhone(value);
     if (errors.phone) {
       try {
         loginSchema.shape.phone.parse(value);
-        setErrors(prev => ({
-          ...prev,
-          phone: undefined
-        }));
+        setErrors(prev => ({ ...prev, phone: undefined }));
       } catch {}
     }
   };
+
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword(value);
     if (errors.password) {
       try {
         loginSchema.shape.password.parse(value);
-        setErrors(prev => ({
-          ...prev,
-          password: undefined
-        }));
+        setErrors(prev => ({ ...prev, password: undefined }));
       } catch {}
     }
   };
-  return <div className="min-h-screen bg-background flex items-center justify-center p-4">
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo and Header */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center mb-4 overflow-hidden">
-            <img src={spotinLogo} alt="SpotIn Logo" className="h-12 w-12 object-contain" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome to SpotIN</h1>
-          <p className="text-muted-foreground mt-2">Access your coworking portal</p>
+        {/* Logo */}
+        <div className="flex justify-center">
+          <img src={spotinLogo} alt="SpotIn Logo" className="h-24 w-auto" />
         </div>
 
         {/* Featured Services */}
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('auth.featuredServices')}</h2>
+        </div>
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="flex flex-col items-center space-y-2">
             <Coffee className="h-6 w-6 text-primary" />
-            <span className="text-sm text-muted-foreground">Order Drinks</span>
+            <span className="text-sm text-muted-foreground">{t('clientHome.features.drinks')}</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Calendar className="h-6 w-6 text-accent" />
-            <span className="text-sm text-muted-foreground">Events Registration</span>
+            <span className="text-sm text-muted-foreground">{t('clientHome.features.events')}</span>
           </div>
           <div className="flex flex-col items-center space-y-2">
             <Check className="h-6 w-6 text-success" />
-            <span className="text-sm text-muted-foreground">Quick Check-in</span>
+            <span className="text-sm text-muted-foreground">{t('clientHome.features.checkin')}</span>
           </div>
         </div>
 
         {/* Login Form */}
         <Card className="shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Client Login</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
+            <CardTitle className="text-xl">{t('auth.login')}</CardTitle>
+            <CardDescription>{t('clientHome.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Input type="tel" placeholder="Phone Number (e.g., 01143431650)" value={phone} onChange={handlePhoneChange} className={`transition-colors ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`} required />
-                {errors.phone && <div className="flex items-center gap-2 text-destructive text-sm">
+                <Input
+                  type="tel"
+                  placeholder={t('auth.phone')}
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className={`transition-colors ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  required
+                />
+                {errors.phone && (
+                  <div className="flex items-center gap-2 text-destructive text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {errors.phone}
-                  </div>}
+                  </div>
+                )}
               </div>
+
               <div className="space-y-2">
-                <Input type="password" placeholder="Password (min 8 characters)" value={password} onChange={handlePasswordChange} className={`transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`} required />
-                {errors.password && <div className="flex items-center gap-2 text-destructive text-sm">
+                <Input
+                  type="password"
+                  placeholder={t('auth.password')}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  className={`transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  required
+                />
+                {errors.password && (
+                  <div className="flex items-center gap-2 text-destructive text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {errors.password}
-                  </div>}
+                  </div>
+                )}
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full" size="lg">
+
+              <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary-hover" size="lg">
                 <LogIn className="h-4 w-4 mr-2" />
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? t('auth.loggingIn') : t('auth.loginButton')}
               </Button>
             </form>
 
             <div className="mt-6 pt-4 border-t text-center space-y-2">
               <a href="/client-signup" className="text-sm text-primary hover:text-primary-hover transition-colors font-medium">
-                Don't have an account? Sign up →
+                {t('auth.dontHaveAccount')} {t('auth.signup')} →
               </a>
               <br />
               <a href="/password-reset" className="text-sm text-accent hover:text-accent-hover transition-colors">
-                Forgot password? →
-              </a>
-              <br />
-              <a href="/management-login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Staff Portal →
+                {t('auth.forgotPassword')} →
               </a>
             </div>
           </CardContent>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default ClientLogin;
