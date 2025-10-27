@@ -776,8 +776,13 @@ export default function ClientDashboard() {
           <Button
             variant={currentView === 'home' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCurrentView('home')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('home');
+            }}
             className="flex flex-col items-center gap-1 h-auto py-2"
+            type="button"
           >
             <Coffee className="h-4 w-4" />
             <span className="text-xs">Home</span>
@@ -785,9 +790,14 @@ export default function ClientDashboard() {
           <Button
             variant={currentView === 'order' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => isCheckedIn ? setCurrentView('order') : null}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isCheckedIn) setCurrentView('order');
+            }}
             className="flex flex-col items-center gap-1 h-auto py-2 relative"
             disabled={!isCheckedIn}
+            type="button"
           >
             <ShoppingCart className="h-4 w-4" />
             <span className="text-xs">Order</span>
@@ -800,8 +810,13 @@ export default function ClientDashboard() {
           <Button
             variant={currentView === 'events' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCurrentView('events')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('events');
+            }}
             className="flex flex-col items-center gap-1 h-auto py-2"
+            type="button"
           >
             <Calendar className="h-4 w-4" />
             <span className="text-xs">Events</span>
@@ -809,8 +824,13 @@ export default function ClientDashboard() {
           <Button
             variant={currentView === 'profile' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCurrentView('profile')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('profile');
+            }}
             className="flex flex-col items-center gap-1 h-auto py-2"
+            type="button"
           >
             <User className="h-4 w-4" />
             <span className="text-xs">Profile</span>
@@ -823,16 +843,26 @@ export default function ClientDashboard() {
         <div className="flex gap-2">
           <Button
             variant={currentView === 'home' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('home')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('home');
+            }}
+            type="button"
           >
             <Coffee className="h-4 w-4 mr-2" />
             Home
           </Button>
           <Button
             variant={currentView === 'order' ? 'default' : 'outline'}
-            onClick={() => isCheckedIn ? setCurrentView('order') : null}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isCheckedIn) setCurrentView('order');
+            }}
             className="relative"
             disabled={!isCheckedIn}
+            type="button"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
             Order
@@ -844,14 +874,24 @@ export default function ClientDashboard() {
           </Button>
           <Button
             variant={currentView === 'events' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('events')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('events');
+            }}
+            type="button"
           >
             <Calendar className="h-4 w-4 mr-2" />
             Events
           </Button>
           <Button
             variant={currentView === 'profile' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('profile')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentView('profile');
+            }}
+            type="button"
           >
             <User className="h-4 w-4 mr-2" />
             Profile
