@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import SpotinHeader from "@/components/SpotinHeader";
 import MetricCard from "@/components/MetricCard";
 import VouchersManagement from "@/components/VouchersManagement";
@@ -121,6 +122,44 @@ const OperationsDashboard = () => {
         [itemId]: 0
       }));
     }
+  };
+
+  const handleGenerateStockReport = () => {
+    const reportDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    // Create CSV content
+    let csvContent = "Stock Report\n";
+    csvContent += `Generated: ${reportDate}\n\n`;
+    csvContent += "Item Name,Category,Unit,Current Quantity,Min Quantity,Status,Cost per Unit,Total Value\n";
+    
+    stockItems.forEach(item => {
+      const totalValue = (item.current_quantity * (item.cost_per_unit || 0)).toFixed(2);
+      csvContent += `"${item.name}","${item.category}","${item.unit}",${item.current_quantity},${item.min_quantity},"${item.status}",${item.cost_per_unit || 0},${totalValue}\n`;
+    });
+    
+    csvContent += `\n\nSummary\n`;
+    csvContent += `Total Items,${stockItems.length}\n`;
+    csvContent += `Critical Stock,${statusCounts.critical}\n`;
+    csvContent += `Low Stock,${statusCounts.low}\n`;
+    csvContent += `Well Stocked,${statusCounts.good}\n`;
+    csvContent += `Total Inventory Value,${getTotalInventoryValue().toFixed(2)} EGP\n`;
+    
+    // Create download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `stock-report-${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Stock report generated successfully!");
   };
 
   const statusCounts = getStockStatusCounts();
@@ -304,12 +343,12 @@ const OperationsDashboard = () => {
                   )}
 
                   <div className="border-t pt-4">
-                    <Button variant="professional" className="w-full mb-2">
-                      <Package className="h-4 w-4" />
+                    <Button variant="professional" className="w-full mb-2" onClick={handleGenerateStockReport}>
+                      <Download className="h-4 w-4 mr-2" />
                       Generate Stock Report
                     </Button>
                     <Button variant="outline" className="w-full">
-                      <Truck className="h-4 w-4" />
+                      <Truck className="h-4 w-4 mr-2" />
                       View Pending Orders
                     </Button>
                   </div>
