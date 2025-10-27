@@ -873,33 +873,45 @@ export type Database = {
       receipts: {
         Row: {
           amount: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           id: string
           line_items: Json | null
           payment_method: string
           receipt_date: string
           receipt_number: string
+          status: string
           total_amount: number
           transaction_type: string
           user_id: string
         }
         Insert: {
           amount: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           id?: string
           line_items?: Json | null
           payment_method?: string
           receipt_date?: string
           receipt_number: string
+          status?: string
           total_amount: number
           transaction_type: string
           user_id: string
         }
         Update: {
           amount?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           id?: string
           line_items?: Json | null
           payment_method?: string
           receipt_date?: string
           receipt_number?: string
+          status?: string
           total_amount?: number
           transaction_type?: string
           user_id?: string

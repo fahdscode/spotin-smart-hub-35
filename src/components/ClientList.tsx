@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +45,8 @@ const ClientList = () => {
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showCheckoutConfirmation, setShowCheckoutConfirmation] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
   const [pendingCheckoutClient, setPendingCheckoutClient] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
 
@@ -227,9 +231,34 @@ const ClientList = () => {
   };
 
   const confirmCheckout = async () => {
-    if (!pendingCheckoutClient) return;
+    if (!pendingCheckoutClient || !receiptData) return;
 
     try {
+      // Create the receipt in the database
+      const { data: savedReceipt, error: receiptError } = await supabase
+        .from('receipts')
+        .insert({
+          receipt_number: receiptData.receiptNumber,
+          user_id: receiptData.userId,
+          total_amount: receiptData.total,
+          amount: receiptData.total,
+          payment_method: receiptData.paymentMethod,
+          transaction_type: 'checkout',
+          line_items: receiptData.items,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (receiptError) throw receiptError;
+
+      // Update receipt data with the saved receipt ID
+      setReceiptData(prev => ({
+        ...prev,
+        receiptId: savedReceipt.id
+      }));
+
+      // Checkout the client
       const { error } = await supabase
         .from('clients')
         .update({ active: false })
@@ -252,6 +281,58 @@ const ClientList = () => {
     } catch (error) {
       console.error('Error checking out client:', error);
       toast.error("Failed to checkout client");
+    }
+  };
+
+  const cancelReceipt = async () => {
+    if (!cancellationReason.trim()) {
+      toast.error("Please provide a cancellation reason");
+      return;
+    }
+
+    if (!receiptData?.receiptId) {
+      toast.error("No receipt to cancel");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Update the receipt status to cancelled
+      const { error } = await supabase
+        .from('receipts')
+        .update({
+          status: 'cancelled',
+          cancellation_reason: cancellationReason,
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user?.id
+        })
+        .eq('id', receiptData.receiptId);
+
+      if (error) throw error;
+
+      // Also checkout the client
+      await supabase
+        .from('clients')
+        .update({ active: false })
+        .eq('id', pendingCheckoutClient);
+
+      setClients(prev => prev.map(client => 
+        client.id === pendingCheckoutClient 
+          ? { ...client, active: false }
+          : client
+      ));
+      
+      const client = clients.find(c => c.id === pendingCheckoutClient);
+      
+      setShowCancelDialog(false);
+      setShowCheckoutConfirmation(false);
+      setCancellationReason("");
+      
+      toast.success(`Receipt cancelled for ${client?.full_name}`);
+    } catch (error) {
+      console.error('Error cancelling receipt:', error);
+      toast.error("Failed to cancel receipt");
     }
   };
 
@@ -686,12 +767,56 @@ const ClientList = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowCheckoutConfirmation(false)}>
               Cancel
             </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                setShowCancelDialog(true);
+              }}
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Cancel Receipt
+            </Button>
             <Button onClick={confirmCheckout}>
               Confirm Checkout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Receipt Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Receipt</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for cancelling this receipt
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cancellation-reason">Cancellation Reason</Label>
+              <Textarea
+                id="cancellation-reason"
+                placeholder="Enter reason for cancellation..."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowCancelDialog(false);
+              setCancellationReason("");
+            }}>
+              Back
+            </Button>
+            <Button variant="destructive" onClick={cancelReceipt}>
+              Confirm Cancellation
             </Button>
           </DialogFooter>
         </DialogContent>

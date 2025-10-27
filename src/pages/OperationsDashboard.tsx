@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import IngredientUsageReport from "@/components/IngredientUsageReport";
 import VendorManagement from "@/components/VendorManagement";
 import BillManagement from "@/components/BillManagement";
 import RolesManagement from "@/components/RolesManagement";
+import CancelledReceipts from "@/components/CancelledReceipts";
 import { useNavigate } from "react-router-dom";
 import { useStockData } from "@/hooks/useStockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -183,7 +184,7 @@ const OperationsDashboard = () => {
         </div>
 
         <Tabs defaultValue="stock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-12">
             <TabsTrigger value="stock">Stock Report</TabsTrigger>
             <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
@@ -196,6 +197,10 @@ const OperationsDashboard = () => {
             <TabsTrigger value="tickets">
               <Ticket className="h-4 w-4 mr-2" />
               Tickets
+            </TabsTrigger>
+            <TabsTrigger value="cancelled">
+              <Ban className="h-4 w-4 mr-2" />
+              Cancelled
             </TabsTrigger>
             <TabsTrigger value="users">User Roles</TabsTrigger>
           </TabsList>
@@ -357,6 +362,11 @@ const OperationsDashboard = () => {
           {/* Tickets Tab */}
           <TabsContent value="tickets" className="space-y-6">
             <DayUseTicketControls />
+          </TabsContent>
+
+          {/* Cancelled Receipts Tab */}
+          <TabsContent value="cancelled" className="space-y-6">
+            <CancelledReceipts />
           </TabsContent>
 
           {/* User Roles Tab */}
