@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Coffee, Clock, CheckCircle, MapPin, Plus, Edit, XCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import SpotinHeader from "@/components/SpotinHeader";
 import ClientSelector from "@/components/ClientSelector";
 import ClientProductEditor from "@/components/ClientProductEditor";
@@ -54,6 +56,7 @@ const BaristaDashboard = () => {
   const [isEditProductsOpen, setIsEditProductsOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quickTableNumber, setQuickTableNumber] = useState<string>('');
 
   // Track previous order count to detect new orders
   const [previousOrderCount, setPreviousOrderCount] = useState(0);
@@ -189,8 +192,10 @@ const BaristaDashboard = () => {
         quantity: 1,
         price: drinkData.price,
         status: 'pending',
+        table_number: quickTableNumber.trim() || null,
         notes: note?.trim() || null
       });
+      if (error) throw error;
       if (error) throw error;
       setIsQuickAddOpen(false);
 
@@ -596,6 +601,23 @@ const BaristaDashboard = () => {
               <CardContent className="space-y-4">
                 <ClientSelector onClientSelect={setSelectedClient} selectedClientId={selectedClient?.id} />
                 
+                {selectedClient && (
+                  <div className="space-y-2">
+                    <Label htmlFor="quickTableNumber" className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Table Number (optional)
+                    </Label>
+                    <Input
+                      id="quickTableNumber"
+                      type="text"
+                      placeholder="Enter table number"
+                      value={quickTableNumber}
+                      onChange={(e) => setQuickTableNumber(e.target.value)}
+                      className="text-center"
+                    />
+                  </div>
+                )}
+
                 <Button variant="default" className="w-full" disabled={!selectedClient} onClick={() => setIsQuickAddOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Quick Item
