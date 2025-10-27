@@ -28,7 +28,6 @@ interface TicketSelectorProps {
 export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCancel }: TicketSelectorProps) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile'>('cash');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
@@ -76,7 +75,7 @@ export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCance
       const { data, error } = await supabase.rpc('assign_ticket_to_client', {
         p_client_id: clientId,
         p_ticket_id: selectedTicketId,
-        p_payment_method: paymentMethod,
+        p_payment_method: 'pending',
         p_duration_hours: 24
       });
 
@@ -174,35 +173,12 @@ export const TicketSelector = ({ clientId, clientName, onTicketAssigned, onCance
         </div>
       </RadioGroup>
 
-      <div>
-        <Label className="text-sm font-medium mb-2 block">Payment Method</Label>
-        <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as any)}>
-          <div className="flex gap-4">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cash" id="cash" />
-              <Label htmlFor="cash" className="cursor-pointer">Cash</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="card" id="card" />
-              <Label htmlFor="card" className="cursor-pointer">Card</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="mobile" id="mobile" />
-              <Label htmlFor="mobile" className="cursor-pointer">Mobile</Label>
-            </div>
-          </div>
-        </RadioGroup>
-      </div>
-
       {selectedTicket && (
         <Card className="bg-muted/50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Total Amount</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Ticket Price</span>
               <span className="text-xl font-bold text-primary">{formatCurrency(selectedTicket.price)}</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Payment via {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}
             </div>
           </CardContent>
         </Card>
