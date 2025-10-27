@@ -80,9 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Management user ACTIVELY logging in (not page refresh) - clear client data
-        if (session?.user && event === 'SIGNED_IN' && !clientSession) {
+        // Management user ACTIVELY logging in - clear any client session and set management role
+        if (session?.user && event === 'SIGNED_IN') {
           console.log('Management user actively logged in');
+          // Clear client session when management user logs in
+          if (clientSession) {
+            localStorage.removeItem('clientData');
+            setClientData(null);
+          }
           setTimeout(() => {
             if (isMounted) {
               fetchUserRole(session.user.id);
