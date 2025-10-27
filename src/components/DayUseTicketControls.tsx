@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Ticket, Settings, DollarSign, Plus, Loader2 } from "lucide-react";
+import { Ticket, Settings, DollarSign, Plus, Loader2, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TicketExpiryCountdown } from "./TicketExpiryCountdown";
@@ -17,6 +17,7 @@ interface TicketSettings {
   is_active: boolean;
   includes_free_drink: boolean;
   ticket_type: string;
+  max_free_drink_price: number;
 }
 
 interface TicketItem {
@@ -27,6 +28,7 @@ interface TicketItem {
   is_active: boolean;
   includes_free_drink: boolean;
   ticket_type: string;
+  max_free_drink_price: number;
 }
 
 const DayUseTicketControls = () => {
@@ -37,7 +39,8 @@ const DayUseTicketControls = () => {
     description: "Full day access to workspace, WiFi, and common areas",
     is_active: true,
     includes_free_drink: false,
-    ticket_type: "day_use"
+    ticket_type: "day_use",
+    max_free_drink_price: 0
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -70,7 +73,8 @@ const DayUseTicketControls = () => {
           description: item.description || "",
           is_active: item.is_available,
           includes_free_drink: item.ingredients?.includes('free_drink') || false,
-          ticket_type: item.ticket_type || 'day_use'
+          ticket_type: item.ticket_type || 'day_use',
+          max_free_drink_price: item.max_free_drink_price || 0
         })));
       } else {
         setTickets([]);
@@ -96,7 +100,8 @@ const DayUseTicketControls = () => {
             description: settings.description,
             is_available: settings.is_active,
             ingredients: settings.includes_free_drink ? ['free_drink'] : [],
-            ticket_type: settings.ticket_type
+            ticket_type: settings.ticket_type,
+            max_free_drink_price: settings.max_free_drink_price
           })
           .eq('id', settings.id);
 
@@ -117,7 +122,8 @@ const DayUseTicketControls = () => {
             category: 'day_use_ticket',
             is_available: settings.is_active,
             ingredients: settings.includes_free_drink ? ['free_drink'] : [],
-            ticket_type: settings.ticket_type
+            ticket_type: settings.ticket_type,
+            max_free_drink_price: settings.max_free_drink_price
           });
 
         if (error) throw error;
@@ -151,7 +157,8 @@ const DayUseTicketControls = () => {
       description: "Full day access to workspace, WiFi, and common areas",
       is_active: true,
       includes_free_drink: false,
-      ticket_type: "day_use"
+      ticket_type: "day_use",
+      max_free_drink_price: 0
     });
   };
 
@@ -190,7 +197,8 @@ const DayUseTicketControls = () => {
       description: ticket.description,
       is_active: ticket.is_active,
       includes_free_drink: ticket.includes_free_drink,
-      ticket_type: ticket.ticket_type
+      ticket_type: ticket.ticket_type,
+      max_free_drink_price: ticket.max_free_drink_price
     });
     setIsEditing(true);
   };
@@ -202,7 +210,8 @@ const DayUseTicketControls = () => {
       description: "",
       is_active: true,
       includes_free_drink: false,
-      ticket_type: "day_use"
+      ticket_type: "day_use",
+      max_free_drink_price: 0
     });
     setIsAdding(true);
     setIsEditing(true);
@@ -281,9 +290,14 @@ const DayUseTicketControls = () => {
                   </div>
                   <p className="text-sm text-muted-foreground">{ticket.description}</p>
                   {ticket.includes_free_drink && (
-                    <Badge variant="secondary" className="mt-2">
-                      Includes Free Drink
-                    </Badge>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-700">
+                        Includes Free Drink
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Max: {ticket.max_free_drink_price.toFixed(2)} EGP
+                      </Badge>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
@@ -379,6 +393,29 @@ const DayUseTicketControls = () => {
                 onCheckedChange={(checked) => setSettings(prev => ({ ...prev, includes_free_drink: checked }))}
               />
             </div>
+
+            {settings.includes_free_drink && (
+              <div className="space-y-2 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Coffee className="h-4 w-4 text-green-600" />
+                  Maximum Free Drink Price (EGP)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={settings.max_free_drink_price}
+                  onChange={(e) => setSettings(prev => ({ 
+                    ...prev, 
+                    max_free_drink_price: parseFloat(e.target.value) || 0 
+                  }))}
+                  placeholder="e.g., 15.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Clients can choose any drink up to this price for free
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button onClick={handleSave} className="flex-1" disabled={saving}>

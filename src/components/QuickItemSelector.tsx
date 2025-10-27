@@ -35,6 +35,8 @@ interface QuickItemSelectorProps {
   onClose: () => void;
   selectedClient: Client | null;
   onItemSelect: (itemName: string, note?: string) => void;
+  maxFreeDrinkPrice?: number;
+  hasFreeDrink?: boolean;
 }
 
 interface Category {
@@ -44,7 +46,7 @@ interface Category {
   color?: string;
 }
 
-const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: QuickItemSelectorProps) => {
+const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect, maxFreeDrinkPrice, hasFreeDrink }: QuickItemSelectorProps) => {
   const { products, loading } = useProductAvailability();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -122,6 +124,21 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
               : "Please select a client first"
             }
           </DialogDescription>
+          {hasFreeDrink && maxFreeDrinkPrice && (
+            <div className="mt-2 p-3 bg-green-50 dark:bg-green-950/30 border-2 border-green-500 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Coffee className="h-5 w-5 text-green-600 animate-bounce" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                    Free Drink Available! (Max: {maxFreeDrinkPrice.toFixed(2)} EGP)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Eligible drinks are highlighted with a green border
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-auto space-y-4">
@@ -182,11 +199,22 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
                     {categoryProducts.map((product) => (
                       <Card 
                         key={product.id} 
-                        className={`cursor-pointer hover:shadow-md transition-shadow ${selectedItem === product.name ? 'ring-2 ring-primary' : ''}`}
+                        className={`cursor-pointer hover:shadow-md transition-shadow ${
+                          selectedItem === product.name ? 'ring-2 ring-primary' : ''
+                        } ${
+                          hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0) 
+                            ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20' 
+                            : ''
+                        }`}
                         onClick={() => handleItemSelect(product.name)}
                       >
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">{product.name}</CardTitle>
+                          <div className="flex items-center justify-between mb-1">
+                            <CardTitle className="text-sm">{product.name}</CardTitle>
+                            {hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0) && (
+                              <Badge className="bg-green-500 text-xs animate-pulse">FREE</Badge>
+                            )}
+                          </div>
                           <CardDescription className="text-xs line-clamp-2">
                             {product.description}
                           </CardDescription>
@@ -197,9 +225,18 @@ const QuickItemSelector = ({ isOpen, onClose, selectedClient, onItemSelect }: Qu
                               <Clock className="h-3 w-3" />
                               2-5 min
                             </div>
-                            <Badge variant="secondary" className="text-xs">
-                              {product.price} EGP
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              {hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0) && (
+                                <span className="line-through text-muted-foreground">
+                                  {product.price} EGP
+                                </span>
+                              )}
+                              {!(hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0)) && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {product.price} EGP
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

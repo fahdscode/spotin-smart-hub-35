@@ -403,9 +403,12 @@ export type Database = {
       client_tickets: {
         Row: {
           checked_in_at: string | null
+          claimed_drink_name: string | null
           client_id: string
           created_at: string | null
           expiry_date: string
+          free_drink_claimed: boolean | null
+          free_drink_claimed_at: string | null
           id: string
           is_active: boolean
           payment_method: string
@@ -416,9 +419,12 @@ export type Database = {
         }
         Insert: {
           checked_in_at?: string | null
+          claimed_drink_name?: string | null
           client_id: string
           created_at?: string | null
           expiry_date: string
+          free_drink_claimed?: boolean | null
+          free_drink_claimed_at?: string | null
           id?: string
           is_active?: boolean
           payment_method?: string
@@ -429,9 +435,12 @@ export type Database = {
         }
         Update: {
           checked_in_at?: string | null
+          claimed_drink_name?: string | null
           client_id?: string
           created_at?: string | null
           expiry_date?: string
+          free_drink_claimed?: boolean | null
+          free_drink_claimed_at?: string | null
           id?: string
           is_active?: boolean
           payment_method?: string
@@ -527,6 +536,7 @@ export type Database = {
           image_url: string | null
           ingredients: string[] | null
           is_available: boolean
+          max_free_drink_price: number | null
           name: string
           name_ar: string | null
           prep_time_minutes: number | null
@@ -543,6 +553,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: string[] | null
           is_available?: boolean
+          max_free_drink_price?: number | null
           name: string
           name_ar?: string | null
           prep_time_minutes?: number | null
@@ -559,6 +570,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: string[] | null
           is_available?: boolean
+          max_free_drink_price?: number | null
           name?: string
           name_ar?: string | null
           prep_time_minutes?: number | null
@@ -1649,6 +1661,7 @@ export type Database = {
       }
       get_client_memberships: { Args: never; Returns: Json }
       get_client_status: { Args: { client_id: string }; Returns: string }
+      get_client_ticket_info: { Args: { p_client_id: string }; Returns: Json }
       get_current_user_role: { Args: never; Returns: string }
       get_event_analytics: {
         Args: { p_end_date?: string; p_start_date?: string }

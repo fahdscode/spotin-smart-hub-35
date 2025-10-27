@@ -33,6 +33,14 @@ interface Client {
   email?: string;
   active: boolean;
   barcode?: string;
+  ticketInfo?: {
+    has_active_ticket: boolean;
+    ticket_name?: string;
+    includes_free_drink?: boolean;
+    max_free_drink_price?: number;
+    free_drink_claimed?: boolean;
+    expiry_date?: string;
+  };
 }
 interface Order {
   id: string;
@@ -57,9 +65,38 @@ const BaristaDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickTableNumber, setQuickTableNumber] = useState<string>('');
+  const [loadingTicketInfo, setLoadingTicketInfo] = useState(false);
 
   // Track previous order count to detect new orders
   const [previousOrderCount, setPreviousOrderCount] = useState(0);
+
+  const fetchClientTicketInfo = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_client_ticket_info', { p_client_id: clientId });
+      
+      if (error) throw error;
+      return data as any;
+    } catch (error) {
+      console.error('Error fetching ticket info:', error);
+      return { has_active_ticket: false };
+    }
+  };
+
+  const handleClientSelect = async (client: Client | null) => {
+    if (!client) {
+      setSelectedClient(null);
+      return;
+    }
+    
+    setLoadingTicketInfo(true);
+    const ticketInfo = await fetchClientTicketInfo(client.id);
+    setSelectedClient({
+      ...client,
+      ticketInfo
+    });
+    setLoadingTicketInfo(false);
+  };
   useEffect(() => {
     fetchOrders();
 
@@ -184,26 +221,62 @@ const BaristaDashboard = () => {
         error: drinkError
       } = await supabase.from('drinks').select('price').eq('name', itemName).single();
       if (drinkError) throw drinkError;
+      
+      // Check if this qualifies as a free drink
+      const isFreeDrink = 
+        selectedClient.ticketInfo?.includes_free_drink &&
+        !selectedClient.ticketInfo?.free_drink_claimed &&
+        drinkData.price <= (selectedClient.ticketInfo?.max_free_drink_price || 0);
+      
+      const finalPrice = isFreeDrink ? 0 : drinkData.price;
+      const orderNote = isFreeDrink 
+        ? `Free drink from ticket: ${selectedClient.ticketInfo?.ticket_name}${note ? ' | ' + note : ''}`
+        : note?.trim() || null;
+      
       const {
         error
       } = await supabase.from('session_line_items').insert({
         user_id: selectedClient.id,
         item_name: itemName,
         quantity: 1,
-        price: drinkData.price,
+        price: finalPrice,
         status: 'pending',
         table_number: quickTableNumber.trim() || null,
-        notes: note?.trim() || null
+        notes: orderNote
       });
       if (error) throw error;
-      if (error) throw error;
+      
+      // If it was a free drink, update the ticket
+      if (isFreeDrink && selectedClient.ticketInfo) {
+        const { error: ticketError } = await supabase
+          .from('client_tickets')
+          .update({
+            free_drink_claimed: true,
+            free_drink_claimed_at: new Date().toISOString(),
+            claimed_drink_name: itemName
+          })
+          .eq('client_id', selectedClient.id)
+          .eq('is_active', true);
+        
+        if (ticketError) console.error('Error updating ticket:', ticketError);
+        
+        // Refresh client ticket info
+        const updatedTicketInfo = await fetchClientTicketInfo(selectedClient.id);
+        setSelectedClient({
+          ...selectedClient,
+          ticketInfo: updatedTicketInfo
+        });
+      }
+      
       setIsQuickAddOpen(false);
 
       // Play notification sound for new order
       playNewOrder();
       toast({
-        title: "Item Added",
-        description: `${itemName} added for ${selectedClient.full_name}`
+        title: isFreeDrink ? "Free Drink Added! 🎉" : "Item Added",
+        description: isFreeDrink 
+          ? `Free ${itemName} added for ${selectedClient.full_name}`
+          : `${itemName} added for ${selectedClient.full_name}`
       });
 
       // Refresh orders list
@@ -599,7 +672,52 @@ const BaristaDashboard = () => {
                 <CardDescription>Select client and add items quickly</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ClientSelector onClientSelect={setSelectedClient} selectedClientId={selectedClient?.id} />
+                <ClientSelector onClientSelect={handleClientSelect} selectedClientId={selectedClient?.id} />
+                
+                {selectedClient?.ticketInfo?.has_active_ticket && 
+                 selectedClient?.ticketInfo?.includes_free_drink && 
+                 !selectedClient?.ticketInfo?.free_drink_claimed && (
+                  <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-500/50 border-2">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-green-500 p-2 rounded-full">
+                          <Coffee className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className="bg-green-500 hover:bg-green-600">
+                              FREE DRINK AVAILABLE
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {selectedClient.ticketInfo.ticket_name}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                            Maximum Price: {selectedClient.ticketInfo.max_free_drink_price?.toFixed(2)} EGP
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Client can select any drink up to this price at no charge
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {selectedClient?.ticketInfo?.has_active_ticket && 
+                 selectedClient?.ticketInfo?.includes_free_drink && 
+                 selectedClient?.ticketInfo?.free_drink_claimed && (
+                  <Card className="bg-muted/50 border-muted">
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Free drink already claimed on this ticket
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {selectedClient && (
                   <div className="space-y-2">
@@ -639,10 +757,29 @@ const BaristaDashboard = () => {
         </div>
 
         {/* Quick Item Selector Dialog */}
-        <QuickItemSelector isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} selectedClient={selectedClient} onItemSelect={addQuickItem} />
+        <QuickItemSelector 
+          isOpen={isQuickAddOpen} 
+          onClose={() => setIsQuickAddOpen(false)} 
+          selectedClient={selectedClient} 
+          onItemSelect={addQuickItem}
+          maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price}
+          hasFreeDrink={
+            selectedClient?.ticketInfo?.includes_free_drink && 
+            !selectedClient?.ticketInfo?.free_drink_claimed
+          }
+        />
 
         {/* Client Product Editor Dialog */}
-        <ClientProductEditor isOpen={isEditProductsOpen} onClose={() => setIsEditProductsOpen(false)} selectedClient={selectedClient} />
+        <ClientProductEditor 
+          isOpen={isEditProductsOpen} 
+          onClose={() => setIsEditProductsOpen(false)} 
+          selectedClient={selectedClient}
+          maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price}
+          hasFreeDrink={
+            selectedClient?.ticketInfo?.includes_free_drink && 
+            !selectedClient?.ticketInfo?.free_drink_claimed
+          }
+        />
       </div>
     </div>;
 };

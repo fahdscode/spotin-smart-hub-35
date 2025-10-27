@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Minus, ShoppingCart, Package, Edit } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, Package, Edit, Coffee } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProductAvailability } from "@/hooks/useProductAvailability";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,8 @@ interface ClientProductEditorProps {
   isOpen: boolean;
   onClose: () => void;
   selectedClient: Client | null;
+  maxFreeDrinkPrice?: number;
+  hasFreeDrink?: boolean;
 }
 
 const categories = [
@@ -48,7 +50,7 @@ const categories = [
   { value: "add_on", label: "Add-ons", icon: "➕" }
 ];
 
-const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductEditorProps) => {
+const ClientProductEditor = ({ isOpen, onClose, selectedClient, maxFreeDrinkPrice, hasFreeDrink }: ClientProductEditorProps) => {
   const { products, loading, checkIngredientAvailability } = useProductAvailability();
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -197,6 +199,21 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
               : "No client selected"
             }
           </DialogDescription>
+          {hasFreeDrink && maxFreeDrinkPrice && (
+            <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-2 border-green-500 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Coffee className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                    🎉 Free Drink Available (Max: {maxFreeDrinkPrice.toFixed(2)} EGP)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Items within the free drink limit are highlighted
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-auto space-y-4">
@@ -252,18 +269,39 @@ const ClientProductEditor = ({ isOpen, onClose, selectedClient }: ClientProductE
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {categoryProducts.map((product) => (
-                    <Card key={product.id} className="relative">
+                    <Card 
+                      key={product.id} 
+                      className={`relative ${
+                        hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0)
+                          ? 'border-2 border-green-500 bg-green-50/30 dark:bg-green-950/20'
+                          : ''
+                      }`}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <CardTitle className="text-sm">{product.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-sm">{product.name}</CardTitle>
+                              {hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0) && (
+                                <Badge className="bg-green-500 text-xs">FREE</Badge>
+                              )}
+                            </div>
                             <CardDescription className="text-xs line-clamp-1">
                               {product.description}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {product.price} EGP
-                          </Badge>
+                          {hasFreeDrink && product.price <= (maxFreeDrinkPrice || 0) ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs line-through text-muted-foreground">
+                                {product.price} EGP
+                              </span>
+                              <Badge className="bg-green-500 text-xs">FREE</Badge>
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              {product.price} EGP
+                            </Badge>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
