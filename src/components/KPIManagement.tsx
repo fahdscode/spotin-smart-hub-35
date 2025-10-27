@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Edit2, Save, X, Plus, Trash2, TrendingUp, Target, DollarSign, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { useClientsData } from "@/hooks/useClientsData";
 
 interface KPI {
   id: string;
@@ -19,44 +22,10 @@ interface KPI {
 
 const KPIManagement = () => {
   const { toast } = useToast();
-  const [kpis, setKpis] = useState<KPI[]>([
-    {
-      id: "1",
-      name: "Monthly Revenue",
-      current_value: 45000,
-      target_value: 50000,
-      unit: "EGP",
-      category: "Finance",
-      color: "text-success"
-    },
-    {
-      id: "2", 
-      name: "Active Members",
-      current_value: 245,
-      target_value: 300,
-      unit: "members",
-      category: "Growth",
-      color: "text-primary"
-    },
-    {
-      id: "3",
-      name: "Daily Check-ins",
-      current_value: 85,
-      target_value: 100,
-      unit: "check-ins",
-      category: "Operations",
-      color: "text-accent"
-    },
-    {
-      id: "4",
-      name: "Customer Satisfaction",
-      current_value: 4.6,
-      target_value: 4.8,
-      unit: "/5",
-      category: "Quality",
-      color: "text-warning"
-    }
-  ]);
+  const { financialData } = useFinanceData();
+  const { clients, getActiveClientsCount } = useClientsData();
+  const [kpis, setKpis] = useState<KPI[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<KPI>>({});
@@ -133,6 +102,95 @@ const KPIManagement = () => {
       default: return TrendingUp;
     }
   };
+
+  const fetchRealKPIs = async () => {
+    try {
+      setLoading(true);
+      
+      // Monthly Revenue
+      const currentMonthRevenue = financialData[0]?.revenue || 0;
+      const previousMonthRevenue = financialData[1]?.revenue || 0;
+      const revenueTarget = previousMonthRevenue > 0 ? previousMonthRevenue * 1.1 : 50000;
+      
+      // Active Members
+      const activeMembers = getActiveClientsCount();
+      const totalClients = clients.length;
+      const membershipTarget = Math.ceil(totalClients * 0.8);
+      
+      // Daily Check-ins
+      const { data: todayCheckIns } = await supabase
+        .from('check_ins')
+        .select('id')
+        .eq('status', 'checked_in')
+        .gte('checked_in_at', new Date().toISOString().split('T')[0]);
+      
+      const dailyCheckIns = todayCheckIns?.length || 0;
+      
+      // Customer Satisfaction
+      const { data: feedbackData } = await supabase
+        .from('feedback')
+        .select('rating')
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      
+      const avgRating = feedbackData && feedbackData.length > 0
+        ? feedbackData.reduce((sum, f) => sum + f.rating, 0) / feedbackData.length
+        : 0;
+
+      setKpis([
+        {
+          id: "1",
+          name: "Monthly Revenue",
+          current_value: Math.round(currentMonthRevenue),
+          target_value: Math.round(revenueTarget),
+          unit: " EGP",
+          category: "Finance",
+          color: "text-success"
+        },
+        {
+          id: "2", 
+          name: "Active Members",
+          current_value: activeMembers,
+          target_value: membershipTarget,
+          unit: " members",
+          category: "Growth",
+          color: "text-primary"
+        },
+        {
+          id: "3",
+          name: "Daily Check-ins",
+          current_value: dailyCheckIns,
+          target_value: 100,
+          unit: " check-ins",
+          category: "Operations",
+          color: "text-accent"
+        },
+        {
+          id: "4",
+          name: "Customer Satisfaction",
+          current_value: Number(avgRating.toFixed(1)),
+          target_value: 4.8,
+          unit: "/5",
+          category: "Quality",
+          color: "text-warning"
+        }
+      ]);
+    } catch (error) {
+      console.error("Error fetching KPIs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch KPI data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (financialData.length > 0 && clients.length > 0) {
+      fetchRealKPIs();
+    }
+  }, [financialData, clients]);
 
   return (
     <div className="space-y-6">
