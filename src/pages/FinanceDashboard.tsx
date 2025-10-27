@@ -305,14 +305,17 @@ const FinanceDashboard = () => {
           transaction_type: 'expense',
           category: newExpense.category,
           amount: amount,
-          description: newExpense.description.trim(),
+          description: newExpense.description.trim() || null,
           payment_method: newExpense.payment_method,
           vendor_id: newExpense.vendor_id || null,
           reference_number: newExpense.reference_number.trim() || null,
           created_by: user?.id
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding expense:', error);
+        throw error;
+      }
 
       toast.success('Expense added successfully');
       setShowAddExpense(false);
@@ -360,13 +363,16 @@ const FinanceDashboard = () => {
           transaction_type: 'income',
           category: newIncome.category,
           amount: amount,
-          description: newIncome.description.trim(),
+          description: newIncome.description.trim() || null,
           payment_method: newIncome.payment_method,
           reference_number: newIncome.reference_number.trim() || null,
           created_by: user?.id
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding income:', error);
+        throw error;
+      }
 
       toast.success('Income added successfully');
       setShowAddIncome(false);
