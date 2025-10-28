@@ -13,7 +13,7 @@ import spotinLogo from '@/assets/spotin-logo-main.png';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface ReportData {
   totalIncome: number;
@@ -231,30 +231,43 @@ export const OperationsReport = () => {
 
   const exportReport = async () => {
     try {
+      console.log('Starting PDF export...');
+      
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
       // SpotIN Brand Colors (RGB)
-      const colors = {
-        primary: [108, 117, 125] as [number, number, number], // SpotIN Green
-        accent: [255, 152, 0] as [number, number, number], // Orange
-        success: [76, 175, 80] as [number, number, number], // Green
-        danger: [244, 67, 54] as [number, number, number], // Red
-        text: [33, 33, 33] as [number, number, number],
-        lightBg: [245, 245, 245] as [number, number, number],
-      };
+      const primaryColor: [number, number, number] = [108, 117, 125];
+      const accentColor: [number, number, number] = [255, 152, 0];
+      const successColor: [number, number, number] = [76, 175, 80];
+      const dangerColor: [number, number, number] = [244, 67, 54];
+      const textColor: [number, number, number] = [33, 33, 33];
+      const lightBg: [number, number, number] = [245, 245, 245];
 
       // Add SpotIN Logo
-      const img = new Image();
-      img.src = spotinLogo;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      doc.addImage(img, 'PNG', 15, 10, 40, 12);
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = spotinLogo;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => {
+            console.log('Logo failed to load, continuing without it');
+            resolve(null);
+          };
+          setTimeout(() => resolve(null), 2000); // Timeout after 2 seconds
+        });
+        
+        if (img.complete && img.naturalHeight !== 0) {
+          doc.addImage(img, 'PNG', 15, 10, 40, 12);
+        }
+      } catch (error) {
+        console.log('Error loading logo:', error);
+      }
 
       // Header
-      doc.setFillColor(...colors.primary);
+      doc.setFillColor(...primaryColor);
       doc.rect(0, 0, pageWidth, 35, 'F');
       
       doc.setTextColor(255, 255, 255);
@@ -267,30 +280,34 @@ export const OperationsReport = () => {
       const reportDate = format(new Date(), 'MMMM dd, yyyy');
       const dateRangeText = filterType === 'custom' && customStartDate 
         ? `${format(customStartDate, 'MMM dd, yyyy')} - ${customEndDate ? format(customEndDate, 'MMM dd, yyyy') : 'Now'}`
+        : dateRange === 'today' ? 'Today'
+        : dateRange === 'yesterday' ? 'Yesterday'
+        : dateRange === 'month' ? 'This Month'
+        : dateRange === 'year' ? 'This Year'
         : `Last ${dateRange} days`;
       doc.text(`Generated: ${reportDate} | Period: ${dateRangeText}`, pageWidth / 2, 28, { align: 'center' });
 
       let yPos = 45;
 
       // Key Metrics Section
-      doc.setTextColor(...colors.text);
+      doc.setTextColor(...textColor);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Key Metrics', 15, yPos);
       yPos += 8;
 
       const metrics = [
-        { label: 'Total Income', value: formatCurrency(reportData.totalIncome), color: colors.primary },
-        { label: 'Total Expenses', value: formatCurrency(reportData.totalExpenses), color: colors.danger },
-        { label: 'Net Profit', value: formatCurrency(netProfit), color: colors.success },
-        { label: 'Profit Margin', value: `${profitMargin}%`, color: colors.accent },
+        { label: 'Total Income', value: formatCurrency(reportData.totalIncome), color: primaryColor },
+        { label: 'Total Expenses', value: formatCurrency(reportData.totalExpenses), color: dangerColor },
+        { label: 'Net Profit', value: formatCurrency(netProfit), color: successColor },
+        { label: 'Profit Margin', value: `${profitMargin}%`, color: accentColor },
       ];
 
       metrics.forEach((metric, index) => {
         const xPos = 15 + (index % 2) * 95;
         const yOffset = yPos + Math.floor(index / 2) * 22;
         
-        doc.setFillColor(...colors.lightBg);
+        doc.setFillColor(...lightBg);
         doc.roundedRect(xPos, yOffset, 90, 18, 3, 3, 'F');
         
         doc.setFontSize(9);
@@ -309,27 +326,28 @@ export const OperationsReport = () => {
       // Income Breakdown Table
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...colors.text);
+      doc.setTextColor(...textColor);
       doc.text('Income Breakdown', 15, yPos);
       yPos += 5;
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Category', 'Amount', 'Percentage']],
         body: [
-          ['Tickets', formatCurrency(reportData.incomeBreakdown.tickets), `${((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1)}%`],
-          ['Memberships', formatCurrency(reportData.incomeBreakdown.memberships), `${((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1)}%`],
-          ['Rooms', formatCurrency(reportData.incomeBreakdown.rooms), `${((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1)}%`],
-          ['Bar/Products', formatCurrency(reportData.incomeBreakdown.bar), `${((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1)}%`],
-          ['Events', formatCurrency(reportData.incomeBreakdown.events), `${((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1)}%`],
+          ['Tickets', formatCurrency(reportData.incomeBreakdown.tickets), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Memberships', formatCurrency(reportData.incomeBreakdown.memberships), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Rooms', formatCurrency(reportData.incomeBreakdown.rooms), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Bar/Products', formatCurrency(reportData.incomeBreakdown.bar), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Events', formatCurrency(reportData.incomeBreakdown.events), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
         ],
-        headStyles: { fillColor: colors.primary, textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: colors.lightBg },
+        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: lightBg },
         margin: { left: 15, right: 15 },
         theme: 'grid',
       });
 
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      const finalY = (doc as any).lastAutoTable.finalY || yPos + 60;
+      yPos = finalY + 15;
 
       // Additional Metrics
       doc.setFontSize(14);
@@ -337,7 +355,7 @@ export const OperationsReport = () => {
       doc.text('Additional Metrics', 15, yPos);
       yPos += 5;
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: yPos,
         head: [['Metric', 'Value']],
         body: [
@@ -346,15 +364,15 @@ export const OperationsReport = () => {
           ['Cancelled Orders', `${reportData.cancelledOrders.count} (${formatCurrency(reportData.cancelledOrders.value)})`],
           ['Inventory Value', formatCurrency(reportData.inventoryValue)],
         ],
-        headStyles: { fillColor: colors.accent, textColor: [255, 255, 255], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: colors.lightBg },
+        headStyles: { fillColor: accentColor, textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: lightBg },
         margin: { left: 15, right: 15 },
         theme: 'grid',
       });
 
       // Footer
       const footerY = pageHeight - 15;
-      doc.setFillColor(...colors.primary);
+      doc.setFillColor(...primaryColor);
       doc.rect(0, footerY, pageWidth, 15, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(8);
@@ -363,6 +381,8 @@ export const OperationsReport = () => {
       // Save PDF
       doc.save(`spotin-operations-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 
+      console.log('PDF export completed successfully');
+      
       toast({
         title: 'Export Successful',
         description: 'Professional PDF report downloaded successfully',
@@ -371,7 +391,7 @@ export const OperationsReport = () => {
       console.error('Export error:', error);
       toast({
         title: 'Export Failed',
-        description: 'Failed to generate PDF report',
+        description: error instanceof Error ? error.message : 'Failed to generate PDF report',
         variant: 'destructive',
       });
     }
