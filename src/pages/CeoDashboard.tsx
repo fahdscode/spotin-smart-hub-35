@@ -74,6 +74,13 @@ const CeoDashboard = () => {
     occupancyRate: 0,
     eventsThisMonth: 0
   });
+  const [demographicsData, setDemographicsData] = useState({
+    totalClients: 0,
+    activeClients: 0,
+    withMemberships: 0,
+    newThisMonth: 0,
+    clientGrowth: [] as Array<{ month: string; count: number }>
+  });
   const [previousMetrics, setPreviousMetrics] = useState({
     totalRevenue: 0,
     occupancyRate: 0,
@@ -114,7 +121,8 @@ const CeoDashboard = () => {
         fetchBusinessMetrics(), 
         fetchPeakHoursData(), 
         fetchDailyRevenueData(),
-        fetchSystemAlerts()
+        fetchSystemAlerts(),
+        fetchDemographicsData()
       ]);
     } finally {
       setIsLoading(false);
@@ -379,6 +387,56 @@ const CeoDashboard = () => {
       setSystemAlerts(alerts);
     } catch (error) {
       console.error('Error fetching system alerts:', error);
+    }
+  };
+
+  const fetchDemographicsData = async () => {
+    try {
+      // Fetch all clients
+      const { data: allClients } = await supabase
+        .from('clients')
+        .select('id, created_at, is_active, active')
+        .eq('is_active', true);
+
+      // Fetch clients with memberships
+      const { data: memberships } = await supabase
+        .from('client_memberships')
+        .select('client_id')
+        .eq('is_active', true);
+
+      // Calculate new clients this month
+      const thisMonthStart = startOfMonth(new Date());
+      const newThisMonth = allClients?.filter(
+        client => new Date(client.created_at) >= thisMonthStart
+      ).length || 0;
+
+      // Calculate growth over last 6 months
+      const growthData: Array<{ month: string; count: number }> = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = subMonths(new Date(), i);
+        const monthStart = startOfMonth(monthDate);
+        const monthEnd = endOfMonth(monthDate);
+        
+        const count = allClients?.filter(client => {
+          const createdDate = new Date(client.created_at);
+          return createdDate >= monthStart && createdDate <= monthEnd;
+        }).length || 0;
+
+        growthData.push({
+          month: format(monthDate, 'MMM'),
+          count
+        });
+      }
+
+      setDemographicsData({
+        totalClients: allClients?.length || 0,
+        activeClients: allClients?.filter(c => c.active).length || 0,
+        withMemberships: memberships?.length || 0,
+        newThisMonth,
+        clientGrowth: growthData
+      });
+    } catch (error) {
+      console.error('Error fetching demographics data:', error);
     }
   };
   const revenueBreakdown: Array<{
@@ -849,12 +907,56 @@ const CeoDashboard = () => {
               {/* Enhanced Demographics */}
               <Card className="bg-card/50 backdrop-blur border-border/50">
                 <CardHeader>
-                  <CardTitle>Customer Demographics</CardTitle>
-                  <CardDescription>Age and gender distribution insights</CardDescription>
+                  <CardTitle>Client Demographics</CardTitle>
+                  <CardDescription>Client base growth and membership insights</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-8">
-                    <p className="text-muted-foreground text-center py-8">Demographic analytics coming soon</p>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Total Clients</p>
+                        <p className="text-3xl font-bold text-primary">{demographicsData.totalClients}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Active Now</p>
+                        <p className="text-3xl font-bold text-green-600">{demographicsData.activeClients}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">With Memberships</p>
+                        <p className="text-2xl font-bold text-accent">{demographicsData.withMemberships}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">New This Month</p>
+                        <p className="text-2xl font-bold text-blue-600">{demographicsData.newThisMonth}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-4">
+                      <p className="text-sm font-medium mb-4">Client Growth (6 Months)</p>
+                      <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={demographicsData.clientGrowth}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--background))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px'
+                              }} 
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="count" 
+                              stroke={CHART_COLORS.primary} 
+                              strokeWidth={2}
+                              dot={{ fill: CHART_COLORS.primary, r: 4 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
