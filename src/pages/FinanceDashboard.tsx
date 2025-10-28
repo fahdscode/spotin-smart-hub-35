@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User, CalendarIcon, Users } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Calendar, Download, RefreshCw, PieChart, BarChart3, FileText, Wallet, CreditCard, Receipt, Building, Plus, Edit, Trash2, Clock, User, CalendarIcon, Users, Tag } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import SpotinHeader from '@/components/SpotinHeader';
 import { LogoutButton } from '@/components/LogoutButton';
 import PayrollManagement from '@/components/PayrollManagement';
+import { ExpenseCategoriesManagement } from '@/components/ExpenseCategoriesManagement';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
@@ -781,6 +782,10 @@ const FinanceDashboard = () => {
               <Users className="h-4 w-4 mr-2" />
               Payroll
             </TabsTrigger>
+            <TabsTrigger value="categories">
+              <Tag className="h-4 w-4 mr-2" />
+              Categories
+            </TabsTrigger>
           </TabsList>
 
           {/* Profit & Loss Report */}
@@ -1429,6 +1434,11 @@ const FinanceDashboard = () => {
           {/* Payroll Tab */}
           <TabsContent value="payroll">
             <PayrollManagement />
+          </TabsContent>
+
+          {/* Expense Categories Tab */}
+          <TabsContent value="categories">
+            <ExpenseCategoriesManagement />
           </TabsContent>
         </Tabs>
 
