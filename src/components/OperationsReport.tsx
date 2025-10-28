@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,9 @@ export const OperationsReport = () => {
     inventoryValue: 0,
     totalTransactions: 0,
   });
+  
+  const pieChartRef = useRef<HTMLDivElement>(null);
+  const barChartRef = useRef<HTMLDivElement>(null);
 
   // Use semantic color tokens that work in both light and dark mode
   const CHART_COLORS = [
@@ -245,6 +248,58 @@ export const OperationsReport = () => {
       const textColor: [number, number, number] = [33, 33, 33];
       const lightBg: [number, number, number] = [245, 245, 245];
 
+      // Capture charts as images
+      let pieChartImage: string | null = null;
+      let barChartImage: string | null = null;
+
+      try {
+        if (pieChartRef.current) {
+          const pieChartSvg = pieChartRef.current.querySelector('svg');
+          if (pieChartSvg) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const svgData = new XMLSerializer().serializeToString(pieChartSvg);
+            const img = new Image();
+            
+            await new Promise((resolve) => {
+              img.onload = () => {
+                canvas.width = pieChartSvg.clientWidth;
+                canvas.height = pieChartSvg.clientHeight;
+                ctx?.drawImage(img, 0, 0);
+                pieChartImage = canvas.toDataURL('image/png');
+                resolve(null);
+              };
+              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+              setTimeout(() => resolve(null), 1000);
+            });
+          }
+        }
+
+        if (barChartRef.current) {
+          const barChartSvg = barChartRef.current.querySelector('svg');
+          if (barChartSvg) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const svgData = new XMLSerializer().serializeToString(barChartSvg);
+            const img = new Image();
+            
+            await new Promise((resolve) => {
+              img.onload = () => {
+                canvas.width = barChartSvg.clientWidth;
+                canvas.height = barChartSvg.clientHeight;
+                ctx?.drawImage(img, 0, 0);
+                barChartImage = canvas.toDataURL('image/png');
+                resolve(null);
+              };
+              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+              setTimeout(() => resolve(null), 1000);
+            });
+          }
+        }
+      } catch (chartError) {
+        console.log('Chart capture skipped:', chartError);
+      }
+
       // Add SpotIN Logo
       try {
         const img = new Image();
@@ -348,6 +403,35 @@ export const OperationsReport = () => {
 
       const finalY = (doc as any).lastAutoTable.finalY || yPos + 60;
       yPos = finalY + 15;
+
+      // Add charts if available
+      if (pieChartImage && yPos + 80 < pageHeight - 30) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text('Income Breakdown Chart', 15, yPos);
+        yPos += 8;
+        
+        doc.addImage(pieChartImage, 'PNG', 15, yPos, 80, 60);
+        yPos += 70;
+      }
+
+      if (barChartImage && yPos + 80 < pageHeight - 30) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textColor);
+        doc.text('Financial Overview Chart', 15, yPos);
+        yPos += 8;
+        
+        doc.addImage(barChartImage, 'PNG', 15, yPos, 80, 60);
+        yPos += 70;
+      }
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 80) {
+        doc.addPage();
+        yPos = 20;
+      }
 
       // Additional Metrics
       doc.setFontSize(14);
@@ -663,7 +747,8 @@ export const OperationsReport = () => {
             <CardDescription className="text-sm">Revenue distribution by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div ref={pieChartRef}>
+              <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={incomeChartData}
@@ -683,6 +768,7 @@ export const OperationsReport = () => {
                 <Legend wrapperStyle={{ fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? '12px' : '14px' }} />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -693,7 +779,8 @@ export const OperationsReport = () => {
             <CardDescription>Income vs Expenses vs Profit</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div ref={barChartRef}>
+              <ResponsiveContainer width="100%" height={300}>
               <BarChart data={profitData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
@@ -705,6 +792,7 @@ export const OperationsReport = () => {
                 <Bar dataKey="Profit" fill="hsl(var(--success))" />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
