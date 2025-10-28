@@ -32,6 +32,7 @@ export const ProductPaymentsReport = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [dateRange, setDateRange] = useState('30');
+  const [bulkFilter, setBulkFilter] = useState('all');
 
   useEffect(() => {
     fetchPayments();
@@ -39,7 +40,7 @@ export const ProductPaymentsReport = () => {
 
   useEffect(() => {
     filterPayments();
-  }, [payments, searchTerm, paymentMethodFilter]);
+  }, [payments, searchTerm, paymentMethodFilter, bulkFilter]);
 
   const fetchPayments = async () => {
     try {
@@ -60,6 +61,8 @@ export const ProductPaymentsReport = () => {
       
       receipts?.forEach((receipt) => {
         const lineItems = receipt.line_items as any[];
+        const isBulk = lineItems && lineItems.length > 1;
+        
         lineItems?.forEach((item) => {
           allPayments.push({
             id: `${receipt.id}-${item.item_name}`,
@@ -71,7 +74,8 @@ export const ProductPaymentsReport = () => {
             total: item.total,
             payment_method: receipt.payment_method,
             transaction_type: receipt.transaction_type,
-          });
+            is_bulk: isBulk,
+          } as any);
         });
       });
 
@@ -103,6 +107,13 @@ export const ProductPaymentsReport = () => {
     // Payment method filter
     if (paymentMethodFilter !== 'all') {
       filtered = filtered.filter((p) => p.payment_method === paymentMethodFilter);
+    }
+
+    // Bulk receipt filter
+    if (bulkFilter === 'bulk') {
+      filtered = filtered.filter((p: any) => p.is_bulk);
+    } else if (bulkFilter === 'single') {
+      filtered = filtered.filter((p: any) => !p.is_bulk);
     }
 
     setFilteredPayments(filtered);
@@ -153,6 +164,8 @@ export const ProductPaymentsReport = () => {
 
   const totalRevenue = filteredPayments.reduce((sum, p) => sum + p.total, 0);
   const totalItems = filteredPayments.reduce((sum, p) => sum + p.quantity, 0);
+  const bulkReceipts = [...new Set(filteredPayments.filter((p: any) => p.is_bulk).map(p => p.receipt_number))].length;
+  const singleReceipts = [...new Set(filteredPayments.filter((p: any) => !p.is_bulk).map(p => p.receipt_number))].length;
 
   return (
     <Card>
@@ -170,7 +183,7 @@ export const ProductPaymentsReport = () => {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -204,10 +217,21 @@ export const ProductPaymentsReport = () => {
               <SelectItem value="365">Last Year</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={bulkFilter} onValueChange={setBulkFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Receipt Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Receipts</SelectItem>
+              <SelectItem value="bulk">Bulk (Multiple Items)</SelectItem>
+              <SelectItem value="single">Single Item</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="pt-4 sm:pt-6">
               <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
@@ -224,6 +248,13 @@ export const ProductPaymentsReport = () => {
             <CardContent className="pt-6">
               <div className="text-2xl font-bold">{totalItems}</div>
               <p className="text-sm text-muted-foreground">Items Sold</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-2xl font-bold">{bulkReceipts}</div>
+              <p className="text-sm text-muted-foreground">Bulk Receipts</p>
+              <p className="text-xs text-muted-foreground mt-1">{singleReceipts} Single</p>
             </CardContent>
           </Card>
         </div>
