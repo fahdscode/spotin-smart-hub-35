@@ -74,6 +74,12 @@ const CeoDashboard = () => {
     occupancyRate: 0,
     eventsThisMonth: 0
   });
+  const [previousMetrics, setPreviousMetrics] = useState({
+    totalRevenue: 0,
+    occupancyRate: 0,
+    eventsThisMonth: 0,
+    activeMembers: 0
+  });
   const [systemAlerts, setSystemAlerts] = useState<Array<{
     type: 'warning' | 'info' | 'success';
     title: string;
@@ -178,16 +184,29 @@ const CeoDashboard = () => {
   };
   const fetchBusinessMetrics = async () => {
     try {
-      const [ordersData, eventsData, activeClientsData] = await Promise.all([
+      // Calculate previous period dates
+      const periodLength = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - periodLength);
+      const previousTo = new Date(dateRange.from.getTime());
+
+      const [ordersData, eventsData, activeClientsData, previousOrdersData, previousEventsData, previousActiveClientsData] = await Promise.all([
         supabase.from('session_line_items').select('price, quantity, user_id, created_at').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()).eq('status', 'completed'), 
         supabase.from('events').select('id').gte('event_date', format(dateRange.from, 'yyyy-MM-dd')).lte('event_date', format(dateRange.to, 'yyyy-MM-dd')).eq('is_active', true), 
-        supabase.from('clients').select('id').eq('is_active', true).eq('active', true)
+        supabase.from('clients').select('id').eq('is_active', true).eq('active', true),
+        // Previous period data
+        supabase.from('session_line_items').select('price, quantity').gte('created_at', previousFrom.toISOString()).lte('created_at', previousTo.toISOString()).eq('status', 'completed'),
+        supabase.from('events').select('id').gte('event_date', format(previousFrom, 'yyyy-MM-dd')).lte('event_date', format(previousTo, 'yyyy-MM-dd')).eq('is_active', true),
+        supabase.from('check_in_logs').select('id').gte('timestamp', previousFrom.toISOString()).lte('timestamp', previousTo.toISOString()).eq('action', 'checked_in')
       ]);
 
       // Count currently active clients (checked in right now)
       const activeMembers = activeClientsData.data?.length || 0;
       const totalClients = getTotalClientsCount() || 1;
       const occupancyRate = totalClients > 0 ? (activeMembers / totalClients * 100) : 0;
+
+      // Previous period metrics
+      const previousActiveMembers = previousActiveClientsData.data?.length || 0;
+      const previousOccupancyRate = totalClients > 0 ? (previousActiveMembers / totalClients * 100) : 0;
 
       if (ordersData.data && ordersData.data.length > 0) {
         const totalRevenue = ordersData.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -196,6 +215,16 @@ const CeoDashboard = () => {
         const totalOrders = ordersData.data.length;
         const repeatRate = totalOrders > uniqueCustomers ? (totalOrders - uniqueCustomers) / totalOrders * 100 : 0;
         
+        // Previous period revenue
+        const previousRevenue = previousOrdersData.data?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+
+        setPreviousMetrics({
+          totalRevenue: previousRevenue,
+          occupancyRate: previousOccupancyRate,
+          eventsThisMonth: previousEventsData.data?.length || 0,
+          activeMembers: previousActiveMembers
+        });
+
         setBusinessMetrics({
           avgOrderValue: Number(avgOrder.toFixed(1)),
           totalOrders,
@@ -207,6 +236,15 @@ const CeoDashboard = () => {
         });
       } else {
         // If no orders, still update active members count
+        const previousRevenue = previousOrdersData.data?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+        
+        setPreviousMetrics({
+          totalRevenue: previousRevenue,
+          occupancyRate: previousOccupancyRate,
+          eventsThisMonth: previousEventsData.data?.length || 0,
+          activeMembers: previousActiveMembers
+        });
+
         setBusinessMetrics(prev => ({
           ...prev,
           activeMembers,
@@ -533,10 +571,46 @@ const CeoDashboard = () => {
 
             {/* Enhanced Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard title="Total Revenue" value={formatCurrency(businessMetrics.totalRevenue)} change="+12.5%" icon={DollarSign} variant="success" />
-              <MetricCard title="Active Now" value={businessMetrics.activeMembers.toString()} change={`/${getTotalClientsCount()}`} icon={Activity} variant="info" />
-              <MetricCard title="Occupancy Rate" value={`${businessMetrics.occupancyRate}%`} change="+5.2%" icon={Building} variant="default" />
-              <MetricCard title="Events This Month" value={businessMetrics.eventsThisMonth.toString()} change="+15%" icon={Calendar} variant="success" />
+              <MetricCard 
+                title="Total Revenue" 
+                value={formatCurrency(businessMetrics.totalRevenue)} 
+                change={
+                  previousMetrics.totalRevenue > 0
+                    ? `${((businessMetrics.totalRevenue - previousMetrics.totalRevenue) / previousMetrics.totalRevenue * 100).toFixed(1)}% from last period`
+                    : businessMetrics.totalRevenue > 0 ? 'New data' : 'No data'
+                }
+                icon={DollarSign} 
+                variant="success" 
+              />
+              <MetricCard 
+                title="Active Now" 
+                value={businessMetrics.activeMembers.toString()} 
+                change={`${getTotalClientsCount()} total members`}
+                icon={Activity} 
+                variant="info" 
+              />
+              <MetricCard 
+                title="Occupancy Rate" 
+                value={`${businessMetrics.occupancyRate.toFixed(1)}%`} 
+                change={
+                  previousMetrics.occupancyRate > 0
+                    ? `${(businessMetrics.occupancyRate - previousMetrics.occupancyRate).toFixed(1)}% from last period`
+                    : businessMetrics.occupancyRate > 0 ? 'Current rate' : 'No data'
+                }
+                icon={Building} 
+                variant="default" 
+              />
+              <MetricCard 
+                title="Events This Month" 
+                value={businessMetrics.eventsThisMonth.toString()} 
+                change={
+                  previousMetrics.eventsThisMonth > 0
+                    ? `${businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth > 0 ? '+' : ''}${businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth} from last period`
+                    : businessMetrics.eventsThisMonth > 0 ? 'Events scheduled' : 'No events'
+                }
+                icon={Calendar} 
+                variant="success" 
+              />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
