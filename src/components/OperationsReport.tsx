@@ -3,11 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Calendar, TrendingUp, TrendingDown, Package, DollarSign, Ban, BarChart3 } from 'lucide-react';
+import { Download, Calendar, TrendingUp, TrendingDown, Package, DollarSign, Ban, BarChart3, CalendarRange } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import spotinLogo from '@/assets/spotin-logo-main.png';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ReportData {
   totalIncome: number;
@@ -31,6 +35,9 @@ export const OperationsReport = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState('30');
+  const [filterType, setFilterType] = useState<'preset' | 'custom'>('preset');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
   const [reportData, setReportData] = useState<ReportData>({
     totalIncome: 0,
     incomeBreakdown: { tickets: 0, memberships: 0, rooms: 0, bar: 0, events: 0 },
@@ -60,19 +67,76 @@ export const OperationsReport = () => {
 
   useEffect(() => {
     fetchReportData();
-  }, [dateRange]);
+  }, [dateRange, customStartDate, customEndDate, filterType]);
+
+  const getDateRange = () => {
+    if (filterType === 'custom' && customStartDate) {
+      return {
+        start: customStartDate,
+        end: customEndDate || new Date()
+      };
+    }
+    
+    const end = new Date();
+    const start = new Date();
+    
+    switch (dateRange) {
+      case 'today':
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'yesterday':
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        end.setDate(end.getDate() - 1);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        start.setDate(start.getDate() - start.getDay());
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'lastweek':
+        start.setDate(start.getDate() - start.getDay() - 7);
+        start.setHours(0, 0, 0, 0);
+        end.setDate(end.getDate() - end.getDay() - 1);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'month':
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'lastmonth':
+        start.setMonth(start.getMonth() - 1, 1);
+        start.setHours(0, 0, 0, 0);
+        end.setMonth(end.getMonth(), 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'quarter':
+        const quarter = Math.floor(start.getMonth() / 3);
+        start.setMonth(quarter * 3, 1);
+        start.setHours(0, 0, 0, 0);
+        break;
+      case 'year':
+        start.setMonth(0, 1);
+        start.setHours(0, 0, 0, 0);
+        break;
+      default:
+        start.setDate(start.getDate() - parseInt(dateRange));
+    }
+    
+    return { start, end };
+  };
 
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - parseInt(dateRange));
+      const { start: startDate, end: endDate } = getDateRange();
 
       // Fetch receipts for income breakdown
       const { data: receipts, error: receiptsError } = await supabase
         .from('receipts')
         .select('*')
         .gte('receipt_date', startDate.toISOString())
+        .lte('receipt_date', endDate.toISOString())
         .eq('status', 'completed');
 
       if (receiptsError) throw receiptsError;
@@ -116,7 +180,8 @@ export const OperationsReport = () => {
       const { data: bills, error: billsError } = await supabase
         .from('bills')
         .select('amount')
-        .gte('created_at', startDate.toISOString());
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       if (billsError) throw billsError;
 
@@ -127,6 +192,7 @@ export const OperationsReport = () => {
         .from('receipts')
         .select('*')
         .gte('receipt_date', startDate.toISOString())
+        .lte('receipt_date', endDate.toISOString())
         .eq('status', 'cancelled');
 
       if (cancelledError) throw cancelledError;
@@ -267,19 +333,177 @@ export const OperationsReport = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Date Range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Last 7 Days</SelectItem>
-                  <SelectItem value="30">Last 30 Days</SelectItem>
-                  <SelectItem value="90">Last 90 Days</SelectItem>
-                  <SelectItem value="180">Last 6 Months</SelectItem>
-                  <SelectItem value="365">Last Year</SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full sm:w-[280px] justify-start text-left font-normal">
+                    <CalendarRange className="w-4 h-4 mr-2" />
+                    {filterType === 'custom' && customStartDate ? (
+                      <>
+                        {format(customStartDate, 'MMM dd, yyyy')} - {customEndDate ? format(customEndDate, 'MMM dd, yyyy') : 'Now'}
+                      </>
+                    ) : (
+                      <span>
+                        {dateRange === 'today' && 'Today'}
+                        {dateRange === 'yesterday' && 'Yesterday'}
+                        {dateRange === 'week' && 'This Week'}
+                        {dateRange === 'lastweek' && 'Last Week'}
+                        {dateRange === 'month' && 'This Month'}
+                        {dateRange === 'lastmonth' && 'Last Month'}
+                        {dateRange === 'quarter' && 'This Quarter'}
+                        {dateRange === 'year' && 'This Year'}
+                        {dateRange === '7' && 'Last 7 Days'}
+                        {dateRange === '30' && 'Last 30 Days'}
+                        {dateRange === '90' && 'Last 90 Days'}
+                        {dateRange === '180' && 'Last 6 Months'}
+                        {dateRange === '365' && 'Last Year'}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Quick Filters</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'today' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('today'); }}
+                          className="text-xs"
+                        >
+                          Today
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'yesterday' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('yesterday'); }}
+                          className="text-xs"
+                        >
+                          Yesterday
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'week' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('week'); }}
+                          className="text-xs"
+                        >
+                          This Week
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'lastweek' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('lastweek'); }}
+                          className="text-xs"
+                        >
+                          Last Week
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'month' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('month'); }}
+                          className="text-xs"
+                        >
+                          This Month
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'lastmonth' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('lastmonth'); }}
+                          className="text-xs"
+                        >
+                          Last Month
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'quarter' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('quarter'); }}
+                          className="text-xs"
+                        >
+                          This Quarter
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'year' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('year'); }}
+                          className="text-xs"
+                        >
+                          This Year
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Rolling Periods</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant={filterType === 'preset' && dateRange === '7' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('7'); }}
+                          className="text-xs"
+                        >
+                          Last 7 Days
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === '30' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('30'); }}
+                          className="text-xs"
+                        >
+                          Last 30 Days
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === '90' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('90'); }}
+                          className="text-xs"
+                        >
+                          Last 90 Days
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === '365' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('365'); }}
+                          className="text-xs"
+                        >
+                          Last Year
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-3">
+                      <h4 className="font-semibold text-sm">Custom Range</h4>
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Start Date</label>
+                          <CalendarComponent
+                            mode="single"
+                            selected={customStartDate}
+                            onSelect={(date) => {
+                              setCustomStartDate(date);
+                              setFilterType('custom');
+                            }}
+                            className={cn("rounded-md border pointer-events-auto")}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">End Date (Optional)</label>
+                          <CalendarComponent
+                            mode="single"
+                            selected={customEndDate}
+                            onSelect={(date) => {
+                              setCustomEndDate(date);
+                              setFilterType('custom');
+                            }}
+                            disabled={(date) => customStartDate ? date < customStartDate : false}
+                            className={cn("rounded-md border pointer-events-auto")}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
               <Button onClick={exportReport} disabled={loading} style={{ backgroundColor: SPOTIN_COLORS.primary }} className="w-full sm:w-auto">
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
