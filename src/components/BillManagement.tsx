@@ -74,6 +74,23 @@ const BillManagement = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    // Auto-generate bill number when opening new bill dialog
+    if (isAddingBill && !editingBill) {
+      generateBillNumber();
+    }
+  }, [isAddingBill, editingBill]);
+
+  const generateBillNumber = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const billNumber = `BILL-${year}${month}${day}-${random}`;
+    setBillForm(prev => ({ ...prev, bill_number: billNumber }));
+  };
+
   const fetchData = async () => {
     try {
       // Fetch vendors
@@ -366,12 +383,24 @@ const BillManagement = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bill_number">Bill Number *</Label>
-                    <Input
-                      id="bill_number"
-                      value={billForm.bill_number}
-                      onChange={(e) => setBillForm({ ...billForm, bill_number: e.target.value })}
-                      required
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="bill_number"
+                        value={billForm.bill_number}
+                        onChange={(e) => setBillForm({ ...billForm, bill_number: e.target.value })}
+                        required
+                        readOnly
+                        className="bg-muted"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={generateBillNumber}
+                        className="shrink-0"
+                      >
+                        Generate
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="due_date">Due Date *</Label>
