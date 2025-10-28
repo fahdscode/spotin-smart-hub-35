@@ -256,19 +256,19 @@ export const OperationsReport = () => {
       {/* Header with Logo and Controls */}
       <Card style={{ borderColor: SPOTIN_COLORS.primary }}>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={spotinLogo} alt="SpotIN Logo" className="h-12 w-auto" />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
+              <img src={spotinLogo} alt="SpotIN Logo" className="h-10 sm:h-12 w-auto" />
               <div>
-                <CardTitle className="text-2xl" style={{ color: SPOTIN_COLORS.primary }}>
+                <CardTitle className="text-xl sm:text-2xl" style={{ color: SPOTIN_COLORS.primary }}>
                   Operations Report
                 </CardTitle>
-                <CardDescription>Comprehensive financial and operational analytics</CardDescription>
+                <CardDescription className="text-sm">Comprehensive financial and operational analytics</CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
               <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <Calendar className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Date Range" />
                 </SelectTrigger>
@@ -280,7 +280,7 @@ export const OperationsReport = () => {
                   <SelectItem value="365">Last Year</SelectItem>
                 </SelectContent>
               </Select>
-              <Button onClick={exportReport} disabled={loading} style={{ backgroundColor: SPOTIN_COLORS.primary }}>
+              <Button onClick={exportReport} disabled={loading} style={{ backgroundColor: SPOTIN_COLORS.primary }} className="w-full sm:w-auto">
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
               </Button>
@@ -290,75 +290,75 @@ export const OperationsReport = () => {
       </Card>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.primary }}>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Income</p>
-                <p className="text-2xl font-bold" style={{ color: SPOTIN_COLORS.primary }}>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Income</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.primary }}>
                   {formatCurrency(reportData.totalIncome)}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8" style={{ color: SPOTIN_COLORS.primary }} />
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.primary }} />
             </div>
           </CardContent>
         </Card>
 
         <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.danger }}>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold" style={{ color: SPOTIN_COLORS.danger }}>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Expenses</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.danger }}>
                   {formatCurrency(reportData.totalExpenses)}
                 </p>
               </div>
-              <TrendingDown className="w-8 h-8" style={{ color: SPOTIN_COLORS.danger }} />
+              <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.danger }} />
             </div>
           </CardContent>
         </Card>
 
         <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.accent }}>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Net Profit</p>
-                <p className="text-2xl font-bold" style={{ color: SPOTIN_COLORS.accent }}>
+                <p className="text-xs sm:text-sm text-muted-foreground">Net Profit</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.accent }}>
                   {formatCurrency(netProfit)}
                 </p>
                 <p className="text-xs text-muted-foreground">{profitMargin}% margin</p>
               </div>
-              <DollarSign className="w-8 h-8" style={{ color: SPOTIN_COLORS.accent }} />
+              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.accent }} />
             </div>
           </CardContent>
         </Card>
 
         <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.secondary }}>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Inventory Value</p>
-                <p className="text-2xl font-bold" style={{ color: SPOTIN_COLORS.secondary }}>
+                <p className="text-xs sm:text-sm text-muted-foreground">Inventory Value</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.secondary }}>
                   {formatCurrency(reportData.inventoryValue)}
                 </p>
               </div>
-              <Package className="w-8 h-8" style={{ color: SPOTIN_COLORS.secondary }} />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.secondary }} />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Income Breakdown Pie Chart */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: SPOTIN_COLORS.primary }}>Income Breakdown</CardTitle>
-            <CardDescription>Revenue distribution by category</CardDescription>
+            <CardTitle className="text-lg sm:text-xl" style={{ color: SPOTIN_COLORS.primary }}>Income Breakdown</CardTitle>
+            <CardDescription className="text-sm">Revenue distribution by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={incomeChartData}
@@ -366,7 +366,7 @@ export const OperationsReport = () => {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  outerRadius={window.innerWidth < 640 ? 60 : 80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -375,7 +375,7 @@ export const OperationsReport = () => {
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

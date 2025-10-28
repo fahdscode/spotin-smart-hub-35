@@ -176,12 +176,11 @@ const OperationsDashboard = () => {
   return <div className="min-h-screen bg-background">
       <SpotinHeader showClock />
       
-      <div className="container mx-auto p-6">
-        <div className="flex items-center gap-4 mb-6">
-          
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Operations Manager</h2>
-            <p className="text-muted-foreground">Stock management, inventory control, and expense tracking</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Operations Manager</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">Stock management, inventory control, and expense tracking</p>
           </div>
         </div>
 
@@ -200,32 +199,32 @@ const OperationsDashboard = () => {
             </>}
         </div>
 
-        <Tabs defaultValue="report" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-13">
-            <TabsTrigger value="report">Operations Report</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="stock">Stock Report</TabsTrigger>
-            <TabsTrigger value="stock-mgmt">Stock Mgmt</TabsTrigger>
-            <TabsTrigger value="vendors">Vendors</TabsTrigger>
-            <TabsTrigger value="bills">Bills</TabsTrigger>
+        <Tabs defaultValue="report" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-13 gap-1 h-auto">
+            <TabsTrigger value="report" className="text-xs sm:text-sm">Report</TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs sm:text-sm">Payments</TabsTrigger>
+            <TabsTrigger value="stock" className="text-xs sm:text-sm">Stock</TabsTrigger>
+            <TabsTrigger value="stock-mgmt" className="text-xs sm:text-sm hidden sm:flex">Mgmt</TabsTrigger>
+            <TabsTrigger value="vendors" className="text-xs sm:text-sm">Vendors</TabsTrigger>
+            <TabsTrigger value="bills" className="text-xs sm:text-sm">Bills</TabsTrigger>
             
-            <TabsTrigger value="pricing">Products</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="rooms">Rooms</TabsTrigger>
-            <TabsTrigger value="plans">Membership Plans</TabsTrigger>
-            <TabsTrigger value="tickets">
-              <Ticket className="h-4 w-4 mr-2" />
+            <TabsTrigger value="pricing" className="text-xs sm:text-sm hidden md:flex">Products</TabsTrigger>
+            <TabsTrigger value="categories" className="text-xs sm:text-sm hidden md:flex">Categories</TabsTrigger>
+            <TabsTrigger value="rooms" className="text-xs sm:text-sm hidden md:flex">Rooms</TabsTrigger>
+            <TabsTrigger value="plans" className="text-xs sm:text-sm hidden lg:flex">Plans</TabsTrigger>
+            <TabsTrigger value="tickets" className="text-xs sm:text-sm hidden lg:flex">
+              <Ticket className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Tickets
             </TabsTrigger>
-            <TabsTrigger value="promotions">
-              <Tag className="h-4 w-4 mr-2" />
+            <TabsTrigger value="promotions" className="text-xs sm:text-sm hidden lg:flex">
+              <Tag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Sales
             </TabsTrigger>
-            <TabsTrigger value="cancelled">
-              <Ban className="h-4 w-4 mr-2" />
+            <TabsTrigger value="cancelled" className="text-xs sm:text-sm hidden lg:flex">
+              <Ban className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Cancelled
             </TabsTrigger>
-            <TabsTrigger value="users">User Roles</TabsTrigger>
+            <TabsTrigger value="users" className="text-xs sm:text-sm hidden lg:flex">Roles</TabsTrigger>
           </TabsList>
 
           {/* Operations Report Tab */}

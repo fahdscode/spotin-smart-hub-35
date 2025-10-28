@@ -157,9 +157,9 @@ export const ProductPaymentsReport = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Product Payments Report</span>
-          <Button onClick={exportToCSV} disabled={filteredPayments.length === 0}>
+        <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <span className="text-lg sm:text-xl">Product Payments Report</span>
+          <Button onClick={exportToCSV} disabled={filteredPayments.length === 0} className="w-full sm:w-auto">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
@@ -170,7 +170,7 @@ export const ProductPaymentsReport = () => {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -207,9 +207,9 @@ export const ProductPaymentsReport = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6">
               <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
             </CardContent>
@@ -229,19 +229,19 @@ export const ProductPaymentsReport = () => {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Receipt #</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Unit Price</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Type</TableHead>
-              </TableRow>
+                <TableRow>
+                  <TableHead className="hidden sm:table-cell">Receipt #</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="text-right hidden sm:table-cell">Qty</TableHead>
+                  <TableHead className="text-right hidden lg:table-cell">Unit Price</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="hidden md:table-cell">Payment</TableHead>
+                  <TableHead className="hidden lg:table-cell">Type</TableHead>
+                </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
@@ -259,16 +259,16 @@ export const ProductPaymentsReport = () => {
               ) : (
                 filteredPayments.map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell className="font-mono text-sm">{payment.receipt_number}</TableCell>
-                    <TableCell>{new Date(payment.receipt_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium">{payment.product_name}</TableCell>
-                    <TableCell className="text-right">{payment.quantity}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(payment.unit_price)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(payment.total)}</TableCell>
-                    <TableCell>
-                      <span className="capitalize">{payment.payment_method}</span>
+                    <TableCell className="font-mono text-xs sm:text-sm hidden sm:table-cell">{payment.receipt_number}</TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden md:table-cell">{new Date(payment.receipt_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium text-sm">{payment.product_name}</TableCell>
+                    <TableCell className="text-right text-sm hidden sm:table-cell">{payment.quantity}</TableCell>
+                    <TableCell className="text-right text-sm hidden lg:table-cell">{formatCurrency(payment.unit_price)}</TableCell>
+                    <TableCell className="text-right font-semibold text-sm">{formatCurrency(payment.total)}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <span className="capitalize text-sm">{payment.payment_method}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="text-xs px-2 py-1 rounded bg-primary/10 text-primary">
                         {payment.transaction_type.replace('_', ' ')}
                       </span>

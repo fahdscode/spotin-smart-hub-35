@@ -127,23 +127,23 @@ All colors MUST be HSL. Based on organic brand palette.
     --background: 39 92% 8%;
     --foreground: 60 14% 91%;
 
-    --card: 40 97% 12%;
+    --card: 40 30% 12%;
     --card-foreground: 60 14% 91%;
 
-    --popover: 40 97% 12%;
+    --popover: 40 30% 12%;
     --popover-foreground: 60 14% 91%;
 
     /* SpotIN Green Primary (brighter in dark mode) */
     --primary: 116 14% 60%;
     --primary-foreground: 40 97% 8%;
-    --primary-hover: 108 16% 55%;
+    --primary-hover: 108 16% 70%;
 
     /* Dark Natural Secondary */
-    --secondary: 39 92% 15%;
+    --secondary: 39 40% 18%;
     --secondary-foreground: 60 14% 91%;
 
-    --muted: 40 97% 15%;
-    --muted-foreground: 84 23% 65%;
+    --muted: 40 30% 16%;
+    --muted-foreground: 84 23% 70%;
 
     /* Orange Accent (brighter in dark mode) */
     --accent: 31 96% 62%;
@@ -153,8 +153,8 @@ All colors MUST be HSL. Based on organic brand palette.
     --destructive: 0 62% 50%;
     --destructive-foreground: 60 14% 91%;
 
-    --border: 40 97% 15%;
-    --input: 40 97% 15%;
+    --border: 40 30% 22%;
+    --input: 40 30% 18%;
     --ring: 116 14% 60%;
 
     /* SpotIN Dark Brand Colors */
@@ -165,12 +165,20 @@ All colors MUST be HSL. Based on organic brand palette.
     --info: 31 92% 53%;
     --info-foreground: 40 97% 8%;
 
-
     /* Dark Mode Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.5);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -2px hsl(0 0% 0% / 0.2);
     --shadow-card: 0 4px 12px hsl(0 0% 0% / 0.4);
+
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   * {
@@ -267,5 +275,27 @@ All colors MUST be HSL. Based on organic brand palette.
   /* Smooth transitions for RTL */
   [dir="rtl"] * {
     transition: margin 0.3s ease, padding 0.3s ease;
+  }
+
+  /* Mobile-first responsive utilities */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* Ensure dropdowns are visible and accessible */
+  [role="menu"],
+  [data-radix-popper-content-wrapper] {
+    z-index: 50 !important;
+  }
+
+  [data-radix-select-content],
+  [data-radix-dropdown-menu-content],
+  [data-radix-popover-content] {
+    background: hsl(var(--popover));
+    border: 1px solid hsl(var(--border));
+    z-index: 50;
   }
 }
