@@ -72,7 +72,9 @@ const CeoDashboard = () => {
     totalRevenue: 0,
     activeMembers: 0,
     occupancyRate: 0,
-    eventsThisMonth: 0
+    eventsThisMonth: 0,
+    peakHours: 'N/A',
+    avgSessionHours: 0
   });
   const [demographicsData, setDemographicsData] = useState({
     totalClients: 0,
@@ -233,7 +235,8 @@ const CeoDashboard = () => {
           activeMembers: previousActiveMembers
         });
 
-        setBusinessMetrics({
+        setBusinessMetrics(prev => ({
+          ...prev,
           avgOrderValue: Number(avgOrder.toFixed(1)),
           totalOrders,
           repeatCustomerRate: Number(repeatRate.toFixed(0)),
@@ -241,7 +244,7 @@ const CeoDashboard = () => {
           activeMembers,
           occupancyRate: Number(occupancyRate.toFixed(0)),
           eventsThisMonth: eventsData.data?.length || 0
-        });
+        }));
       } else {
         // If no orders, still update active members count
         const previousRevenue = previousOrdersData.data?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
@@ -268,13 +271,53 @@ const CeoDashboard = () => {
     try {
       const {
         data
-      } = await supabase.from('check_ins').select('checked_in_at').gte('checked_in_at', dateRange.from.toISOString()).lte('checked_in_at', dateRange.to.toISOString()).eq('status', 'checked_in');
+      } = await supabase.from('check_ins').select('checked_in_at, checked_out_at').gte('checked_in_at', dateRange.from.toISOString()).lte('checked_in_at', dateRange.to.toISOString()).eq('status', 'checked_in');
+      
       if (data) {
         const hourCounts: Record<number, number> = {};
+        let totalSessionMinutes = 0;
+        let sessionCount = 0;
+        
         data.forEach(item => {
           const hour = new Date(item.checked_in_at).getHours();
           hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+          
+          // Calculate session duration if checked out
+          if (item.checked_out_at) {
+            const checkIn = new Date(item.checked_in_at);
+            const checkOut = new Date(item.checked_out_at);
+            const durationMinutes = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60);
+            totalSessionMinutes += durationMinutes;
+            sessionCount++;
+          }
         });
+        
+        // Find peak hour(s)
+        const maxVisitors = Math.max(...Object.values(hourCounts));
+        const peakHours = Object.entries(hourCounts)
+          .filter(([_, count]) => count === maxVisitors)
+          .map(([hour]) => parseInt(hour))
+          .sort((a, b) => a - b);
+        
+        let peakHoursText = 'N/A';
+        if (peakHours.length > 0) {
+          const formatHour = (h: number) => {
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const displayHour = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+            return `${displayHour}${ampm}`;
+          };
+          
+          if (peakHours.length === 1) {
+            peakHoursText = formatHour(peakHours[0]);
+          } else if (peakHours.length === 2 && peakHours[1] - peakHours[0] === 1) {
+            peakHoursText = `${formatHour(peakHours[0])}-${formatHour(peakHours[1])}`;
+          } else {
+            peakHoursText = peakHours.map(formatHour).join(', ');
+          }
+        }
+        
+        const avgSessionHours = sessionCount > 0 ? totalSessionMinutes / sessionCount / 60 : 0;
+        
         const chartData = Array.from({
           length: 16
         }, (_, i) => {
@@ -286,10 +329,18 @@ const CeoDashboard = () => {
             visitors: hourCounts[hour] || 0
           };
         });
+        
         setPeakHoursData(chartData);
+        
+        // Update business metrics with peak hours
+        setBusinessMetrics(prev => ({
+          ...prev,
+          peakHours: peakHoursText,
+          avgSessionHours: Number(avgSessionHours.toFixed(1))
+        }));
       }
     } catch (error) {
-      // Error already logged
+      console.error('Error fetching peak hours data:', error);
     }
   };
   const fetchDailyRevenueData = async () => {
@@ -979,11 +1030,11 @@ const CeoDashboard = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Avg Order Value</span>
-                      <span className="font-bold text-lg">{businessMetrics.avgOrderValue} EGP</span>
+                      <span className="font-bold text-lg">{formatCurrency(businessMetrics.avgOrderValue)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Peak Hours</span>
-                      <Badge variant="outline">2-4 PM</Badge>
+                      <Badge variant="outline">{businessMetrics.peakHours}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -1004,11 +1055,15 @@ const CeoDashboard = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Avg Session</span>
-                      <Badge variant="outline">3.2 hours</Badge>
+                      <Badge variant="outline">
+                        {businessMetrics.avgSessionHours > 0 
+                          ? `${businessMetrics.avgSessionHours} hours` 
+                          : 'N/A'}
+                      </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Popular Day</span>
-                      <Badge variant="secondary">Wednesday</Badge>
+                      <span className="text-sm text-muted-foreground">Active Now</span>
+                      <Badge variant="secondary">{businessMetrics.activeMembers} clients</Badge>
                     </div>
                   </div>
                 </CardContent>
