@@ -1493,12 +1493,12 @@ const FinanceDashboard = () => {
 
               <div>
                 <Label htmlFor="expense-vendor">Vendor (Optional)</Label>
-                <Select value={newExpense.vendor_id} onValueChange={(value) => setNewExpense({ ...newExpense, vendor_id: value })}>
+                <Select value={newExpense.vendor_id || "none"} onValueChange={(value) => setNewExpense({ ...newExpense, vendor_id: value === "none" ? '' : value })}>
                   <SelectTrigger id="expense-vendor">
                     <SelectValue placeholder="Select vendor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {vendors.map((vendor) => (
                       <SelectItem key={vendor.id} value={vendor.id}>
                         {vendor.name}
