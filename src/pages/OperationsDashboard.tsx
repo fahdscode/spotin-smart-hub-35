@@ -44,55 +44,7 @@ const OperationsDashboard = () => {
     [key: string]: number;
   }>({});
   const [showPendingOrders, setShowPendingOrders] = useState(false);
-  const expenses = [{
-    id: 1,
-    category: "Rent",
-    amount: 8500,
-    budget: 8500,
-    period: "Monthly",
-    dueDate: "2024-02-01",
-    status: "paid"
-  }, {
-    id: 2,
-    category: "Salaries",
-    amount: 15200,
-    budget: 16000,
-    period: "Monthly",
-    dueDate: "2024-01-31",
-    status: "pending"
-  }, {
-    id: 3,
-    category: "Electricity",
-    amount: 1250,
-    budget: 1400,
-    period: "Monthly",
-    dueDate: "2024-02-05",
-    status: "overdue"
-  }, {
-    id: 4,
-    category: "Internet",
-    amount: 299,
-    budget: 350,
-    period: "Monthly",
-    dueDate: "2024-02-10",
-    status: "upcoming"
-  }, {
-    id: 5,
-    category: "Marketing",
-    amount: 2100,
-    budget: 2500,
-    period: "Monthly",
-    dueDate: "2024-02-15",
-    status: "upcoming"
-  }, {
-    id: 6,
-    category: "Cleaning Supplies",
-    amount: 180,
-    budget: 200,
-    period: "Monthly",
-    dueDate: "2024-02-08",
-    status: "upcoming"
-  }];
+  const expenses: any[] = [];
   const getStockStatusColor = (status: string) => {
     switch (status) {
       case "critical":
@@ -192,10 +144,34 @@ const OperationsDashboard = () => {
               <Skeleton className="h-24" />
               <Skeleton className="h-24" />
             </> : <>
-              <MetricCard title="Low Stock Alerts" value={getCriticalStockCount()} change={`${getCriticalStockCount()} items need attention`} icon={AlertTriangle} variant="warning" />
-              <MetricCard title="Monthly Expenses" value="27,629 EGP" change="85.2% of budget" icon={DollarSign} variant="info" />
-              <MetricCard title="Pending Orders" value="7" change="3 arriving today" icon={Truck} variant="default" />
-              <MetricCard title="Inventory Value" value={`${getTotalInventoryValue().toLocaleString()} EGP`} change="+2.1% from last month" icon={Package} variant="success" />
+              <MetricCard 
+                title="Low Stock Alerts" 
+                value={getCriticalStockCount()} 
+                change={getCriticalStockCount() > 0 ? `${getCriticalStockCount()} items need attention` : 'All stock levels good'} 
+                icon={AlertTriangle} 
+                variant={getCriticalStockCount() > 0 ? "warning" : "success"} 
+              />
+              <MetricCard 
+                title="Monthly Expenses" 
+                value={`${getTotalExpenses().toLocaleString()} EGP`} 
+                change={getTotalBudget() > 0 ? `${((getTotalExpenses() / getTotalBudget()) * 100).toFixed(1)}% of budget` : 'No expenses recorded'} 
+                icon={DollarSign} 
+                variant="info" 
+              />
+              <MetricCard 
+                title="Pending Orders" 
+                value="0" 
+                change="No pending orders" 
+                icon={Truck} 
+                variant="default" 
+              />
+              <MetricCard 
+                title="Inventory Value" 
+                value={`${getTotalInventoryValue().toLocaleString()} EGP`} 
+                change={getTotalInventoryValue() > 0 ? 'Current stock value' : 'No inventory recorded'} 
+                icon={Package} 
+                variant={getTotalInventoryValue() > 0 ? "success" : "default"} 
+              />
             </>}
         </div>
 
