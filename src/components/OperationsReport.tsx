@@ -24,6 +24,13 @@ interface ReportData {
     bar: number;
     events: number;
   };
+  transactionCounts: {
+    tickets: number;
+    memberships: number;
+    rooms: number;
+    bar: number;
+    events: number;
+  };
   totalExpenses: number;
   cancelledOrders: {
     count: number;
@@ -43,6 +50,7 @@ export const OperationsReport = () => {
   const [reportData, setReportData] = useState<ReportData>({
     totalIncome: 0,
     incomeBreakdown: { tickets: 0, memberships: 0, rooms: 0, bar: 0, events: 0 },
+    transactionCounts: { tickets: 0, memberships: 0, rooms: 0, bar: 0, events: 0 },
     totalExpenses: 0,
     cancelledOrders: { count: 0, value: 0 },
     inventoryValue: 0,
@@ -138,8 +146,16 @@ export const OperationsReport = () => {
 
       if (receiptsError) throw receiptsError;
 
-      // Calculate income breakdown
+      // Calculate income breakdown and transaction counts
       const breakdown = {
+        tickets: 0,
+        memberships: 0,
+        rooms: 0,
+        bar: 0,
+        events: 0,
+      };
+
+      const counts = {
         tickets: 0,
         memberships: 0,
         rooms: 0,
@@ -157,18 +173,23 @@ export const OperationsReport = () => {
         switch (receipt.transaction_type) {
           case 'day_use_ticket':
             breakdown.tickets += amount;
+            counts.tickets += 1;
             break;
           case 'membership':
             breakdown.memberships += amount;
+            counts.memberships += 1;
             break;
           case 'room_booking':
             breakdown.rooms += amount;
+            counts.rooms += 1;
             break;
           case 'event':
             breakdown.events += amount;
+            counts.events += 1;
             break;
           default:
             breakdown.bar += amount;
+            counts.bar += 1;
             break;
         }
       });
@@ -212,6 +233,7 @@ export const OperationsReport = () => {
       setReportData({
         totalIncome,
         incomeBreakdown: breakdown,
+        transactionCounts: counts,
         totalExpenses,
         cancelledOrders: {
           count: cancelled?.length || 0,
@@ -387,13 +409,13 @@ export const OperationsReport = () => {
 
       autoTable(doc, {
         startY: yPos,
-        head: [['Category', 'Amount', 'Percentage']],
+        head: [['Category', 'Count', 'Amount', 'Percentage']],
         body: [
-          ['Tickets', formatCurrency(reportData.incomeBreakdown.tickets), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Memberships', formatCurrency(reportData.incomeBreakdown.memberships), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Rooms', formatCurrency(reportData.incomeBreakdown.rooms), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Bar/Products', formatCurrency(reportData.incomeBreakdown.bar), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Events', formatCurrency(reportData.incomeBreakdown.events), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Tickets', `${reportData.transactionCounts.tickets} sold`, formatCurrency(reportData.incomeBreakdown.tickets), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Memberships', `${reportData.transactionCounts.memberships} sold`, formatCurrency(reportData.incomeBreakdown.memberships), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Rooms', `${reportData.transactionCounts.rooms} booked`, formatCurrency(reportData.incomeBreakdown.rooms), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Bar/Products', `${reportData.transactionCounts.bar} orders`, formatCurrency(reportData.incomeBreakdown.bar), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Events', `${reportData.transactionCounts.events} tickets`, formatCurrency(reportData.incomeBreakdown.events), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
         ],
         headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: lightBg },
@@ -807,14 +829,17 @@ export const OperationsReport = () => {
           <CardContent>
             <div className="space-y-3">
               {[
-                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, className: 'bg-primary/10', textClass: 'text-primary' },
-                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, className: 'bg-accent/10', textClass: 'text-accent' },
-                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, className: 'bg-success/10', textClass: 'text-success' },
-                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, className: 'bg-warning/10', textClass: 'text-warning' },
-                { label: 'Events', value: reportData.incomeBreakdown.events, className: 'bg-destructive/10', textClass: 'text-destructive' },
+                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, count: reportData.transactionCounts.tickets, countLabel: 'sold', className: 'bg-primary/10', textClass: 'text-primary' },
+                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, count: reportData.transactionCounts.memberships, countLabel: 'sold', className: 'bg-accent/10', textClass: 'text-accent' },
+                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, count: reportData.transactionCounts.rooms, countLabel: 'booked', className: 'bg-success/10', textClass: 'text-success' },
+                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, count: reportData.transactionCounts.bar, countLabel: 'orders', className: 'bg-warning/10', textClass: 'text-warning' },
+                { label: 'Events', value: reportData.incomeBreakdown.events, count: reportData.transactionCounts.events, countLabel: 'tickets', className: 'bg-destructive/10', textClass: 'text-destructive' },
               ].map((item) => (
                 <div key={item.label} className={`flex items-center justify-between p-3 rounded-lg ${item.className}`}>
-                  <span className="font-medium text-sm sm:text-base">{item.label}</span>
+                  <div>
+                    <span className="font-medium text-sm sm:text-base block">{item.label}</span>
+                    <span className="text-xs text-muted-foreground">{item.count} {item.countLabel}</span>
+                  </div>
                   <span className={`font-bold text-sm sm:text-base ${item.textClass}`}>
                     {formatCurrency(item.value)}
                   </span>
