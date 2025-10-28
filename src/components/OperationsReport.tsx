@@ -151,22 +151,20 @@ export const OperationsReport = () => {
         const amount = Number(receipt.total_amount);
         totalIncome += amount;
 
-        switch (receipt.transaction_type) {
-          case 'day_use_ticket':
-            breakdown.tickets += amount;
-            break;
-          case 'membership':
-            breakdown.memberships += amount;
-            break;
-          case 'room_booking':
-            breakdown.rooms += amount;
-            break;
-          case 'event':
-            breakdown.events += amount;
-            break;
-          default:
-            breakdown.bar += amount;
-            break;
+        // Track all ticket types (day_use, coworking, etc.) from operations portal
+        const transactionType = receipt.transaction_type?.toLowerCase() || '';
+        
+        if (transactionType.includes('ticket') || transactionType === 'day_use' || transactionType === 'coworking') {
+          breakdown.tickets += amount;
+        } else if (transactionType === 'membership') {
+          breakdown.memberships += amount;
+        } else if (transactionType === 'room_booking' || transactionType === 'room') {
+          breakdown.rooms += amount;
+        } else if (transactionType === 'event') {
+          breakdown.events += amount;
+        } else {
+          // All other transactions (drinks, products, etc.)
+          breakdown.bar += amount;
         }
       });
 
