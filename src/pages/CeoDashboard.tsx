@@ -685,8 +685,8 @@ const CeoDashboard = () => {
                 value={formatCurrency(businessMetrics.totalRevenue)} 
                 change={
                   previousMetrics.totalRevenue > 0
-                    ? `${((businessMetrics.totalRevenue - previousMetrics.totalRevenue) / previousMetrics.totalRevenue * 100).toFixed(1)}% from last period`
-                    : businessMetrics.totalRevenue > 0 ? 'New data' : 'No data'
+                    ? `${((businessMetrics.totalRevenue - previousMetrics.totalRevenue) / previousMetrics.totalRevenue * 100) >= 0 ? '+' : ''}${((businessMetrics.totalRevenue - previousMetrics.totalRevenue) / previousMetrics.totalRevenue * 100).toFixed(1)}%`
+                    : undefined
                 }
                 icon={DollarSign} 
                 variant="success" 
@@ -694,7 +694,11 @@ const CeoDashboard = () => {
               <MetricCard 
                 title="Active Now" 
                 value={businessMetrics.activeMembers.toString()} 
-                change={`${getTotalClientsCount()} total members`}
+                change={
+                  previousMetrics.activeMembers > 0
+                    ? `${((businessMetrics.activeMembers - previousMetrics.activeMembers) / previousMetrics.activeMembers * 100) >= 0 ? '+' : ''}${((businessMetrics.activeMembers - previousMetrics.activeMembers) / previousMetrics.activeMembers * 100).toFixed(1)}%`
+                    : undefined
+                }
                 icon={Activity} 
                 variant="info" 
               />
@@ -703,8 +707,8 @@ const CeoDashboard = () => {
                 value={`${businessMetrics.occupancyRate.toFixed(1)}%`} 
                 change={
                   previousMetrics.occupancyRate > 0
-                    ? `${(businessMetrics.occupancyRate - previousMetrics.occupancyRate).toFixed(1)}% from last period`
-                    : businessMetrics.occupancyRate > 0 ? 'Current rate' : 'No data'
+                    ? `${(businessMetrics.occupancyRate - previousMetrics.occupancyRate) >= 0 ? '+' : ''}${(businessMetrics.occupancyRate - previousMetrics.occupancyRate).toFixed(1)}%`
+                    : undefined
                 }
                 icon={Building} 
                 variant="default" 
@@ -714,8 +718,8 @@ const CeoDashboard = () => {
                 value={businessMetrics.eventsThisMonth.toString()} 
                 change={
                   previousMetrics.eventsThisMonth > 0
-                    ? `${businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth > 0 ? '+' : ''}${businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth} from last period`
-                    : businessMetrics.eventsThisMonth > 0 ? 'Events scheduled' : 'No events'
+                    ? `${((businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth) / previousMetrics.eventsThisMonth * 100) >= 0 ? '+' : ''}${((businessMetrics.eventsThisMonth - previousMetrics.eventsThisMonth) / previousMetrics.eventsThisMonth * 100).toFixed(1)}%`
+                    : undefined
                 }
                 icon={Calendar} 
                 variant="success" 
