@@ -40,7 +40,7 @@ const MetricCard = ({ title, value, change, icon: Icon, variant = "default" }: M
         <div className="text-2xl font-bold text-foreground">{value}</div>
         {change && (
           <p className={`text-xs ${getChangeColor()} mt-1`}>
-            {change} from last period
+            {change}
           </p>
         )}
       </CardContent>
