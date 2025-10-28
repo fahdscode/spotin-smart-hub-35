@@ -1084,15 +1084,23 @@ const CeoDashboard = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Monthly Growth</span>
-                      <Badge variant="default" className="bg-green-500">+15.2%</Badge>
+                      <Badge variant="default" className={demographicsData.newThisMonth > 0 ? "bg-green-500" : "bg-muted"}>
+                        {demographicsData.totalClients > 0 && demographicsData.newThisMonth > 0
+                          ? `+${((demographicsData.newThisMonth / (demographicsData.totalClients - demographicsData.newThisMonth)) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">New Members</span>
-                      <span className="font-bold text-lg">23</span>
+                      <span className="font-bold text-lg">{demographicsData.newThisMonth}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Churn Rate</span>
-                      <Badge variant="outline" className="text-yellow-600">2.1%</Badge>
+                      <span className="text-sm text-muted-foreground">Active Rate</span>
+                      <Badge variant="outline" className="text-green-600">
+                        {demographicsData.totalClients > 0
+                          ? `${((demographicsData.activeClients / demographicsData.totalClients) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </Badge>
                     </div>
                   </div>
                 </CardContent>
