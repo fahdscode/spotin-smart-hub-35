@@ -6,12 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Calendar, TrendingUp, TrendingDown, Package, DollarSign, Ban, BarChart3, CalendarRange } from 'lucide-react';
+import { Download, Calendar, TrendingUp, TrendingDown, Package, DollarSign, Ban, BarChart3, CalendarRange, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import spotinLogo from '@/assets/spotin-logo-main.png';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface ReportData {
   totalIncome: number;
@@ -227,61 +229,149 @@ export const OperationsReport = () => {
     }
   };
 
-  const exportReport = () => {
+  const exportReport = async () => {
     try {
-      const reportDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // SpotIN Brand Colors (RGB)
+      const colors = {
+        primary: [108, 117, 125] as [number, number, number], // SpotIN Green
+        accent: [255, 152, 0] as [number, number, number], // Orange
+        success: [76, 175, 80] as [number, number, number], // Green
+        danger: [244, 67, 54] as [number, number, number], // Red
+        text: [33, 33, 33] as [number, number, number],
+        lightBg: [245, 245, 245] as [number, number, number],
+      };
+
+      // Add SpotIN Logo
+      const img = new Image();
+      img.src = spotinLogo;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      doc.addImage(img, 'PNG', 15, 10, 40, 12);
+
+      // Header
+      doc.setFillColor(...colors.primary);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Operations Report', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const reportDate = format(new Date(), 'MMMM dd, yyyy');
+      const dateRangeText = filterType === 'custom' && customStartDate 
+        ? `${format(customStartDate, 'MMM dd, yyyy')} - ${customEndDate ? format(customEndDate, 'MMM dd, yyyy') : 'Now'}`
+        : `Last ${dateRange} days`;
+      doc.text(`Generated: ${reportDate} | Period: ${dateRangeText}`, pageWidth / 2, 28, { align: 'center' });
+
+      let yPos = 45;
+
+      // Key Metrics Section
+      doc.setTextColor(...colors.text);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Key Metrics', 15, yPos);
+      yPos += 8;
+
+      const metrics = [
+        { label: 'Total Income', value: formatCurrency(reportData.totalIncome), color: colors.primary },
+        { label: 'Total Expenses', value: formatCurrency(reportData.totalExpenses), color: colors.danger },
+        { label: 'Net Profit', value: formatCurrency(netProfit), color: colors.success },
+        { label: 'Profit Margin', value: `${profitMargin}%`, color: colors.accent },
+      ];
+
+      metrics.forEach((metric, index) => {
+        const xPos = 15 + (index % 2) * 95;
+        const yOffset = yPos + Math.floor(index / 2) * 22;
+        
+        doc.setFillColor(...colors.lightBg);
+        doc.roundedRect(xPos, yOffset, 90, 18, 3, 3, 'F');
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(metric.label, xPos + 5, yOffset + 7);
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...metric.color);
+        doc.text(metric.value, xPos + 5, yOffset + 14);
       });
 
-      let csvContent = "SpotIN Operations Report\n";
-      csvContent += `Generated: ${reportDate}\n`;
-      csvContent += `Period: Last ${dateRange} days\n\n`;
-      
-      csvContent += "INCOME BREAKDOWN\n";
-      csvContent += "Category,Amount\n";
-      csvContent += `Tickets,${reportData.incomeBreakdown.tickets}\n`;
-      csvContent += `Memberships,${reportData.incomeBreakdown.memberships}\n`;
-      csvContent += `Rooms,${reportData.incomeBreakdown.rooms}\n`;
-      csvContent += `Bar/Products,${reportData.incomeBreakdown.bar}\n`;
-      csvContent += `Events,${reportData.incomeBreakdown.events}\n`;
-      csvContent += `Total Income,${reportData.totalIncome}\n\n`;
-      
-      csvContent += "EXPENSES\n";
-      csvContent += `Total Expenses,${reportData.totalExpenses}\n\n`;
-      
-      csvContent += "CANCELLED ORDERS\n";
-      csvContent += `Count,${reportData.cancelledOrders.count}\n`;
-      csvContent += `Value,${reportData.cancelledOrders.value}\n\n`;
-      
-      csvContent += "INVENTORY\n";
-      csvContent += `Total Inventory Value,${reportData.inventoryValue}\n\n`;
-      
-      csvContent += "SUMMARY\n";
-      csvContent += `Total Transactions,${reportData.totalTransactions}\n`;
-      csvContent += `Net Profit,${reportData.totalIncome - reportData.totalExpenses}\n`;
-      csvContent += `Profit Margin,${((reportData.totalIncome - reportData.totalExpenses) / reportData.totalIncome * 100).toFixed(2)}%\n`;
+      yPos += 50;
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `spotin-operations-report-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Income Breakdown Table
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...colors.text);
+      doc.text('Income Breakdown', 15, yPos);
+      yPos += 5;
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Category', 'Amount', 'Percentage']],
+        body: [
+          ['Tickets', formatCurrency(reportData.incomeBreakdown.tickets), `${((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1)}%`],
+          ['Memberships', formatCurrency(reportData.incomeBreakdown.memberships), `${((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1)}%`],
+          ['Rooms', formatCurrency(reportData.incomeBreakdown.rooms), `${((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1)}%`],
+          ['Bar/Products', formatCurrency(reportData.incomeBreakdown.bar), `${((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1)}%`],
+          ['Events', formatCurrency(reportData.incomeBreakdown.events), `${((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1)}%`],
+        ],
+        headStyles: { fillColor: colors.primary, textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: colors.lightBg },
+        margin: { left: 15, right: 15 },
+        theme: 'grid',
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Additional Metrics
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Additional Metrics', 15, yPos);
+      yPos += 5;
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Total Transactions', reportData.totalTransactions.toString()],
+          ['Average Transaction', formatCurrency(reportData.totalTransactions > 0 ? reportData.totalIncome / reportData.totalTransactions : 0)],
+          ['Cancelled Orders', `${reportData.cancelledOrders.count} (${formatCurrency(reportData.cancelledOrders.value)})`],
+          ['Inventory Value', formatCurrency(reportData.inventoryValue)],
+        ],
+        headStyles: { fillColor: colors.accent, textColor: [255, 255, 255], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: colors.lightBg },
+        margin: { left: 15, right: 15 },
+        theme: 'grid',
+      });
+
+      // Footer
+      const footerY = pageHeight - 15;
+      doc.setFillColor(...colors.primary);
+      doc.rect(0, footerY, pageWidth, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('SpotIN - Smart Coworking Space Management', pageWidth / 2, footerY + 9, { align: 'center' });
+
+      // Save PDF
+      doc.save(`spotin-operations-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 
       toast({
         title: 'Export Successful',
-        description: 'Operations report downloaded successfully',
+        description: 'Professional PDF report downloaded successfully',
       });
     } catch (error) {
       console.error('Export error:', error);
       toast({
         title: 'Export Failed',
-        description: 'Failed to export report',
+        description: 'Failed to generate PDF report',
         variant: 'destructive',
       });
     }
@@ -471,9 +561,13 @@ export const OperationsReport = () => {
                 </PopoverContent>
               </Popover>
               
-              <Button onClick={exportReport} disabled={loading} className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-primary-foreground">
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
+              <Button 
+                onClick={exportReport} 
+                disabled={loading} 
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent-hover text-white shadow-lg"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Export PDF Report
               </Button>
             </div>
           </div>
