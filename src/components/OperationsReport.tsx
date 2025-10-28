@@ -47,22 +47,14 @@ export const OperationsReport = () => {
     totalTransactions: 0,
   });
 
-  const SPOTIN_COLORS = {
-    primary: '#8b5cf6',
-    secondary: '#06b6d4',
-    accent: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    purple: '#ec4899',
-  };
-
+  // Use semantic color tokens that work in both light and dark mode
   const CHART_COLORS = [
-    SPOTIN_COLORS.primary,
-    SPOTIN_COLORS.secondary,
-    SPOTIN_COLORS.accent,
-    SPOTIN_COLORS.warning,
-    SPOTIN_COLORS.danger,
-    SPOTIN_COLORS.purple,
+    'hsl(var(--primary))',
+    'hsl(var(--accent))',
+    'hsl(var(--success))',
+    'hsl(var(--warning))',
+    'hsl(var(--destructive))',
+    'hsl(var(--info))',
   ];
 
   useEffect(() => {
@@ -320,13 +312,13 @@ export const OperationsReport = () => {
   return (
     <div className="space-y-6">
       {/* Header with Logo and Controls */}
-      <Card style={{ borderColor: SPOTIN_COLORS.primary }}>
+      <Card className="border-primary/20">
         <CardHeader>
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
               <img src={spotinLogo} alt="SpotIN Logo" className="h-10 sm:h-12 w-auto" />
               <div>
-                <CardTitle className="text-xl sm:text-2xl" style={{ color: SPOTIN_COLORS.primary }}>
+                <CardTitle className="text-xl sm:text-2xl text-primary">
                   Operations Report
                 </CardTitle>
                 <CardDescription className="text-sm">Comprehensive financial and operational analytics</CardDescription>
@@ -504,7 +496,7 @@ export const OperationsReport = () => {
                 </PopoverContent>
               </Popover>
               
-              <Button onClick={exportReport} disabled={loading} style={{ backgroundColor: SPOTIN_COLORS.primary }} className="w-full sm:w-auto">
+              <Button onClick={exportReport} disabled={loading} className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-primary-foreground">
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
               </Button>
@@ -515,59 +507,59 @@ export const OperationsReport = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.primary }}>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Income</p>
-                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.primary }}>
+                <p className="text-xl sm:text-2xl font-bold text-primary">
                   {formatCurrency(reportData.totalIncome)}
                 </p>
               </div>
-              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.primary }} />
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
           </CardContent>
         </Card>
 
-        <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.danger }}>
+        <Card className="border-l-4 border-l-destructive">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Expenses</p>
-                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.danger }}>
+                <p className="text-xl sm:text-2xl font-bold text-destructive">
                   {formatCurrency(reportData.totalExpenses)}
                 </p>
               </div>
-              <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.danger }} />
+              <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
 
-        <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.accent }}>
+        <Card className="border-l-4 border-l-success">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Net Profit</p>
-                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.accent }}>
+                <p className="text-xl sm:text-2xl font-bold text-success">
                   {formatCurrency(netProfit)}
                 </p>
                 <p className="text-xs text-muted-foreground">{profitMargin}% margin</p>
               </div>
-              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.accent }} />
+              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-success" />
             </div>
           </CardContent>
         </Card>
 
-        <Card style={{ borderLeftWidth: '4px', borderLeftColor: SPOTIN_COLORS.secondary }}>
+        <Card className="border-l-4 border-l-accent">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Inventory Value</p>
-                <p className="text-xl sm:text-2xl font-bold" style={{ color: SPOTIN_COLORS.secondary }}>
+                <p className="text-xl sm:text-2xl font-bold text-accent">
                   {formatCurrency(reportData.inventoryValue)}
                 </p>
               </div>
-              <Package className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: SPOTIN_COLORS.secondary }} />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-accent" />
             </div>
           </CardContent>
         </Card>
@@ -578,11 +570,11 @@ export const OperationsReport = () => {
         {/* Income Breakdown Pie Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl" style={{ color: SPOTIN_COLORS.primary }}>Income Breakdown</CardTitle>
+            <CardTitle className="text-lg sm:text-xl text-primary">Income Breakdown</CardTitle>
             <CardDescription className="text-sm">Revenue distribution by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={incomeChartData}
@@ -590,16 +582,16 @@ export const OperationsReport = () => {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={window.innerWidth < 640 ? 60 : 80}
-                  fill="#8884d8"
+                  outerRadius={typeof window !== 'undefined' && window.innerWidth < 640 ? 60 : 80}
+                  fill="hsl(var(--primary))"
                   dataKey="value"
                 >
                   {incomeChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Legend wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} />
+                <Legend wrapperStyle={{ fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? '12px' : '14px' }} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -608,20 +600,20 @@ export const OperationsReport = () => {
         {/* Profit Comparison Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: SPOTIN_COLORS.primary }}>Financial Overview</CardTitle>
+            <CardTitle className="text-lg sm:text-xl text-primary">Financial Overview</CardTitle>
             <CardDescription>Income vs Expenses vs Profit</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={profitData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} />
                 <Legend />
-                <Bar dataKey="Income" fill={SPOTIN_COLORS.primary} />
-                <Bar dataKey="Expenses" fill={SPOTIN_COLORS.danger} />
-                <Bar dataKey="Profit" fill={SPOTIN_COLORS.accent} />
+                <Bar dataKey="Income" fill="hsl(var(--primary))" />
+                <Bar dataKey="Expenses" fill="hsl(var(--destructive))" />
+                <Bar dataKey="Profit" fill="hsl(var(--success))" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -629,24 +621,24 @@ export const OperationsReport = () => {
       </div>
 
       {/* Detailed Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Income Details */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: SPOTIN_COLORS.primary }}>Income Details</CardTitle>
+            <CardTitle className="text-lg sm:text-xl text-primary">Income Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {[
-                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, color: CHART_COLORS[0] },
-                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, color: CHART_COLORS[1] },
-                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, color: CHART_COLORS[2] },
-                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, color: CHART_COLORS[3] },
-                { label: 'Events', value: reportData.incomeBreakdown.events, color: CHART_COLORS[4] },
+                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, className: 'bg-primary/10', textClass: 'text-primary' },
+                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, className: 'bg-accent/10', textClass: 'text-accent' },
+                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, className: 'bg-success/10', textClass: 'text-success' },
+                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, className: 'bg-warning/10', textClass: 'text-warning' },
+                { label: 'Events', value: reportData.incomeBreakdown.events, className: 'bg-destructive/10', textClass: 'text-destructive' },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: `${item.color}15` }}>
-                  <span className="font-medium">{item.label}</span>
-                  <span className="font-bold" style={{ color: item.color }}>
+                <div key={item.label} className={`flex items-center justify-between p-3 rounded-lg ${item.className}`}>
+                  <span className="font-medium text-sm sm:text-base">{item.label}</span>
+                  <span className={`font-bold text-sm sm:text-base ${item.textClass}`}>
                     {formatCurrency(item.value)}
                   </span>
                 </div>
@@ -658,46 +650,46 @@ export const OperationsReport = () => {
         {/* Additional Metrics */}
         <Card>
           <CardHeader>
-            <CardTitle style={{ color: SPOTIN_COLORS.primary }}>Additional Metrics</CardTitle>
+            <CardTitle className="text-lg sm:text-xl text-primary">Additional Metrics</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" style={{ color: SPOTIN_COLORS.secondary }} />
-                  <span className="font-medium">Total Transactions</span>
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                  <span className="font-medium text-sm sm:text-base">Total Transactions</span>
                 </div>
-                <span className="font-bold text-lg">{reportData.totalTransactions}</span>
+                <span className="font-bold text-base sm:text-lg">{reportData.totalTransactions}</span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: `${SPOTIN_COLORS.danger}15` }}>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/10">
                 <div className="flex items-center gap-2">
-                  <Ban className="w-5 h-5" style={{ color: SPOTIN_COLORS.danger }} />
-                  <span className="font-medium">Cancelled Orders</span>
+                  <Ban className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
+                  <span className="font-medium text-sm sm:text-base">Cancelled Orders</span>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold" style={{ color: SPOTIN_COLORS.danger }}>
+                  <div className="font-bold text-sm sm:text-base text-destructive">
                     {reportData.cancelledOrders.count}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     {formatCurrency(reportData.cancelledOrders.value)}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: `${SPOTIN_COLORS.accent}15` }}>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-success/10">
                 <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5" style={{ color: SPOTIN_COLORS.accent }} />
-                  <span className="font-medium">Inventory Value</span>
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
+                  <span className="font-medium text-sm sm:text-base">Inventory Value</span>
                 </div>
-                <span className="font-bold" style={{ color: SPOTIN_COLORS.accent }}>
+                <span className="font-bold text-sm sm:text-base text-success">
                   {formatCurrency(reportData.inventoryValue)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: `${SPOTIN_COLORS.primary}15` }}>
-                <span className="font-medium">Average Transaction</span>
-                <span className="font-bold" style={{ color: SPOTIN_COLORS.primary }}>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10">
+                <span className="font-medium text-sm sm:text-base">Average Transaction</span>
+                <span className="font-bold text-sm sm:text-base text-primary">
                   {formatCurrency(reportData.totalTransactions > 0 ? reportData.totalIncome / reportData.totalTransactions : 0)}
                 </span>
               </div>
