@@ -233,19 +233,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const setClientAuth = (client: ClientData) => {
-    // Add session expiration (4 hours)
+    console.log('🔐 Setting client authentication');
+    
+    // Store client data with session info in localStorage
     const sessionData = {
-      client,
-      expiresAt: Date.now() + (4 * 60 * 60 * 1000),
-      createdAt: Date.now()
+      ...client,
+      sessionCreatedAt: Date.now(),
+      sessionExpiresAt: Date.now() + (4 * 60 * 60 * 1000) // 4 hours
     };
     
-    localStorage.setItem('clientSession', JSON.stringify(sessionData));
+    localStorage.setItem('clientData', JSON.stringify(sessionData));
     setClientData(client);
     setUserRole('client');
     setIsLoading(false);
 
-    // Sign out any existing Supabase session
+    // Clear any existing Supabase management session
     if (user) {
       supabase.auth.signOut().then(() => {
         setUser(null);
@@ -255,11 +257,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const clearClientAuth = () => {
-    localStorage.removeItem('clientSession');
-    localStorage.removeItem('clientData'); // Legacy cleanup
+    console.log('🚪 Clearing client authentication');
+    localStorage.removeItem('clientData');
     setClientData(null);
     setUserRole(null);
-    setIsLoading(true);
+    setIsLoading(false);
   };
 
   const initializeManagementAuth = async () => {

@@ -226,7 +226,7 @@ export default function ClientDashboard() {
       fetchMembershipStatus(clientId);
       fetchCheckInStatus(clientId);
       fetchClientAnalytics(clientId);
-      loadMockTransactions();
+      fetchRecentTransactions(clientId);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -331,9 +331,9 @@ export default function ClientDashboard() {
       const {
         data
       } = await supabase.from('check_in_logs').select('*').eq('client_id', clientId).eq('action', 'checked_in').gte('timestamp', thirtyDaysAgo.toISOString());
-      setCheckInsLast30Days(data?.length || 12);
+      setCheckInsLast30Days(data?.length || 0);
     } catch (error) {
-      setCheckInsLast30Days(12);
+      setCheckInsLast30Days(0);
     }
   };
   const fetchMembershipStatus = async (clientId: string) => {
@@ -341,9 +341,9 @@ export default function ClientDashboard() {
       const {
         data
       } = await supabase.from('client_memberships').select('plan_name, is_active').eq('client_id', clientId).eq('is_active', true).maybeSingle();
-      setMembershipStatus(data?.plan_name || 'Premium Member');
+      setMembershipStatus(data?.plan_name || 'No active membership');
     } catch (error) {
-      setMembershipStatus('Premium Member');
+      setMembershipStatus('No active membership');
     }
   };
   const fetchCheckInStatus = async (clientId: string) => {
@@ -418,23 +418,42 @@ export default function ClientDashboard() {
       console.error('Error fetching analytics:', error);
     }
   };
-  const loadMockTransactions = () => {
-    const mockTransactions = [{
-      id: '1',
-      date: '2024-09-23',
-      amount: 15.50,
-      items: ['Cappuccino', 'Croissant'],
-      status: 'Completed',
-      payment_method: 'Card'
-    }, {
-      id: '2',
-      date: '2024-09-20',
-      amount: 8.75,
-      items: ['Latte', 'Cookie'],
-      status: 'Completed',
-      payment_method: 'Cash'
-    }];
-    setRecentTransactions(mockTransactions);
+  const fetchRecentTransactions = async (clientId: string) => {
+    try {
+      // Fetch real transaction data from receipts
+      const { data: receiptsData, error } = await supabase
+        .from('receipts')
+        .select('id, receipt_date, total_amount, line_items, payment_method, status')
+        .eq('user_id', clientId)
+        .eq('status', 'completed')
+        .order('receipt_date', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        setRecentTransactions([]);
+        return;
+      }
+
+      if (receiptsData && receiptsData.length > 0) {
+        const transactions = receiptsData.map(receipt => ({
+          id: receipt.id,
+          date: new Date(receipt.receipt_date).toLocaleDateString(),
+          amount: receipt.total_amount,
+          items: Array.isArray(receipt.line_items) 
+            ? receipt.line_items.map((item: any) => item.name || item.item_name).filter(Boolean)
+            : [],
+          status: 'Completed',
+          payment_method: receipt.payment_method.charAt(0).toUpperCase() + receipt.payment_method.slice(1)
+        }));
+        setRecentTransactions(transactions);
+      } else {
+        setRecentTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setRecentTransactions([]);
+    }
   };
   const fetchLastTableNumber = async (clientId: string) => {
     try {
