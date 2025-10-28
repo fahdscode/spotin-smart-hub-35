@@ -352,16 +352,16 @@ export const OperationsReport = () => {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0" align="start" sideOffset={5}>
-                  <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[80vh] overflow-y-auto">
+                <PopoverContent className="w-80 p-0" align="start" sideOffset={5}>
+                  <div className="p-4 space-y-4">
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-xs sm:text-sm">Quick Filters</h4>
-                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                      <h4 className="font-semibold text-sm">Select Period</h4>
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           variant={filterType === 'preset' && dateRange === 'today' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('today'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
                           Today
                         </Button>
@@ -369,69 +369,15 @@ export const OperationsReport = () => {
                           variant={filterType === 'preset' && dateRange === 'yesterday' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('yesterday'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
                           Yesterday
                         </Button>
                         <Button
-                          variant={filterType === 'preset' && dateRange === 'week' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('week'); }}
-                          className="text-xs h-8"
-                        >
-                          This Week
-                        </Button>
-                        <Button
-                          variant={filterType === 'preset' && dateRange === 'lastweek' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('lastweek'); }}
-                          className="text-xs h-8"
-                        >
-                          Last Week
-                        </Button>
-                        <Button
-                          variant={filterType === 'preset' && dateRange === 'month' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('month'); }}
-                          className="text-xs h-8"
-                        >
-                          This Month
-                        </Button>
-                        <Button
-                          variant={filterType === 'preset' && dateRange === 'lastmonth' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('lastmonth'); }}
-                          className="text-xs h-8"
-                        >
-                          Last Month
-                        </Button>
-                        <Button
-                          variant={filterType === 'preset' && dateRange === 'quarter' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('quarter'); }}
-                          className="text-xs h-8"
-                        >
-                          This Quarter
-                        </Button>
-                        <Button
-                          variant={filterType === 'preset' && dateRange === 'year' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => { setFilterType('preset'); setDateRange('year'); }}
-                          className="text-xs h-8"
-                        >
-                          This Year
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-xs sm:text-sm">Rolling Periods</h4>
-                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                        <Button
                           variant={filterType === 'preset' && dateRange === '7' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('7'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
                           Last 7 Days
                         </Button>
@@ -439,86 +385,87 @@ export const OperationsReport = () => {
                           variant={filterType === 'preset' && dateRange === '30' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('30'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
                           Last 30 Days
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'month' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('month'); }}
+                          className="justify-start"
+                        >
+                          This Month
                         </Button>
                         <Button
                           variant={filterType === 'preset' && dateRange === '90' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('90'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
-                          Last 90 Days
+                          Last 3 Months
+                        </Button>
+                        <Button
+                          variant={filterType === 'preset' && dateRange === 'year' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => { setFilterType('preset'); setDateRange('year'); }}
+                          className="justify-start"
+                        >
+                          This Year
                         </Button>
                         <Button
                           variant={filterType === 'preset' && dateRange === '365' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => { setFilterType('preset'); setDateRange('365'); }}
-                          className="text-xs h-8"
+                          className="justify-start"
                         >
-                          Last Year
+                          Last 12 Months
                         </Button>
                       </div>
                     </div>
 
-                    <div className="space-y-2 border-t pt-3">
-                      <h4 className="font-semibold text-xs sm:text-sm">Custom Range</h4>
-                      <div className="space-y-2">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
-                          <CalendarComponent
-                            mode="single"
-                            selected={customStartDate}
-                            onSelect={(date) => {
-                              setCustomStartDate(date);
-                              setFilterType('custom');
-                            }}
-                            className={cn("rounded-md border pointer-events-auto w-full")}
-                            classNames={{
-                              months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                              month: "space-y-4",
-                              caption: "flex justify-center pt-1 relative items-center",
-                              caption_label: "text-xs sm:text-sm font-medium",
-                              nav: "space-x-1 flex items-center",
-                              nav_button: cn("h-6 w-6 sm:h-7 sm:w-7 bg-transparent p-0 opacity-50 hover:opacity-100"),
-                              table: "w-full border-collapse space-y-1",
-                              head_row: "flex",
-                              head_cell: "text-muted-foreground rounded-md w-8 sm:w-9 font-normal text-[0.7rem] sm:text-xs",
-                              row: "flex w-full mt-2",
-                              cell: "text-center text-xs sm:text-sm p-0 relative",
-                              day: cn("h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal"),
-                            }}
-                          />
+                    <div className="border-t pt-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (filterType === 'custom') {
+                            setFilterType('preset');
+                            setCustomStartDate(undefined);
+                            setCustomEndDate(undefined);
+                          } else {
+                            setFilterType('custom');
+                          }
+                        }}
+                        className="w-full justify-start"
+                      >
+                        <CalendarRange className="w-4 h-4 mr-2" />
+                        {filterType === 'custom' ? 'Back to Presets' : 'Custom Date Range'}
+                      </Button>
+
+                      {filterType === 'custom' && (
+                        <div className="space-y-3 mt-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1.5 block">From</label>
+                            <CalendarComponent
+                              mode="single"
+                              selected={customStartDate}
+                              onSelect={setCustomStartDate}
+                              className="rounded-md border pointer-events-auto"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1.5 block">To (Optional)</label>
+                            <CalendarComponent
+                              mode="single"
+                              selected={customEndDate}
+                              onSelect={setCustomEndDate}
+                              disabled={(date) => customStartDate ? date < customStartDate : false}
+                              className="rounded-md border pointer-events-auto"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">End Date (Optional)</label>
-                          <CalendarComponent
-                            mode="single"
-                            selected={customEndDate}
-                            onSelect={(date) => {
-                              setCustomEndDate(date);
-                              setFilterType('custom');
-                            }}
-                            disabled={(date) => customStartDate ? date < customStartDate : false}
-                            className={cn("rounded-md border pointer-events-auto w-full")}
-                            classNames={{
-                              months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                              month: "space-y-4",
-                              caption: "flex justify-center pt-1 relative items-center",
-                              caption_label: "text-xs sm:text-sm font-medium",
-                              nav: "space-x-1 flex items-center",
-                              nav_button: cn("h-6 w-6 sm:h-7 sm:w-7 bg-transparent p-0 opacity-50 hover:opacity-100"),
-                              table: "w-full border-collapse space-y-1",
-                              head_row: "flex",
-                              head_cell: "text-muted-foreground rounded-md w-8 sm:w-9 font-normal text-[0.7rem] sm:text-xs",
-                              row: "flex w-full mt-2",
-                              cell: "text-center text-xs sm:text-sm p-0 relative",
-                              day: cn("h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal"),
-                            }}
-                          />
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </PopoverContent>
