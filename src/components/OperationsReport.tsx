@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,13 +24,6 @@ interface ReportData {
     bar: number;
     events: number;
   };
-  transactionCounts: {
-    tickets: number;
-    memberships: number;
-    rooms: number;
-    bar: number;
-    events: number;
-  };
   totalExpenses: number;
   cancelledOrders: {
     count: number;
@@ -50,15 +43,11 @@ export const OperationsReport = () => {
   const [reportData, setReportData] = useState<ReportData>({
     totalIncome: 0,
     incomeBreakdown: { tickets: 0, memberships: 0, rooms: 0, bar: 0, events: 0 },
-    transactionCounts: { tickets: 0, memberships: 0, rooms: 0, bar: 0, events: 0 },
     totalExpenses: 0,
     cancelledOrders: { count: 0, value: 0 },
     inventoryValue: 0,
     totalTransactions: 0,
   });
-  
-  const pieChartRef = useRef<HTMLDivElement>(null);
-  const barChartRef = useRef<HTMLDivElement>(null);
 
   // Use semantic color tokens that work in both light and dark mode
   const CHART_COLORS = [
@@ -146,16 +135,8 @@ export const OperationsReport = () => {
 
       if (receiptsError) throw receiptsError;
 
-      // Calculate income breakdown and transaction counts
+      // Calculate income breakdown
       const breakdown = {
-        tickets: 0,
-        memberships: 0,
-        rooms: 0,
-        bar: 0,
-        events: 0,
-      };
-
-      const counts = {
         tickets: 0,
         memberships: 0,
         rooms: 0,
@@ -173,23 +154,18 @@ export const OperationsReport = () => {
         switch (receipt.transaction_type) {
           case 'day_use_ticket':
             breakdown.tickets += amount;
-            counts.tickets += 1;
             break;
           case 'membership':
             breakdown.memberships += amount;
-            counts.memberships += 1;
             break;
           case 'room_booking':
             breakdown.rooms += amount;
-            counts.rooms += 1;
             break;
           case 'event':
             breakdown.events += amount;
-            counts.events += 1;
             break;
           default:
             breakdown.bar += amount;
-            counts.bar += 1;
             break;
         }
       });
@@ -233,7 +209,6 @@ export const OperationsReport = () => {
       setReportData({
         totalIncome,
         incomeBreakdown: breakdown,
-        transactionCounts: counts,
         totalExpenses,
         cancelledOrders: {
           count: cancelled?.length || 0,
@@ -269,58 +244,6 @@ export const OperationsReport = () => {
       const dangerColor: [number, number, number] = [244, 67, 54];
       const textColor: [number, number, number] = [33, 33, 33];
       const lightBg: [number, number, number] = [245, 245, 245];
-
-      // Capture charts as images
-      let pieChartImage: string | null = null;
-      let barChartImage: string | null = null;
-
-      try {
-        if (pieChartRef.current) {
-          const pieChartSvg = pieChartRef.current.querySelector('svg');
-          if (pieChartSvg) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const svgData = new XMLSerializer().serializeToString(pieChartSvg);
-            const img = new Image();
-            
-            await new Promise((resolve) => {
-              img.onload = () => {
-                canvas.width = pieChartSvg.clientWidth;
-                canvas.height = pieChartSvg.clientHeight;
-                ctx?.drawImage(img, 0, 0);
-                pieChartImage = canvas.toDataURL('image/png');
-                resolve(null);
-              };
-              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-              setTimeout(() => resolve(null), 1000);
-            });
-          }
-        }
-
-        if (barChartRef.current) {
-          const barChartSvg = barChartRef.current.querySelector('svg');
-          if (barChartSvg) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const svgData = new XMLSerializer().serializeToString(barChartSvg);
-            const img = new Image();
-            
-            await new Promise((resolve) => {
-              img.onload = () => {
-                canvas.width = barChartSvg.clientWidth;
-                canvas.height = barChartSvg.clientHeight;
-                ctx?.drawImage(img, 0, 0);
-                barChartImage = canvas.toDataURL('image/png');
-                resolve(null);
-              };
-              img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-              setTimeout(() => resolve(null), 1000);
-            });
-          }
-        }
-      } catch (chartError) {
-        console.log('Chart capture skipped:', chartError);
-      }
 
       // Add SpotIN Logo
       try {
@@ -409,13 +332,13 @@ export const OperationsReport = () => {
 
       autoTable(doc, {
         startY: yPos,
-        head: [['Category', 'Count', 'Amount', 'Percentage']],
+        head: [['Category', 'Amount', 'Percentage']],
         body: [
-          ['Tickets', `${reportData.transactionCounts.tickets} sold`, formatCurrency(reportData.incomeBreakdown.tickets), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Memberships', `${reportData.transactionCounts.memberships} sold`, formatCurrency(reportData.incomeBreakdown.memberships), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Rooms', `${reportData.transactionCounts.rooms} booked`, formatCurrency(reportData.incomeBreakdown.rooms), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Bar/Products', `${reportData.transactionCounts.bar} orders`, formatCurrency(reportData.incomeBreakdown.bar), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
-          ['Events', `${reportData.transactionCounts.events} tickets`, formatCurrency(reportData.incomeBreakdown.events), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Tickets', formatCurrency(reportData.incomeBreakdown.tickets), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.tickets / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Memberships', formatCurrency(reportData.incomeBreakdown.memberships), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.memberships / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Rooms', formatCurrency(reportData.incomeBreakdown.rooms), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.rooms / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Bar/Products', formatCurrency(reportData.incomeBreakdown.bar), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.bar / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
+          ['Events', formatCurrency(reportData.incomeBreakdown.events), `${reportData.totalIncome > 0 ? ((reportData.incomeBreakdown.events / reportData.totalIncome) * 100).toFixed(1) : 0}%`],
         ],
         headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: lightBg },
@@ -425,35 +348,6 @@ export const OperationsReport = () => {
 
       const finalY = (doc as any).lastAutoTable.finalY || yPos + 60;
       yPos = finalY + 15;
-
-      // Add charts if available
-      if (pieChartImage && yPos + 80 < pageHeight - 30) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text('Income Breakdown Chart', 15, yPos);
-        yPos += 8;
-        
-        doc.addImage(pieChartImage, 'PNG', 15, yPos, 80, 60);
-        yPos += 70;
-      }
-
-      if (barChartImage && yPos + 80 < pageHeight - 30) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...textColor);
-        doc.text('Financial Overview Chart', 15, yPos);
-        yPos += 8;
-        
-        doc.addImage(barChartImage, 'PNG', 15, yPos, 80, 60);
-        yPos += 70;
-      }
-
-      // Check if we need a new page
-      if (yPos > pageHeight - 80) {
-        doc.addPage();
-        yPos = 20;
-      }
 
       // Additional Metrics
       doc.setFontSize(14);
@@ -769,8 +663,7 @@ export const OperationsReport = () => {
             <CardDescription className="text-sm">Revenue distribution by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <div ref={pieChartRef}>
-              <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={incomeChartData}
@@ -790,7 +683,6 @@ export const OperationsReport = () => {
                 <Legend wrapperStyle={{ fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? '12px' : '14px' }} />
               </PieChart>
             </ResponsiveContainer>
-            </div>
           </CardContent>
         </Card>
 
@@ -801,8 +693,7 @@ export const OperationsReport = () => {
             <CardDescription>Income vs Expenses vs Profit</CardDescription>
           </CardHeader>
           <CardContent>
-            <div ref={barChartRef}>
-              <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={profitData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
@@ -814,7 +705,6 @@ export const OperationsReport = () => {
                 <Bar dataKey="Profit" fill="hsl(var(--success))" />
               </BarChart>
             </ResponsiveContainer>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -829,17 +719,14 @@ export const OperationsReport = () => {
           <CardContent>
             <div className="space-y-3">
               {[
-                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, count: reportData.transactionCounts.tickets, countLabel: 'sold', className: 'bg-primary/10', textClass: 'text-primary' },
-                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, count: reportData.transactionCounts.memberships, countLabel: 'sold', className: 'bg-accent/10', textClass: 'text-accent' },
-                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, count: reportData.transactionCounts.rooms, countLabel: 'booked', className: 'bg-success/10', textClass: 'text-success' },
-                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, count: reportData.transactionCounts.bar, countLabel: 'orders', className: 'bg-warning/10', textClass: 'text-warning' },
-                { label: 'Events', value: reportData.incomeBreakdown.events, count: reportData.transactionCounts.events, countLabel: 'tickets', className: 'bg-destructive/10', textClass: 'text-destructive' },
+                { label: 'Tickets', value: reportData.incomeBreakdown.tickets, className: 'bg-primary/10', textClass: 'text-primary' },
+                { label: 'Memberships', value: reportData.incomeBreakdown.memberships, className: 'bg-accent/10', textClass: 'text-accent' },
+                { label: 'Rooms', value: reportData.incomeBreakdown.rooms, className: 'bg-success/10', textClass: 'text-success' },
+                { label: 'Bar/Products', value: reportData.incomeBreakdown.bar, className: 'bg-warning/10', textClass: 'text-warning' },
+                { label: 'Events', value: reportData.incomeBreakdown.events, className: 'bg-destructive/10', textClass: 'text-destructive' },
               ].map((item) => (
                 <div key={item.label} className={`flex items-center justify-between p-3 rounded-lg ${item.className}`}>
-                  <div>
-                    <span className="font-medium text-sm sm:text-base block">{item.label}</span>
-                    <span className="text-xs text-muted-foreground">{item.count} {item.countLabel}</span>
-                  </div>
+                  <span className="font-medium text-sm sm:text-base">{item.label}</span>
                   <span className={`font-bold text-sm sm:text-base ${item.textClass}`}>
                     {formatCurrency(item.value)}
                   </span>
