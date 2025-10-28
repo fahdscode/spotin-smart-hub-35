@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket, CreditCard, Banknote, Building2, Laptop } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket, CreditCard, Banknote, Building2, Laptop, Receipt as ReceiptIcon, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Receipt from "@/components/Receipt";
 import { TicketSelector } from "@/components/TicketSelector";
+import { RefundDialog } from "@/components/RefundDialog";
 import { formatCurrency } from "@/lib/currency";
 
 interface Client {
@@ -66,6 +67,10 @@ const ClientList = () => {
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [pendingCheckInClient, setPendingCheckInClient] = useState<{ id: string; name: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [showReceiptsDialog, setShowReceiptsDialog] = useState(false);
+  const [clientReceipts, setClientReceipts] = useState<any[]>([]);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [selectedReceiptForRefund, setSelectedReceiptForRefund] = useState<any>(null);
 
 
   useEffect(() => {
@@ -650,6 +655,29 @@ const ClientList = () => {
     setPendingCheckInClient(null);
   };
 
+  const fetchClientReceipts = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('*')
+        .eq('user_id', clientId)
+        .order('receipt_date', { ascending: false });
+
+      if (error) throw error;
+
+      setClientReceipts(data || []);
+      setShowReceiptsDialog(true);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      toast.error("Failed to load receipts");
+    }
+  };
+
+  const handleRefundClick = (receipt: any) => {
+    setSelectedReceiptForRefund(receipt);
+    setShowRefundDialog(true);
+  };
+
   const filteredClients = clients.filter(client => {
     const matchesSearch = 
       client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -887,6 +915,13 @@ const ClientList = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => fetchClientReceipts(client.id)}
+                                  >
+                                    <ReceiptIcon className="h-4 w-4 mr-2" />
+                                    View Receipts
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() => {
                                       setEditingClient(client);
@@ -1474,6 +1509,108 @@ const ClientList = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Client Receipts Dialog */}
+      <Dialog open={showReceiptsDialog} onOpenChange={setShowReceiptsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ReceiptIcon className="h-5 w-5" />
+              Client Receipts
+            </DialogTitle>
+            <DialogDescription>
+              View and manage all receipts for this client
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {clientReceipts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ReceiptIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No receipts found for this client</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {clientReceipts.map((receipt) => (
+                  <Card key={receipt.id} className="overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-mono font-semibold text-sm">{receipt.receipt_number}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(receipt.receipt_date).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-lg">{formatCurrency(receipt.total_amount)}</p>
+                          <Badge variant={receipt.status === 'completed' ? 'default' : 'destructive'}>
+                            {receipt.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          <span className="capitalize">{receipt.payment_method}</span>
+                        </div>
+                        {receipt.line_items && receipt.line_items.length > 0 && (
+                          <div className="border-t pt-2">
+                            <p className="text-xs text-muted-foreground mb-1">Items:</p>
+                            <div className="space-y-1">
+                              {receipt.line_items.map((item: any, idx: number) => (
+                                <div key={idx} className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {item.name} x{item.quantity}
+                                  </span>
+                                  <span>{formatCurrency(item.total)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {receipt.status === 'completed' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => handleRefundClick(receipt)}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Refund Receipt
+                        </Button>
+                      )}
+
+                      {receipt.status === 'cancelled' && (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded p-2 text-xs">
+                          <p className="font-semibold text-destructive mb-1">Cancelled</p>
+                          {receipt.cancellation_reason && (
+                            <p className="text-muted-foreground">{receipt.cancellation_reason}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Dialog */}
+      <RefundDialog
+        open={showRefundDialog}
+        onOpenChange={setShowRefundDialog}
+        receipt={selectedReceiptForRefund}
+        onRefundComplete={() => {
+          setShowRefundDialog(false);
+          if (selectedClient) {
+            fetchClientReceipts(selectedClient.id);
+          }
+        }}
+      />
     </div>
   );
 };
