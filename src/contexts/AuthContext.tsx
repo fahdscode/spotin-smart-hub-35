@@ -62,12 +62,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (clientSession) {
         // CLIENT SESSION EXISTS - Skip all Supabase auth processing
-        console.log('✅ Client session found, skipping Supabase auth');
+        console.log('✅ Client session found, restoring...');
         try {
-          const parsedClient = JSON.parse(clientSession);
-          setClientData(parsedClient);
+          const parsedSession = JSON.parse(clientSession);
+          
+          // Check if session has expiration
+          if (parsedSession.sessionExpiresAt) {
+            const now = Date.now();
+            if (now > parsedSession.sessionExpiresAt) {
+              // Session expired
+              console.log('⏰ Client session expired, clearing...');
+              localStorage.removeItem('clientData');
+              setClientData(null);
+              setUserRole(null);
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // Extract client data (remove session metadata if present)
+          const clientData: ClientData = {
+            id: parsedSession.id,
+            client_code: parsedSession.client_code,
+            full_name: parsedSession.full_name,
+            phone: parsedSession.phone,
+            email: parsedSession.email,
+            barcode: parsedSession.barcode
+          };
+          
+          setClientData(clientData);
           setUserRole('client');
           setIsLoading(false);
+          console.log('✅ Client session restored successfully');
           return; // Don't set up Supabase auth listener at all
         } catch (error) {
           console.error('Error parsing client session:', error);
