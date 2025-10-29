@@ -1716,7 +1716,11 @@ export type Database = {
       get_client_by_id: { Args: { client_id: string }; Returns: Json }
       get_client_check_in_status: {
         Args: { p_client_id: string }
-        Returns: string
+        Returns: {
+          active: boolean
+          check_in_time: string
+          updated_at: string
+        }[]
       }
       get_client_last_orders: {
         Args: { p_limit?: number; p_user_id: string }

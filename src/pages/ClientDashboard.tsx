@@ -350,49 +350,31 @@ export default function ClientDashboard() {
     try {
       console.log('🔍 Fetching check-in status for client:', clientId);
       
-      // First check the client's active status (most reliable)
-      const {
-        data: clientStatus,
-        error: clientError
-      } = await supabase.from('clients').select('active, updated_at').eq('id', clientId).single();
+      // Use RPC function to bypass RLS issues with custom client auth
+      const { data, error } = await supabase.rpc('get_client_check_in_status', {
+        p_client_id: clientId
+      });
       
-      if (clientError) {
-        console.error('❌ Error fetching client status:', clientError);
+      if (error) {
+        console.error('❌ Error fetching check-in status:', error);
         setIsCheckedIn(false);
         setCheckInTime(null);
         return;
       }
       
-      console.log('📊 Client active status:', clientStatus?.active);
+      // RPC returns an array, get first result
+      const statusResult = data?.[0];
+      console.log('📊 Client status from RPC:', statusResult);
       
-      if (clientStatus?.active === true) {
+      if (statusResult?.active === true) {
         setIsCheckedIn(true);
-        
-        // Get the latest check-in time from check_ins table
-        const {
-          data: checkInData,
-          error: checkInError
-        } = await supabase
-          .from('check_ins')
-          .select('checked_in_at')
-          .eq('client_id', clientId)
-          .eq('status', 'checked_in')
-          .is('checked_out_at', null)
-          .order('checked_in_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (checkInError) {
-          console.error('⚠️ Error fetching check-in time:', checkInError);
-        }
-        
-        const checkInTime = checkInData?.checked_in_at || clientStatus.updated_at;
+        const checkInTime = statusResult.check_in_time || statusResult.updated_at;
         setCheckInTime(new Date(checkInTime).toLocaleTimeString());
         console.log('✅ Client is checked in at:', checkInTime);
       } else {
         setIsCheckedIn(false);
         setCheckInTime(null);
-        console.log('❌ Client is not checked in (active=false)');
+        console.log('❌ Client is not checked in');
       }
     } catch (error) {
       console.error('💥 Error in fetchCheckInStatus:', error);
@@ -478,7 +460,7 @@ export default function ClientDashboard() {
       const {
         data,
         error
-      } = await supabase.from('clients').select('last_table_number').eq('id', clientId).single();
+      } = await supabase.from('clients').select('last_table_number').eq('id', clientId).maybeSingle();
       if (error) throw error;
       if (data?.last_table_number) {
         setLastTableNumber(data.last_table_number);
