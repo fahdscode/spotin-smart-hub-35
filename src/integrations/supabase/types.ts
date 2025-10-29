@@ -1722,6 +1722,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_client_event_registrations: {
+        Args: { p_client_id: string }
+        Returns: {
+          attendance_status: string
+          end_time: string
+          event_date: string
+          event_id: string
+          event_title: string
+          event_title_ar: string
+          id: string
+          location: string
+          price: number
+          registration_date: string
+          special_requests: string
+          start_time: string
+        }[]
+      }
       get_client_last_orders: {
         Args: { p_limit?: number; p_user_id: string }
         Returns: Json
@@ -1765,6 +1782,17 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      register_client_for_event: {
+        Args: {
+          p_attendee_email: string
+          p_attendee_name: string
+          p_attendee_phone: string
+          p_client_id: string
+          p_event_id: string
+          p_special_requests?: string
+        }
+        Returns: Json
       }
       reset_client_password: {
         Args: { p_new_password: string; p_phone: string; p_reset_token: string }

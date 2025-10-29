@@ -343,6 +343,7 @@
     "registrationSuccessDesc": "You're registered for {{title}}. We'll send you a confirmation email.",
     "registrationFailed": "Registration Failed",
     "registrationFailedDesc": "Failed to register for event. Please try again.",
-    "failedToLoad": "Failed to load events"
+    "failedToLoad": "Failed to load events",
+    "fillAllFields": "Please fill in all required fields"
   }
 }

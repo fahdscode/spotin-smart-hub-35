@@ -343,6 +343,7 @@
     "registrationSuccessDesc": "تم تسجيلك في {{title}}. هنبعتلك إيميل تأكيد.",
     "registrationFailed": "فشل التسجيل",
     "registrationFailedDesc": "فشل التسجيل في الفعالية. حاول تاني.",
-    "failedToLoad": "فشل تحميل الفعاليات"
+    "failedToLoad": "فشل تحميل الفعاليات",
+    "fillAllFields": "من فضلك املأ كل الحقول المطلوبة"
   }
 }

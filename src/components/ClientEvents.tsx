@@ -96,40 +96,54 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
   };
 
   const submitRegistration = async () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent || !clientData?.id) return;
 
-    // Check if event is full
-    if (selectedEvent.registered_attendees >= selectedEvent.capacity) {
+    // Validate required fields
+    if (!registrationForm.attendee_name || !registrationForm.attendee_email || !registrationForm.attendee_phone) {
       toast({
-        title: t('clientEvents.eventFull'),
-        description: t('clientEvents.eventFullDesc'),
+        title: t('common.error'),
+        description: t('clientEvents.fillAllFields'),
         variant: "destructive"
       });
       return;
     }
 
     try {
-      // Insert into event_registrations table
-      const { error } = await supabase
-        .from('event_registrations')
-        .insert([{
-          event_id: selectedEvent.id,
-          attendee_name: registrationForm.attendee_name,
-          attendee_email: registrationForm.attendee_email,
-          attendee_phone: registrationForm.attendee_phone,
-          client_id: clientData?.id || null,
-          special_requests: registrationForm.special_requests || null
-        }]);
-
-      if (error) throw error;
-
-      toast({
-        title: t('clientEvents.registrationSuccess'),
-        description: t('clientEvents.registrationSuccessDesc', { title: isArabic && (selectedEvent as any).title_ar ? (selectedEvent as any).title_ar : selectedEvent.title }),
+      // Use RPC function to register for event
+      const { data, error } = await supabase.rpc('register_client_for_event', {
+        p_client_id: clientData.id,
+        p_event_id: selectedEvent.id,
+        p_attendee_name: registrationForm.attendee_name,
+        p_attendee_email: registrationForm.attendee_email,
+        p_attendee_phone: registrationForm.attendee_phone,
+        p_special_requests: registrationForm.special_requests || null
       });
 
-      setIsRegistrationOpen(false);
-      fetchEvents(); // Refresh events to show updated attendee count
+      if (error) {
+        console.error('Error registering for event:', error);
+        throw error;
+      }
+
+      // Check if registration was successful
+      if (data && typeof data === 'object' && 'success' in data) {
+        const result = data as { success: boolean; error?: string; message?: string };
+        if (result.success) {
+          toast({
+            title: t('clientEvents.registrationSuccess'),
+            description: t('clientEvents.registrationSuccessDesc', { 
+              title: isArabic && (selectedEvent as any).title_ar ? (selectedEvent as any).title_ar : selectedEvent.title 
+            }),
+          });
+          setIsRegistrationOpen(false);
+          fetchEvents(); // Refresh events to show updated attendee count
+        } else {
+          toast({
+            title: t('clientEvents.registrationFailed'),
+            description: result.error || t('clientEvents.registrationFailedDesc'),
+            variant: "destructive"
+          });
+        }
+      }
     } catch (error) {
       console.error('Error registering for event:', error);
       toast({
