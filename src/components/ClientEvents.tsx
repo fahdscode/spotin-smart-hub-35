@@ -85,9 +85,10 @@ const ClientEvents = ({ clientData }: ClientEventsProps) => {
 
   const handleRegisterForEvent = (event: Event) => {
     setSelectedEvent(event);
+    // Pre-fill form with client's profile data for better UX
     setRegistrationForm({
       event_id: event.id,
-      attendee_name: clientData?.fullName || '',
+      attendee_name: clientData?.full_name || clientData?.fullName || '',
       attendee_email: clientData?.email || '',
       attendee_phone: clientData?.phone || '',
       special_requests: ''
