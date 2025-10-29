@@ -348,36 +348,54 @@ export default function ClientDashboard() {
   };
   const fetchCheckInStatus = async (clientId: string) => {
     try {
+      console.log('🔍 Fetching check-in status for client:', clientId);
+      
       // First check the client's active status (most reliable)
       const {
         data: clientStatus,
         error: clientError
       } = await supabase.from('clients').select('active, updated_at').eq('id', clientId).single();
+      
       if (clientError) {
-        console.error('Error fetching client status:', clientError);
+        console.error('❌ Error fetching client status:', clientError);
         setIsCheckedIn(false);
         setCheckInTime(null);
         return;
       }
-      console.log('📊 Client status from database:', clientStatus);
-      if (clientStatus?.active) {
+      
+      console.log('📊 Client active status:', clientStatus?.active);
+      
+      if (clientStatus?.active === true) {
         setIsCheckedIn(true);
-        // Get the latest check-in time
+        
+        // Get the latest check-in time from check_ins table
         const {
-          data: checkInData
-        } = await supabase.from('check_ins').select('checked_in_at').eq('client_id', clientId).eq('status', 'checked_in').is('checked_out_at', null).order('checked_in_at', {
-          ascending: false
-        }).limit(1);
-        const checkInTime = checkInData?.[0]?.checked_in_at || clientStatus.updated_at;
+          data: checkInData,
+          error: checkInError
+        } = await supabase
+          .from('check_ins')
+          .select('checked_in_at')
+          .eq('client_id', clientId)
+          .eq('status', 'checked_in')
+          .is('checked_out_at', null)
+          .order('checked_in_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (checkInError) {
+          console.error('⚠️ Error fetching check-in time:', checkInError);
+        }
+        
+        const checkInTime = checkInData?.checked_in_at || clientStatus.updated_at;
         setCheckInTime(new Date(checkInTime).toLocaleTimeString());
-        console.log('✅ Client is checked in, time:', checkInTime);
+        console.log('✅ Client is checked in at:', checkInTime);
       } else {
         setIsCheckedIn(false);
         setCheckInTime(null);
-        console.log('❌ Client is checked out');
+        console.log('❌ Client is not checked in (active=false)');
       }
     } catch (error) {
-      console.error('Error fetching check-in status:', error);
+      console.error('💥 Error in fetchCheckInStatus:', error);
       setIsCheckedIn(false);
       setCheckInTime(null);
     }
