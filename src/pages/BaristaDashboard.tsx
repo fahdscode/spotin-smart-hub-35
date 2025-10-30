@@ -330,20 +330,24 @@ const BaristaDashboard = () => {
   };
   const cancelOrder = async (orderId: string) => {
     try {
-      // Instead of deleting, update status to cancelled to maintain order history
-      const {
-        error
-      } = await supabase.from('session_line_items').update({
-        status: 'cancelled'
-      }).eq('id', orderId);
+      // Use RPC function to cancel order
+      const { data, error } = await supabase.rpc('cancel_order_item', {
+        p_order_id: orderId
+      });
+
       if (error) throw error;
+
+      const result = data as { success: boolean; message?: string };
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to cancel order');
+      }
       
       // Play cancellation sound
       playOrderCancelled();
       
       toast({
         title: "Order Cancelled",
-        description: "Order has been cancelled successfully"
+        description: result.message || "Order has been cancelled successfully"
       });
 
       // Refresh orders list

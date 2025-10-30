@@ -1688,6 +1688,7 @@ export type Database = {
         Args: { client_password: string; client_phone: string }
         Returns: Json
       }
+      cancel_order_item: { Args: { p_order_id: string }; Returns: Json }
       check_admin_exists: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: { p_ip_address?: unknown; p_phone: string }
