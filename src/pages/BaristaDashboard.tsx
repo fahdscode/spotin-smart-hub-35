@@ -330,6 +330,9 @@ const BaristaDashboard = () => {
   };
   const cancelOrder = async (orderId: string) => {
     try {
+      // Get order details first to send notification
+      const orderToCancel = orders.find(o => o.id === orderId);
+      
       // Use RPC function to cancel order
       const { data, error } = await supabase.rpc('cancel_order_item', {
         p_order_id: orderId
@@ -342,12 +345,45 @@ const BaristaDashboard = () => {
         throw new Error(result?.message || 'Failed to cancel order');
       }
       
+      // Send email notification to client if order details are available
+      if (orderToCancel) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('email, full_name')
+          .eq('id', orderToCancel.user_id)
+          .single();
+
+        if (clientData?.email) {
+          // Send cancellation email
+          await supabase.functions.invoke('send-emails', {
+            body: {
+              to: clientData.email,
+              subject: 'Order Cancelled - SpotIN',
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #dc2626;">Order Cancelled</h2>
+                  <p>Dear ${clientData.full_name || 'Customer'},</p>
+                  <p>We regret to inform you that your order has been cancelled:</p>
+                  <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Item:</strong> ${orderToCancel.item_name}</p>
+                    <p style="margin: 5px 0;"><strong>Quantity:</strong> ${orderToCancel.quantity}</p>
+                    ${orderToCancel.table_number ? `<p style="margin: 5px 0;"><strong>Table:</strong> ${orderToCancel.table_number}</p>` : ''}
+                  </div>
+                  <p>If you have any questions, please don't hesitate to contact our staff.</p>
+                  <p style="margin-top: 30px;">Best regards,<br><strong>SpotIN Team</strong></p>
+                </div>
+              `
+            }
+          });
+        }
+      }
+      
       // Play cancellation sound
       playOrderCancelled();
       
       toast({
         title: "Order Cancelled",
-        description: result.message || "Order has been cancelled successfully"
+        description: result.message || "Order cancelled and client notified"
       });
 
       // Refresh orders list
