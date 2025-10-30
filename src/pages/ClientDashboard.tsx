@@ -601,20 +601,27 @@ export default function ClientDashboard() {
       if (validatedItems.length === 0) {
         throw new Error('No valid items in cart');
       }
-      const orderPromises = validatedItems.map(item => supabase.from('session_line_items').insert({
-        user_id: clientData.id,
+
+      // Prepare order items for RPC function
+      const orderItems = validatedItems.map(item => ({
         item_name: item.name,
         quantity: item.quantity,
         price: item.price,
-        status: 'pending',
-        table_number: tableNumber.trim(),
-        notes: item.note?.trim() || null
+        notes: item.note?.trim() || null,
+        table_number: tableNumber.trim()
       }));
-      const results = await Promise.all(orderPromises);
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        console.error('Order placement errors:', errors);
-        throw new Error(`Failed to place ${errors.length} order items. ${errors[0].error?.message || ''}`);
+
+      // Use RPC function to bypass RLS issues
+      const { data, error } = await supabase.rpc('create_client_order', {
+        p_client_id: clientData.id,
+        p_items: orderItems
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; message?: string };
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to place order');
       }
 
       // Update client's last table number
@@ -623,6 +630,7 @@ export default function ClientDashboard() {
           last_table_number: tableNumber.trim()
         }).eq('id', clientData.id);
       }
+
       ClientSound.playOrderPlaced();
       setCart([]);
       setTableNumber('');

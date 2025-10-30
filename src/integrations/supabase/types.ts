@@ -1698,6 +1698,10 @@ export type Database = {
         Args: { p_checkout_by_user_id?: string; p_client_id: string }
         Returns: Json
       }
+      create_client_order: {
+        Args: { p_client_id: string; p_items: Json }
+        Returns: Json
+      }
       create_super_admin: {
         Args: { p_email: string; p_full_name: string; p_password: string }
         Returns: Json
