@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, UserPlus, Crown, Star, Gift } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, UserPlus, Crown, Star, Gift, History, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Client {
   id: string;
@@ -16,6 +18,22 @@ interface Client {
   phone: string;
   email: string;
   active: boolean;
+  current_membership?: {
+    plan_name: string;
+    discount_percentage: number;
+  } | null;
+}
+
+interface MembershipHistoryItem {
+  id: string;
+  plan_name: string;
+  discount_percentage: number;
+  perks: string[];
+  assigned_at: string;
+  deactivated_at: string | null;
+  deactivation_reason: string | null;
+  assigned_by_name: string;
+  duration_days: number;
 }
 
 interface MembershipPlan {
@@ -32,6 +50,8 @@ const MembershipAssignment = () => {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [loading, setLoading] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
+  const [membershipHistory, setMembershipHistory] = useState<MembershipHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -118,6 +138,25 @@ const MembershipAssignment = () => {
     }
   };
 
+  const fetchMembershipHistory = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_client_membership_history' as any, {
+        p_client_id: clientId
+      });
+
+      if (error) throw error;
+      setMembershipHistory((data || []) as unknown as MembershipHistoryItem[]);
+      setShowHistory(true);
+    } catch (error) {
+      console.error('Error fetching membership history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load membership history",
+        variant: "destructive",
+      });
+    }
+  };
+
   const assignMembership = async () => {
     if (!selectedClient || !selectedPlan) {
       toast({
@@ -146,6 +185,7 @@ const MembershipAssignment = () => {
         toast({
           title: "Success!",
           description: result.message,
+          variant: result.replaced_plan ? "default" : "default",
         });
 
         // Reset form
@@ -232,22 +272,52 @@ const MembershipAssignment = () => {
                     onClick={() => setSelectedClient(client)}
                   >
                     <CardContent className="p-3">
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1">
                           <p className="font-medium">{client.full_name}</p>
                           <p className="text-sm text-muted-foreground">
                             {client.client_code} • {client.phone}
                           </p>
+                          {client.current_membership && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                Current: {client.current_membership.plan_name} ({client.current_membership.discount_percentage}% off)
+                              </Badge>
+                            </div>
+                          )}
                         </div>
-                        <Badge variant={client.active ? "default" : "secondary"}>
-                          {client.active ? "Active" : "Inactive"}
-                        </Badge>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fetchMembershipHistory(client.id);
+                            }}
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                          <Badge variant={client.active ? "default" : "secondary"}>
+                            {client.active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Warning if client has active membership */}
+          {selectedClient?.current_membership && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                This client already has an active <strong>{selectedClient.current_membership.plan_name}</strong> membership.
+                Assigning a new membership will replace the current one.
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Membership Plan Selection */}
@@ -311,12 +381,71 @@ const MembershipAssignment = () => {
             ) : (
               <>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Assign Membership
+                {selectedClient?.current_membership ? 'Replace Membership' : 'Assign Membership'}
               </>
             )}
           </Button>
         </CardContent>
       </Card>
+
+      {/* Membership History Dialog */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Membership History</DialogTitle>
+            <DialogDescription>
+              View all membership assignments for this client
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {membershipHistory.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No membership history found</p>
+            ) : (
+              membershipHistory.map((item) => (
+                <Card key={item.id} className={item.deactivated_at ? "opacity-60" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{item.plan_name}</h4>
+                          <Badge variant={item.deactivated_at ? "secondary" : "default"}>
+                            {item.discount_percentage}% off
+                          </Badge>
+                          {!item.deactivated_at && (
+                            <Badge variant="default" className="bg-green-500">Active</Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <p>Assigned: {new Date(item.assigned_at).toLocaleString()}</p>
+                          <p>By: {item.assigned_by_name}</p>
+                          {item.deactivated_at && (
+                            <>
+                              <p>Deactivated: {new Date(item.deactivated_at).toLocaleString()}</p>
+                              <p>Reason: {item.deactivation_reason}</p>
+                            </>
+                          )}
+                          <p className="font-medium mt-1">
+                            Duration: {Math.floor(item.duration_days)} days
+                          </p>
+                        </div>
+                        {item.perks.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {item.perks.map((perk, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {perk}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
