@@ -211,12 +211,12 @@ const CeoDashboard = () => {
 
       // Count currently active clients (checked in right now)
       const activeMembers = activeClientsData.data?.length || 0;
-      const totalClients = getTotalClientsCount() || 1;
-      const occupancyRate = totalClients > 0 ? (activeMembers / totalClients * 100) : 0;
+      const MAX_CAPACITY = 120; // Total available seats
+      const occupancyRate = (activeMembers / MAX_CAPACITY * 100);
 
       // Previous period metrics
       const previousActiveMembers = previousActiveClientsData.data?.length || 0;
-      const previousOccupancyRate = totalClients > 0 ? (previousActiveMembers / totalClients * 100) : 0;
+      const previousOccupancyRate = (previousActiveMembers / MAX_CAPACITY * 100);
 
       if (ordersData.data && ordersData.data.length > 0) {
         const totalRevenue = ordersData.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
