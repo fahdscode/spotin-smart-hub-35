@@ -55,10 +55,10 @@ const ReceptionistDashboard = () => {
     action: "booking",
     variant: "info" as const
   }, {
-    title: "Assign Membership",
-    description: "Assign membership plans",
+    title: "Memberships",
+    description: "Manage client memberships",
     icon: UserPlus,
-    action: "membership",
+    action: "memberships-page",
     variant: "default" as const
   }, {
     title: "Room Calendar",
@@ -298,7 +298,26 @@ const ReceptionistDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {quickActions.map(action => <Dialog key={action.action}>
+                  {quickActions.map(action => action.action === "memberships-page" ? (
+                    <Card 
+                      key={action.action}
+                      className={`hover:shadow-card transition-all duration-200 cursor-pointer group ${!hasActiveCashierSession ? 'opacity-50 pointer-events-none' : ''}`}
+                      onClick={() => navigate('/reception-memberships')}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className={`p-3 rounded-lg ${action.variant === "info" ? "bg-info/10 text-info" : action.variant === "secondary" ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}>
+                            <action.icon className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm">{action.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">{action.description}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Dialog key={action.action}>
                       <DialogTrigger asChild>
                         <Card className={`hover:shadow-card transition-all duration-200 cursor-pointer group ${!hasActiveCashierSession ? 'opacity-50 pointer-events-none' : ''}`}>
                           <CardContent className="p-4">
@@ -334,15 +353,6 @@ const ReceptionistDashboard = () => {
                           </DialogHeader>
                           <RoomBooking />
                         </DialogContent>}
-                      {action.action === "membership" && <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                          <DialogHeader>
-                            <DialogTitle>Assign Membership</DialogTitle>
-                            <DialogDescription>
-                              Search for clients and assign membership plans
-                            </DialogDescription>
-                          </DialogHeader>
-                          <MembershipAssignment />
-                        </DialogContent>}
                       {action.action === "calendar" && <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
                           <DialogHeader>
                             <DialogTitle>Room Calendar</DialogTitle>
@@ -361,7 +371,8 @@ const ReceptionistDashboard = () => {
                           </DialogHeader>
                           <ProductionMonitor />
                         </DialogContent>}
-                    </Dialog>)}
+                    </Dialog>
+                  ))}
                 </div>
               </CardContent>
             </Card>

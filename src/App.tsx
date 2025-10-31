@@ -13,6 +13,7 @@ import ClientHome from "./pages/ClientHome";
 import ClientLogin from "./pages/ClientLogin";
 import ManagementLogin from "./pages/ManagementLogin";
 import ReceptionistDashboard from "./pages/ReceptionistDashboard";
+import ReceptionMemberships from "./pages/ReceptionMemberships";
 import CeoDashboard from "./pages/CeoDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import OperationsDashboard from "./pages/OperationsDashboard";
@@ -67,6 +68,11 @@ const App = () => (
               <Route path="/receptionist" element={
                 <ProtectedRoute requiredRole={["receptionist", "ceo", "admin"]} redirectTo="/management-login">
                   <ReceptionistDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/reception-memberships" element={
+                <ProtectedRoute requiredRole={["receptionist", "ceo", "admin"]} redirectTo="/management-login">
+                  <ReceptionMemberships />
                 </ProtectedRoute>
               } />
               <Route path="/ceo" element={
