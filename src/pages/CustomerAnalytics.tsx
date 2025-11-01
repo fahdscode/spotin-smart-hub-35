@@ -4,7 +4,8 @@ import SpotinHeader from '@/components/SpotinHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useClientsData } from '@/hooks/useClientsData';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, TrendingUp, Calendar as CalendarIcon, DollarSign, ArrowLeft, Filter, Download } from 'lucide-react';
+import { Users, TrendingUp, Calendar as CalendarIcon, DollarSign, ArrowLeft, Filter, Download, Search } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ export default function CustomerAnalytics() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [visitsFilter, setVisitsFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [spendingData, setSpendingData] = useState<SpendingData[]>([]);
   const [clientVisits, setClientVisits] = useState<ClientVisitCount[]>([]);
@@ -177,6 +179,17 @@ export default function CustomerAnalytics() {
           break;
       }
     }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        client.full_name.toLowerCase().includes(query) ||
+        client.email?.toLowerCase().includes(query) ||
+        client.phone.toLowerCase().includes(query) ||
+        client.client_code.toLowerCase().includes(query)
+      );
+    }
     
     return true;
   });
@@ -202,6 +215,49 @@ export default function CustomerAnalytics() {
   const leadSourceData = getLeadSources().slice(0, 6);
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c'];
+
+  // Export function
+  const handleExport = () => {
+    const exportData = filteredClients.map(client => {
+      const clientVisitData = clientVisits.find(v => v.client_id === client.id);
+      const visitCount = clientVisitData?.visit_count || 0;
+      
+      return {
+        'Client Code': client.client_code,
+        'Full Name': client.full_name,
+        'Email': client.email || 'N/A',
+        'Phone': client.phone,
+        'Job Title': client.job_title,
+        'Status': client.active ? 'Active' : 'Inactive',
+        'Membership': client.membership?.plan_name || 'None',
+        'Discount': client.membership?.discount_percentage ? `${client.membership.discount_percentage}%` : '0%',
+        'Total Visits': visitCount,
+        'How Found Us': client.how_did_you_find_us,
+        'Registered Date': format(new Date(client.created_at), 'yyyy-MM-dd')
+      };
+    });
+
+    // Convert to CSV
+    const headers = Object.keys(exportData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...exportData.map(row => 
+        headers.map(header => {
+          const value = row[header as keyof typeof row];
+          return `"${value}"`;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-analytics-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -240,9 +296,9 @@ export default function CustomerAnalytics() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Export
+              Export ({filteredClients.length} customers)
             </Button>
           </div>
         </div>
@@ -296,6 +352,21 @@ export default function CustomerAnalytics() {
                   <SelectItem value="20+">20+ visits</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Search Bar */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, phone, or client code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </CardContent>
         </Card>
@@ -376,6 +447,87 @@ export default function CustomerAnalytics() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Customer List Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Customers ({filteredClients.length})</CardTitle>
+            <CardDescription>Complete list of customers with filters applied</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {clientsLoading ? (
+              <Skeleton className="h-[400px] w-full" />
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client Code</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Job Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Membership</TableHead>
+                      <TableHead>Visits</TableHead>
+                      <TableHead>Registered</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredClients.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          No customers found matching your filters
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredClients.map((client) => {
+                        const clientVisitData = clientVisits.find(v => v.client_id === client.id);
+                        const visitCount = clientVisitData?.visit_count || 0;
+                        
+                        return (
+                          <TableRow key={client.id}>
+                            <TableCell className="font-mono text-sm">{client.client_code}</TableCell>
+                            <TableCell className="font-medium">{client.full_name}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{client.phone}</div>
+                                {client.email && <div className="text-muted-foreground">{client.email}</div>}
+                              </div>
+                            </TableCell>
+                            <TableCell>{client.job_title}</TableCell>
+                            <TableCell>
+                              <Badge variant={client.active ? "default" : "secondary"}>
+                                {client.active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {client.membership?.is_active ? (
+                                <div>
+                                  <div className="font-medium">{client.membership.plan_name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {client.membership.discount_percentage}% discount
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">None</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{visitCount}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(client.created_at), 'MMM dd, yyyy')}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Analytics Tabs */}
         <Tabs defaultValue="visits" className="space-y-4">
