@@ -27,6 +27,11 @@ interface SpendingData {
   order_count: number;
 }
 
+interface ClientVisitCount {
+  client_id: string;
+  visit_count: number;
+}
+
 export default function CustomerAnalytics() {
   const navigate = useNavigate();
   const { clients, loading: clientsLoading, getLeadSources, getClientsByStatus } = useClientsData();
@@ -37,13 +42,44 @@ export default function CustomerAnalytics() {
   });
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
+  const [visitsFilter, setVisitsFilter] = useState<string>('all');
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [spendingData, setSpendingData] = useState<SpendingData[]>([]);
+  const [clientVisits, setClientVisits] = useState<ClientVisitCount[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAnalyticsData();
   }, [dateRange]);
+
+  useEffect(() => {
+    fetchClientVisitCounts();
+  }, []);
+
+  const fetchClientVisitCounts = async () => {
+    try {
+      // Fetch all check-ins and count by client
+      const { data: checkIns } = await supabase
+        .from('check_ins')
+        .select('client_id');
+
+      const visitCounts: Record<string, number> = {};
+      checkIns?.forEach(checkIn => {
+        if (checkIn.client_id) {
+          visitCounts[checkIn.client_id] = (visitCounts[checkIn.client_id] || 0) + 1;
+        }
+      });
+
+      const visitCountsArray = Object.entries(visitCounts).map(([client_id, visit_count]) => ({
+        client_id,
+        visit_count
+      }));
+
+      setClientVisits(visitCountsArray);
+    } catch (error) {
+      console.error('Error fetching client visit counts:', error);
+    }
+  };
 
   const fetchAnalyticsData = async () => {
     try {
@@ -120,6 +156,28 @@ export default function CustomerAnalytics() {
     if (statusFilter !== 'all' && client.active.toString() !== statusFilter) return false;
     if (membershipFilter === 'with' && !client.membership?.is_active) return false;
     if (membershipFilter === 'without' && client.membership?.is_active) return false;
+    
+    // Filter by number of visits
+    if (visitsFilter !== 'all') {
+      const clientVisitData = clientVisits.find(v => v.client_id === client.id);
+      const visitCount = clientVisitData?.visit_count || 0;
+      
+      switch(visitsFilter) {
+        case '0-5':
+          if (visitCount > 5) return false;
+          break;
+        case '6-10':
+          if (visitCount < 6 || visitCount > 10) return false;
+          break;
+        case '11-20':
+          if (visitCount < 11 || visitCount > 20) return false;
+          break;
+        case '20+':
+          if (visitCount < 21) return false;
+          break;
+      }
+    }
+    
     return true;
   });
 
@@ -197,8 +255,8 @@ export default function CustomerAnalytics() {
               Filters
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-4">
-            <div className="flex-1">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
@@ -211,7 +269,7 @@ export default function CustomerAnalytics() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
+            <div>
               <label className="text-sm font-medium mb-2 block">Membership</label>
               <Select value={membershipFilter} onValueChange={setMembershipFilter}>
                 <SelectTrigger>
@@ -221,6 +279,21 @@ export default function CustomerAnalytics() {
                   <SelectItem value="all">All Customers</SelectItem>
                   <SelectItem value="with">With Membership</SelectItem>
                   <SelectItem value="without">Without Membership</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Number of Visits</label>
+              <Select value={visitsFilter} onValueChange={setVisitsFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Visits</SelectItem>
+                  <SelectItem value="0-5">0-5 visits</SelectItem>
+                  <SelectItem value="6-10">6-10 visits</SelectItem>
+                  <SelectItem value="11-20">11-20 visits</SelectItem>
+                  <SelectItem value="20+">20+ visits</SelectItem>
                 </SelectContent>
               </Select>
             </div>
