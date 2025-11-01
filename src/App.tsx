@@ -19,6 +19,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import OperationsDashboard from "./pages/OperationsDashboard";
 import BaristaDashboard from "./pages/BaristaDashboard";
 import CrmDashboard from "./pages/CrmDashboard";
+import CustomerAnalytics from "./pages/CustomerAnalytics";
 import CommunityManagerDashboard from "./pages/CommunityManagerDashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import ClientSignup from "./pages/ClientSignup";
@@ -93,6 +94,11 @@ const App = () => (
               <Route path="/crm" element={
                 <ProtectedRoute requiredRole={["ceo", "admin"]} redirectTo="/management-login">
                   <CrmDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/customer-analytics" element={
+                <ProtectedRoute requiredRole={["ceo", "admin", "operations_manager"]} redirectTo="/management-login">
+                  <CustomerAnalytics />
                 </ProtectedRoute>
               } />
               <Route path="/community-manager" element={

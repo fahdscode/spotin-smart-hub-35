@@ -1,0 +1,430 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SpotinHeader from '@/components/SpotinHeader';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useClientsData } from '@/hooks/useClientsData';
+import { supabase } from '@/integrations/supabase/client';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Users, TrendingUp, Calendar as CalendarIcon, DollarSign, ArrowLeft, Filter, Download } from 'lucide-react';
+import { format, subDays } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+interface VisitData {
+  date: string;
+  count: number;
+}
+
+interface SpendingData {
+  client_name: string;
+  total_spent: number;
+  order_count: number;
+}
+
+export default function CustomerAnalytics() {
+  const navigate = useNavigate();
+  const { clients, loading: clientsLoading, getLeadSources, getClientsByStatus } = useClientsData();
+  
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [membershipFilter, setMembershipFilter] = useState<string>('all');
+  const [visitData, setVisitData] = useState<VisitData[]>([]);
+  const [spendingData, setSpendingData] = useState<SpendingData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [dateRange]);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch visit/check-in data
+      const { data: checkIns } = await supabase
+        .from('check_ins')
+        .select('checked_in_at, client_id')
+        .gte('checked_in_at', dateRange.from.toISOString())
+        .lte('checked_in_at', dateRange.to.toISOString())
+        .order('checked_in_at', { ascending: true });
+
+      // Group by date
+      const visitsByDate: Record<string, number> = {};
+      checkIns?.forEach(checkIn => {
+        const date = format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd');
+        visitsByDate[date] = (visitsByDate[date] || 0) + 1;
+      });
+
+      const visitChartData = Object.entries(visitsByDate).map(([date, count]) => ({
+        date: format(new Date(date), 'MMM dd'),
+        count
+      }));
+
+      setVisitData(visitChartData);
+
+      // Fetch spending data
+      const { data: orders } = await supabase
+        .from('session_line_items')
+        .select(`
+          user_id,
+          price,
+          quantity,
+          clients!inner(full_name)
+        `)
+        .gte('created_at', dateRange.from.toISOString())
+        .lte('created_at', dateRange.to.toISOString())
+        .in('status', ['completed', 'served']);
+
+      // Aggregate spending by client
+      const spendingByClient: Record<string, { total: number; count: number; name: string }> = {};
+      orders?.forEach((order: any) => {
+        const clientId = order.user_id;
+        const clientName = order.clients?.full_name || 'Unknown';
+        const amount = order.price * order.quantity;
+        
+        if (!spendingByClient[clientId]) {
+          spendingByClient[clientId] = { total: 0, count: 0, name: clientName };
+        }
+        spendingByClient[clientId].total += amount;
+        spendingByClient[clientId].count += 1;
+      });
+
+      const topSpenders = Object.entries(spendingByClient)
+        .map(([_, data]) => ({
+          client_name: data.name,
+          total_spent: data.total,
+          order_count: data.count
+        }))
+        .sort((a, b) => b.total_spent - a.total_spent)
+        .slice(0, 10);
+
+      setSpendingData(topSpenders);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter clients based on selected filters
+  const filteredClients = clients.filter(client => {
+    if (statusFilter !== 'all' && client.active.toString() !== statusFilter) return false;
+    if (membershipFilter === 'with' && !client.membership?.is_active) return false;
+    if (membershipFilter === 'without' && client.membership?.is_active) return false;
+    return true;
+  });
+
+  // Calculate metrics
+  const clientStats = getClientsByStatus();
+  const totalRevenue = spendingData.reduce((sum, item) => sum + item.total_spent, 0);
+  const avgOrderValue = spendingData.reduce((sum, item) => sum + (item.total_spent / item.order_count), 0) / (spendingData.length || 1);
+  const totalOrders = spendingData.reduce((sum, item) => sum + item.order_count, 0);
+
+  // Demographics data
+  const jobTitles = filteredClients.reduce((acc: Record<string, number>, client) => {
+    const title = client.job_title || 'Not specified';
+    acc[title] = (acc[title] || 0) + 1;
+    return acc;
+  }, {});
+
+  const jobTitleData = Object.entries(jobTitles)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const leadSourceData = getLeadSources().slice(0, 6);
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c'];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SpotinHeader />
+      
+      <main className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <Button variant="ghost" onClick={() => navigate(-1)} className="mb-2">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold">Customer Analytics</h1>
+            <p className="text-muted-foreground">Detailed insights into customer behavior and demographics</p>
+          </div>
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="p-3 space-y-2">
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 7), to: new Date() })}>
+                    Last 7 days
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}>
+                    Last 30 days
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 90), to: new Date() })}>
+                    Last 90 days
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Membership</label>
+              <Select value={membershipFilter} onValueChange={setMembershipFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Customers</SelectItem>
+                  <SelectItem value="with">With Membership</SelectItem>
+                  <SelectItem value="without">Without Membership</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Key Metrics */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {clientsLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{filteredClients.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {clientStats.active} active, {clientStats.inactive} inactive
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">EGP {totalRevenue.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">{totalOrders} orders</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">EGP {avgOrderValue.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground">Per customer</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Membership Rate</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {clientsLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {filteredClients.length > 0 
+                      ? ((clientStats.withMembership / filteredClients.length) * 100).toFixed(1)
+                      : 0}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">{clientStats.withMembership} members</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Analytics Tabs */}
+        <Tabs defaultValue="visits" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="visits">Visit Patterns</TabsTrigger>
+            <TabsTrigger value="spending">Spending Behavior</TabsTrigger>
+            <TabsTrigger value="demographics">Demographics</TabsTrigger>
+          </TabsList>
+
+          {/* Visit Patterns */}
+          <TabsContent value="visits" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Check-ins Over Time</CardTitle>
+                <CardDescription>Daily customer visits for selected period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={visitData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} name="Check-ins" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Spending Behavior */}
+          <TabsContent value="spending" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top 10 Spenders</CardTitle>
+                <CardDescription>Customers with highest spending in selected period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Skeleton className="h-[400px] w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={spendingData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="client_name" type="category" width={120} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="total_spent" fill="hsl(var(--primary))" name="Total Spent (EGP)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Demographics */}
+          <TabsContent value="demographics" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customers by Job Title</CardTitle>
+                  <CardDescription>Distribution of customer professions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {clientsLoading ? (
+                    <Skeleton className="h-[300px] w-full" />
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={jobTitleData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {jobTitleData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lead Sources</CardTitle>
+                  <CardDescription>How customers found us</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {clientsLoading ? (
+                    <Skeleton className="h-[300px] w-full" />
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={leadSourceData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="source" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" fill="hsl(var(--secondary))" name="Customers" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+}
