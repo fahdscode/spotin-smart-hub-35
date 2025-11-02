@@ -134,7 +134,7 @@ export default function CustomerAnalytics() {
       setVisitData(visitChartData);
 
       // Fetch spending data
-      const { data: orders } = await supabase
+      const { data: orders, error: ordersError } = await supabase
         .from('session_line_items')
         .select(`
           user_id,
@@ -145,6 +145,14 @@ export default function CustomerAnalytics() {
         .gte('created_at', dateRange.from.toISOString())
         .lte('created_at', dateRange.to.toISOString())
         .in('status', ['completed', 'served']);
+
+      console.log('💰 Fetched orders for spending:', {
+        from: dateRange.from.toISOString(),
+        to: dateRange.to.toISOString(),
+        count: orders?.length || 0,
+        error: ordersError,
+        sample: orders?.[0]
+      });
 
       // Aggregate spending by client
       const spendingByClient: Record<string, { total: number; count: number; name: string }> = {};
@@ -169,6 +177,7 @@ export default function CustomerAnalytics() {
         .sort((a, b) => b.total_spent - a.total_spent)
         .slice(0, 10);
 
+      console.log('💵 Top spenders calculated:', topSpenders);
       setSpendingData(topSpenders);
     } catch (error) {
       console.error('Error fetching analytics:', error);
