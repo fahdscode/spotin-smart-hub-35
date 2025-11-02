@@ -66,7 +66,12 @@ export default function CustomerAnalytics() {
         .from('check_ins')
         .select('client_id');
 
-      if (error) throw error;
+      console.log('✅ Fetched check_ins for visit counts:', checkIns?.length || 0, 'records');
+      
+      if (error) {
+        console.error('❌ Error fetching check_ins:', error);
+        throw error;
+      }
 
       // Count total check-ins (visits) per client
       const visitCounts: Record<string, number> = {};
@@ -81,6 +86,7 @@ export default function CustomerAnalytics() {
         visit_count
       }));
 
+      console.log('📊 Visit counts calculated:', visitCountsArray);
       setClientVisits(visitCountsArray);
     } catch (error) {
       console.error('Error fetching client visit counts:', error);
@@ -100,7 +106,17 @@ export default function CustomerAnalytics() {
         .lte('checked_in_at', dateRange.to.toISOString())
         .order('checked_in_at', { ascending: true });
 
-      if (checkInsError) throw checkInsError;
+      console.log('📅 Fetched check_ins for date range:', {
+        from: dateRange.from.toISOString(),
+        to: dateRange.to.toISOString(),
+        count: checkIns?.length || 0,
+        data: checkIns
+      });
+
+      if (checkInsError) {
+        console.error('❌ Error fetching check_ins for analytics:', checkInsError);
+        throw checkInsError;
+      }
 
       // Group visits by date - each check-in counts as 1 visit
       const visitsByDate: Record<string, number> = {};
@@ -114,6 +130,7 @@ export default function CustomerAnalytics() {
         count
       }));
 
+      console.log('📈 Visit chart data:', visitChartData);
       setVisitData(visitChartData);
 
       // Fetch spending data
