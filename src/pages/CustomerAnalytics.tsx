@@ -60,11 +60,15 @@ export default function CustomerAnalytics() {
 
   const fetchClientVisitCounts = async () => {
     try {
-      // Fetch all check-ins and count by client
-      const { data: checkIns } = await supabase
+      // IMPORTANT: Count EVERY check-in as a visit for analytics
+      // Each check_in record = 1 visit, regardless of status
+      const { data: checkIns, error } = await supabase
         .from('check_ins')
         .select('client_id');
 
+      if (error) throw error;
+
+      // Count total check-ins (visits) per client
       const visitCounts: Record<string, number> = {};
       checkIns?.forEach(checkIn => {
         if (checkIn.client_id) {
@@ -87,15 +91,18 @@ export default function CustomerAnalytics() {
     try {
       setLoading(true);
 
-      // Fetch visit/check-in data
-      const { data: checkIns } = await supabase
+      // IMPORTANT: Count EVERY check-in as a visit for analytics
+      // Fetch all check-ins within date range - each check_in = 1 visit
+      const { data: checkIns, error: checkInsError } = await supabase
         .from('check_ins')
         .select('checked_in_at, client_id')
         .gte('checked_in_at', dateRange.from.toISOString())
         .lte('checked_in_at', dateRange.to.toISOString())
         .order('checked_in_at', { ascending: true });
 
-      // Group by date
+      if (checkInsError) throw checkInsError;
+
+      // Group visits by date - each check-in counts as 1 visit
       const visitsByDate: Record<string, number> = {};
       checkIns?.forEach(checkIn => {
         const date = format(new Date(checkIn.checked_in_at), 'yyyy-MM-dd');
