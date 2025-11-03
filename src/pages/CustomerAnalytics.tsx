@@ -14,7 +14,8 @@ import { useClientsData } from '@/hooks/useClientsData';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, TrendingUp, Calendar as CalendarIcon, DollarSign, ArrowLeft, Filter, Download, Search } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 interface VisitData {
@@ -41,6 +42,8 @@ export default function CustomerAnalytics() {
     from: subDays(new Date(), 30),
     to: new Date()
   });
+  const [datePreset, setDatePreset] = useState<string>('last30days');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [visitsFilter, setVisitsFilter] = useState<string>('all');
@@ -295,24 +298,149 @@ export default function CustomerAnalytics() {
             <p className="text-muted-foreground">Detailed insights into customer behavior and demographics</p>
           </div>
           <div className="flex gap-2">
-            <Popover>
+            <Popover open={showCustomDatePicker} onOpenChange={setShowCustomDatePicker}>
               <PopoverTrigger asChild>
                 <Button variant="outline">
                   <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(dateRange.from, 'MMM dd')} - {format(dateRange.to, 'MMM dd')}
+                  {datePreset === 'custom' 
+                    ? `${format(dateRange.from, 'MMM dd, yyyy')} - ${format(dateRange.to, 'MMM dd, yyyy')}`
+                    : datePreset === 'lifetime' 
+                    ? 'Lifetime'
+                    : `${format(dateRange.from, 'MMM dd')} - ${format(dateRange.to, 'MMM dd')}`
+                  }
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <div className="p-3 space-y-2">
-                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 7), to: new Date() })}>
-                    Last 7 days
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}>
-                    Last 30 days
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: subDays(new Date(), 90), to: new Date() })}>
-                    Last 90 days
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant={datePreset === 'last7days' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: subDays(new Date(), 7), to: new Date() });
+                        setDatePreset('last7days');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      Last 7 days
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'last30days' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: subDays(new Date(), 30), to: new Date() });
+                        setDatePreset('last30days');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      Last 30 days
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'last90days' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: subDays(new Date(), 90), to: new Date() });
+                        setDatePreset('last90days');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      Last 90 days
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'thisMonth' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+                        setDatePreset('thisMonth');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      This Month
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'lastMonth' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        const lastMonth = subMonths(new Date(), 1);
+                        setDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) });
+                        setDatePreset('lastMonth');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      Last Month
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'thisYear' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: startOfYear(new Date()), to: endOfYear(new Date()) });
+                        setDatePreset('thisYear');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full"
+                    >
+                      This Year
+                    </Button>
+                    <Button 
+                      variant={datePreset === 'lifetime' ? 'default' : 'outline'} 
+                      size="sm" 
+                      onClick={() => {
+                        setDateRange({ from: new Date('2020-01-01'), to: new Date() });
+                        setDatePreset('lifetime');
+                        setShowCustomDatePicker(false);
+                      }}
+                      className="w-full col-span-2"
+                    >
+                      Lifetime (All Data)
+                    </Button>
+                  </div>
+                  <div className="border-t pt-2">
+                    <p className="text-sm font-medium mb-2">Custom Range</p>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground">From</label>
+                        <Calendar
+                          mode="single"
+                          selected={dateRange.from}
+                          onSelect={(date) => {
+                            if (date) {
+                              setDateRange(prev => ({ ...prev, from: date }));
+                              setDatePreset('custom');
+                            }
+                          }}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">To</label>
+                        <Calendar
+                          mode="single"
+                          selected={dateRange.to}
+                          onSelect={(date) => {
+                            if (date) {
+                              setDateRange(prev => ({ ...prev, to: date }));
+                              setDatePreset('custom');
+                            }
+                          }}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => setShowCustomDatePicker(false)}
+                      >
+                        Apply Custom Range
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
