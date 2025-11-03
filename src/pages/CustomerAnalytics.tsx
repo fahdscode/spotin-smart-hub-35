@@ -106,12 +106,6 @@ export default function CustomerAnalytics() {
         .lte('checked_in_at', dateRange.to.toISOString())
         .order('checked_in_at', { ascending: true });
 
-      console.log('📅 Fetched check_ins for date range:', {
-        from: dateRange.from.toISOString(),
-        to: dateRange.to.toISOString(),
-        count: checkIns?.length || 0,
-        data: checkIns
-      });
 
       if (checkInsError) {
         console.error('❌ Error fetching check_ins for analytics:', checkInsError);
@@ -130,7 +124,7 @@ export default function CustomerAnalytics() {
         count
       }));
 
-      console.log('📈 Visit chart data:', visitChartData);
+      
       setVisitData(visitChartData);
 
       // Fetch spending data
@@ -146,13 +140,6 @@ export default function CustomerAnalytics() {
         .lte('created_at', dateRange.to.toISOString())
         .in('status', ['completed', 'served']);
 
-      console.log('💰 Fetched orders for spending:', {
-        from: dateRange.from.toISOString(),
-        to: dateRange.to.toISOString(),
-        count: orders?.length || 0,
-        error: ordersError,
-        sample: orders?.[0]
-      });
 
       // Aggregate spending by client
       const spendingByClient: Record<string, { total: number; count: number; name: string }> = {};
@@ -177,7 +164,7 @@ export default function CustomerAnalytics() {
         .sort((a, b) => b.total_spent - a.total_spent)
         .slice(0, 10);
 
-      console.log('💵 Top spenders calculated:', topSpenders);
+      
       setSpendingData(topSpenders);
     } catch (error) {
       console.error('Error fetching analytics:', error);
