@@ -373,6 +373,19 @@ export default function CustomerAnalytics() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Only 1 Visit Customers</label>
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
+                <CardContent className="p-4">
+                  <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                    {clientVisits.filter(v => v.visit_count === 1).length}
+                  </div>
+                  <div className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                    Single visit customers
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </CardContent>
         </Card>
 
