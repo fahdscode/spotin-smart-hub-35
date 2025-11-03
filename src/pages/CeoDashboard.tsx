@@ -1,4 +1,4 @@
-import { TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet, Activity, TrendingDown, ShoppingCart, Star, Smile } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet, Activity, TrendingDown, ShoppingCart, Star, Smile, ChartBar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -673,6 +673,10 @@ const CeoDashboard = () => {
                   <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/client")}>
                     <Star className="h-6 w-6" />
                     <span className="text-sm">Client Portal</span>
+                  </Button>
+                  <Button variant="outline" className="h-auto flex-col gap-2 p-4 bg-background/50 hover:bg-primary/10" onClick={() => navigate("/customer-analytics")}>
+                    <ChartBar className="h-6 w-6" />
+                    <span className="text-sm">Customer Analytics</span>
                   </Button>
                 </div>
               </CardContent>
