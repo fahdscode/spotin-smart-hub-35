@@ -24,6 +24,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useClientsData } from "@/hooks/useClientsData";
 import { formatCurrency } from "@/lib/currency";
+import { AIInsightsCard } from "@/components/AIInsightsCard";
+
 const CeoDashboard = () => {
   const navigate = useNavigate();
   
@@ -681,6 +683,24 @@ const CeoDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* AI Customer Insights */}
+            <AIInsightsCard 
+              analyticsData={{
+                totalCustomers: getTotalClientsCount(),
+                activeCustomers: getActiveClientsCount(),
+                totalRevenue: businessMetrics.totalRevenue,
+                avgOrderValue: businessMetrics.avgOrderValue,
+                totalOrders: businessMetrics.totalOrders,
+                topCustomers: clients.slice(0, 5),
+                visitPatterns: { peakHours: businessMetrics.peakHours },
+                demographics: demographicsData
+              }}
+              dateRange={{
+                from: format(dateRange.from, 'yyyy-MM-dd'),
+                to: format(dateRange.to, 'yyyy-MM-dd')
+              }}
+            />
 
             {/* Enhanced Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

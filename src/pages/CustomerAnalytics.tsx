@@ -17,6 +17,7 @@ import { Users, TrendingUp, Calendar as CalendarIcon, DollarSign, ArrowLeft, Fil
 import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { AIInsightsCard } from '@/components/AIInsightsCard';
 
 interface VisitData {
   date: string;
@@ -531,6 +532,24 @@ export default function CustomerAnalytics() {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Customer Insights */}
+        <AIInsightsCard 
+          analyticsData={{
+            totalCustomers: filteredClients.length,
+            activeCustomers: clientStats.active,
+            totalRevenue,
+            avgOrderValue,
+            totalOrders,
+            topCustomers: spendingData.slice(0, 5),
+            visitPatterns: visitData,
+            demographics: { jobTitles: jobTitleData, leadSources: leadSourceData }
+          }}
+          dateRange={{
+            from: format(dateRange.from, 'yyyy-MM-dd'),
+            to: format(dateRange.to, 'yyyy-MM-dd')
+          }}
+        />
 
         {/* Key Metrics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

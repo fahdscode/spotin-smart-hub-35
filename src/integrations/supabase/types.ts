@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights: {
+        Row: {
+          created_at: string | null
+          date_range_from: string | null
+          date_range_to: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          insight_type: string
+          insights: Json
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_range_from?: string | null
+          date_range_to?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          insight_type: string
+          insights: Json
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          date_range_from?: string | null
+          date_range_to?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          insight_type?: string
+          insights?: Json
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       bill_line_items: {
         Row: {
           bill_id: string
