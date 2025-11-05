@@ -125,6 +125,16 @@ export const OperationsReport = () => {
       setLoading(true);
       const { start: startDate, end: endDate } = getDateRange();
 
+      // Fetch all ticket products to identify ticket sales
+      const { data: ticketProducts, error: ticketsError } = await supabase
+        .from('drinks')
+        .select('name')
+        .eq('category', 'day_use_ticket');
+
+      if (ticketsError) throw ticketsError;
+
+      const ticketNames = new Set(ticketProducts?.map(t => t.name.trim().toLowerCase()) || []);
+
       // Fetch receipts for income breakdown
       const { data: receipts, error: receiptsError } = await supabase
         .from('receipts')
@@ -151,10 +161,16 @@ export const OperationsReport = () => {
         const amount = Number(receipt.total_amount);
         totalIncome += amount;
 
-        // Track all ticket types (day_use, coworking, etc.) from operations portal
         const transactionType = receipt.transaction_type?.toLowerCase() || '';
+        const lineItems = receipt.line_items as any[] || [];
         
-        if (transactionType.includes('ticket') || transactionType === 'day_use' || transactionType === 'coworking') {
+        // Check if any line item is a ticket by matching against ticket product names
+        const hasTicketItem = lineItems.some(item => 
+          ticketNames.has(item.name?.trim().toLowerCase())
+        );
+
+        if (hasTicketItem) {
+          // This receipt contains ticket purchases
           breakdown.tickets += amount;
         } else if (transactionType === 'membership') {
           breakdown.memberships += amount;
