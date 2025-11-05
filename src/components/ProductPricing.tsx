@@ -257,7 +257,7 @@ const ProductPricing = () => {
           description_ar: newProduct.description_ar || null,
           is_available: newProduct.is_available,
           image_url: imageUrl,
-          prep_time: newProduct.prep_time || null
+          prep_time_minutes: newProduct.prep_time ? parseInt(newProduct.prep_time) : null
         }])
         .select();
 
