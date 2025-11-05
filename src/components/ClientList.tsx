@@ -327,13 +327,49 @@ const ClientList = () => {
         return;
       }
 
-      // For check-in, show ticket selector dialog
+      // For check-in, check if client has active membership first
       const client = clients.find(c => c.id === clientId);
-      setPendingCheckInClient({
-        id: clientId,
-        name: client?.full_name || 'Client'
-      });
-      setShowTicketDialog(true);
+      
+      // Check for active membership
+      const { data: activeMembership } = await supabase
+        .from('client_memberships')
+        .select('plan_name, discount_percentage')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (activeMembership) {
+        // Client has membership - check in directly without ticket
+        const { error } = await supabase
+          .from('clients')
+          .update({ active: true })
+          .eq('id', clientId);
+
+        if (error) {
+          console.error('Error checking in client:', error);
+          toast.error("Failed to check in client");
+          return;
+        }
+
+        // Update local state
+        setClients(prev => prev.map(c => 
+          c.id === clientId 
+            ? { ...c, active: true }
+            : c
+        ));
+
+        toast.success(`${client?.full_name} checked in with ${activeMembership.plan_name} membership`);
+        
+        // Emit event to refresh active sessions
+        window.dispatchEvent(new CustomEvent('client-status-changed'));
+      } else {
+        // No membership - show ticket selector
+        setPendingCheckInClient({
+          id: clientId,
+          name: client?.full_name || 'Client'
+        });
+        setShowTicketDialog(true);
+      }
     } catch (error) {
       console.error('Error updating client status:', error);
       toast.error("Failed to update client status");
