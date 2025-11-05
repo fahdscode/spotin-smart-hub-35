@@ -37,6 +37,13 @@ interface Client {
   barcode: string;
   created_at: string;
   updated_at: string;
+  membership?: {
+    plan_name: string;
+    start_date: string;
+    end_date: string | null;
+    is_active: boolean;
+    discount_percentage: number;
+  };
 }
 
 const ClientList = () => {
@@ -731,8 +738,16 @@ const ClientList = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            setSelectedClient(client);
+          onClick={async () => {
+            // Fetch membership data
+            const { data: membershipData } = await supabase
+              .from('client_memberships')
+              .select('plan_name, start_date, end_date, is_active, discount_percentage')
+              .eq('client_id', client.id)
+              .eq('is_active', true)
+              .maybeSingle();
+            
+            setSelectedClient({ ...client, membership: membershipData || undefined });
             setShowClientDetails(true);
           }}
         >
@@ -879,8 +894,16 @@ const ClientList = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => {
-                                      setSelectedClient(client);
+                                    onClick={async () => {
+                                      // Fetch membership data
+                                      const { data: membershipData } = await supabase
+                                        .from('client_memberships')
+                                        .select('plan_name, start_date, end_date, is_active, discount_percentage')
+                                        .eq('client_id', client.id)
+                                        .eq('is_active', true)
+                                        .maybeSingle();
+                                      
+                                      setSelectedClient({ ...client, membership: membershipData || undefined });
                                       setShowClientDetails(true);
                                     }}
                                   >
@@ -1033,6 +1056,51 @@ const ClientList = () => {
                   </div>
                 </div>
               </div>
+
+              {selectedClient.membership && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      Membership Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{selectedClient.membership.plan_name}</span>
+                      <Badge variant={selectedClient.membership.is_active ? "default" : "secondary"}>
+                        {selectedClient.membership.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Start Date</p>
+                        <p className="font-medium">
+                          {new Date(selectedClient.membership.start_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">
+                          {selectedClient.membership.end_date ? "Expires" : "Valid Until"}
+                        </p>
+                        <p className="font-medium">
+                          {selectedClient.membership.end_date 
+                            ? new Date(selectedClient.membership.end_date).toLocaleDateString()
+                            : "Lifetime"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Discount</span>
+                        <span className="font-semibold text-primary">
+                          {selectedClient.membership.discount_percentage}% off
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </DialogContent>
