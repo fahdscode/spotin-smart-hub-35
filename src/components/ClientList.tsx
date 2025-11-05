@@ -85,12 +85,30 @@ const ClientList = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          *,
+          membership:client_memberships!client_id(
+            plan_name,
+            start_date,
+            end_date,
+            is_active,
+            discount_percentage
+          )
+        `)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClients(data || []);
+      
+      // Transform data to handle membership array
+      const transformedData = data?.map(client => ({
+        ...client,
+        membership: Array.isArray(client.membership) && client.membership.length > 0 
+          ? client.membership.find((m: any) => m.is_active) 
+          : undefined
+      })) || [];
+      
+      setClients(transformedData);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast.error("Failed to load clients");
@@ -728,7 +746,15 @@ const ClientList = () => {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-sm">{client.full_name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm">{client.full_name}</h3>
+              {client.membership && (
+                <Badge variant="default" className="text-xs">
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  Member
+                </Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{client.client_code}</p>
           </div>
         </div>
@@ -880,8 +906,16 @@ const ClientList = () => {
                                   {getInitials(client.full_name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <div>
-                                <p className="font-medium text-sm">{client.full_name}</p>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-sm">{client.full_name}</p>
+                                  {client.membership && (
+                                    <Badge variant="default" className="text-xs">
+                                      <CreditCard className="h-3 w-3 mr-1" />
+                                      Member
+                                    </Badge>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground">{client.client_code}</p>
                               </div>
                             </div>
