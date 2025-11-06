@@ -169,11 +169,17 @@ export const OperationsReport = () => {
           ticketNames.has(item.name?.trim().toLowerCase())
         );
 
-        if (hasTicketItem) {
+        // Check if any line item is a membership
+        const hasMembershipItem = lineItems.some(item => 
+          item.category === 'membership'
+        );
+
+        if (hasMembershipItem) {
+          // This receipt contains membership purchases
+          breakdown.memberships += amount;
+        } else if (hasTicketItem) {
           // This receipt contains ticket purchases
           breakdown.tickets += amount;
-        } else if (transactionType === 'membership') {
-          breakdown.memberships += amount;
         } else if (transactionType === 'room_booking' || transactionType === 'room') {
           breakdown.rooms += amount;
         } else if (transactionType === 'event') {
