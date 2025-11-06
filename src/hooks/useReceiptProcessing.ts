@@ -8,7 +8,7 @@ export interface ReceiptItem {
   quantity: number;
   price: number;
   total: number;
-  category: 'product' | 'room' | 'ticket';
+  category: 'product' | 'room' | 'ticket' | 'membership';
 }
 
 export interface ReceiptData {

@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search, UserPlus, Crown, Star, Gift, History, AlertTriangle } from 'lucide-react';
+import { Search, UserPlus, Crown, Star, Gift, History, AlertTriangle, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useReceiptProcessing } from '@/hooks/useReceiptProcessing';
+import { formatPrice } from '@/lib/currency';
 
 interface Client {
   id: string;
@@ -41,6 +43,7 @@ interface MembershipPlan {
   plan_name: string;
   discount_percentage: number;
   perks: string[];
+  price: number;
 }
 
 const MembershipAssignment = () => {
@@ -52,7 +55,10 @@ const MembershipAssignment = () => {
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [membershipHistory, setMembershipHistory] = useState<MembershipHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const { toast } = useToast();
+  const { generateReceiptNumber, createReceipt } = useReceiptProcessing();
 
   useEffect(() => {
     fetchMembershipPlans();
@@ -182,6 +188,33 @@ const MembershipAssignment = () => {
 
       const result = data as any;
       if (result?.success) {
+        // Generate receipt for membership
+        const receiptNumber = generateReceiptNumber();
+        const receipt = {
+          receiptNumber,
+          customerName: selectedClient.full_name,
+          items: [{
+            id: selectedPlan,
+            name: `${selectedPlanData?.plan_name} Membership`,
+            quantity: 1,
+            price: selectedPlanData?.price || 0,
+            total: selectedPlanData?.price || 0,
+            category: 'membership' as const
+          }],
+          subtotal: selectedPlanData?.price || 0,
+          discount: 0,
+          total: selectedPlanData?.price || 0,
+          paymentMethod: 'cash',
+          userId: selectedClient.id
+        };
+
+        // Create receipt in database
+        await createReceipt(receipt);
+        
+        // Set receipt data and show print dialog
+        setReceiptData(receipt);
+        setShowReceipt(true);
+
         toast({
           title: "Success!",
           description: result.message,
@@ -206,6 +239,10 @@ const MembershipAssignment = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const getPlanIcon = (planId: string) => {
@@ -443,6 +480,79 @@ const MembershipAssignment = () => {
                 </Card>
               ))
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Membership Receipt Dialog */}
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Membership Receipt</DialogTitle>
+            <DialogDescription>
+              Receipt for membership assignment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 print:p-4">
+            <div className="text-center border-b pb-4">
+              <h2 className="text-2xl font-bold">SpotIN</h2>
+              <p className="text-sm text-muted-foreground">Membership Receipt</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Receipt #: {receiptData?.receiptNumber}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Date: {new Date().toLocaleString()}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Customer:</span>
+                <span className="font-medium">{receiptData?.customerName}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Client Code:</span>
+                <span className="font-medium">{selectedClient?.client_code}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-b py-3 space-y-2">
+              {receiptData?.items.map((item: any) => (
+                <div key={item.id} className="flex justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  </div>
+                  <p className="font-medium">{formatPrice(item.total)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total:</span>
+                <span>{formatPrice(receiptData?.total || 0)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Payment Method:</span>
+                <span className="capitalize">{receiptData?.paymentMethod}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 print:hidden">
+              <Button onClick={handlePrint} className="flex-1">
+                <Printer className="h-4 w-4 mr-2" />
+                Print Receipt
+              </Button>
+              <Button onClick={() => setShowReceipt(false)} variant="outline" className="flex-1">
+                Close
+              </Button>
+            </div>
+
+            <div className="text-center text-xs text-muted-foreground pt-4 border-t">
+              <p>Thank you for your membership!</p>
+              <p>Visit us at spotin.com</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
