@@ -1,4 +1,4 @@
-import { TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet, Activity, TrendingDown, ShoppingCart, Star, Smile, ChartBar } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calendar, Coffee, AlertTriangle, Building, BarChart3, UserCog, PieChart, Filter, Download, RefreshCw, CalendarIcon, Receipt, Wallet, Activity, TrendingDown, ShoppingCart, Star, Smile, ChartBar, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -78,6 +78,12 @@ const CeoDashboard = () => {
     peakHours: 'N/A',
     avgSessionHours: 0
   });
+  const [membershipRevenue, setMembershipRevenue] = useState({
+    totalRevenue: 0,
+    totalMemberships: 0,
+    revenueByPlan: [] as Array<{ plan_name: string; count: number; revenue: number }>,
+    trend: 0
+  });
   const [demographicsData, setDemographicsData] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -89,7 +95,8 @@ const CeoDashboard = () => {
     totalRevenue: 0,
     occupancyRate: 0,
     eventsThisMonth: 0,
-    activeMembers: 0
+    activeMembers: 0,
+    membershipRevenue: 0
   });
   const [systemAlerts, setSystemAlerts] = useState<Array<{
     type: 'warning' | 'info' | 'success';
@@ -126,7 +133,8 @@ const CeoDashboard = () => {
         fetchPeakHoursData(), 
         fetchDailyRevenueData(),
         fetchSystemAlerts(),
-        fetchDemographicsData()
+        fetchDemographicsData(),
+        fetchMembershipRevenue()
       ]);
     } finally {
       setIsLoading(false);
@@ -234,7 +242,8 @@ const CeoDashboard = () => {
           totalRevenue: previousRevenue,
           occupancyRate: previousOccupancyRate,
           eventsThisMonth: previousEventsData.data?.length || 0,
-          activeMembers: previousActiveMembers
+          activeMembers: previousActiveMembers,
+          membershipRevenue: 0
         });
 
         setBusinessMetrics(prev => ({
@@ -255,7 +264,8 @@ const CeoDashboard = () => {
           totalRevenue: previousRevenue,
           occupancyRate: previousOccupancyRate,
           eventsThisMonth: previousEventsData.data?.length || 0,
-          activeMembers: previousActiveMembers
+          activeMembers: previousActiveMembers,
+          membershipRevenue: 0
         });
 
         setBusinessMetrics(prev => ({
@@ -490,6 +500,93 @@ const CeoDashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching demographics data:', error);
+    }
+  };
+
+  const fetchMembershipRevenue = async () => {
+    try {
+      // Calculate previous period dates
+      const periodLength = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - periodLength);
+      const previousTo = new Date(dateRange.from.getTime());
+
+      // Fetch membership receipts for current period
+      const { data: currentReceipts } = await supabase
+        .from('receipts')
+        .select('total_amount, line_items, receipt_date')
+        .gte('receipt_date', dateRange.from.toISOString())
+        .lte('receipt_date', dateRange.to.toISOString())
+        .eq('transaction_type', 'order')
+        .eq('status', 'completed');
+
+      // Fetch previous period receipts
+      const { data: previousReceipts } = await supabase
+        .from('receipts')
+        .select('total_amount, line_items')
+        .gte('receipt_date', previousFrom.toISOString())
+        .lte('receipt_date', previousTo.toISOString())
+        .eq('transaction_type', 'order')
+        .eq('status', 'completed');
+
+      let totalRevenue = 0;
+      let totalMemberships = 0;
+      const planRevenue: Record<string, { count: number; revenue: number }> = {};
+
+      // Process receipts to find membership transactions
+      currentReceipts?.forEach(receipt => {
+        const lineItems = receipt.line_items as any[];
+        lineItems?.forEach((item: any) => {
+          if (item.category === 'membership') {
+            totalRevenue += item.total || 0;
+            totalMemberships += 1;
+            
+            const planName = item.name.replace(' Membership', '');
+            if (!planRevenue[planName]) {
+              planRevenue[planName] = { count: 0, revenue: 0 };
+            }
+            planRevenue[planName].count += 1;
+            planRevenue[planName].revenue += item.total || 0;
+          }
+        });
+      });
+
+      // Calculate previous period revenue
+      let previousTotalRevenue = 0;
+      previousReceipts?.forEach(receipt => {
+        const lineItems = receipt.line_items as any[];
+        lineItems?.forEach((item: any) => {
+          if (item.category === 'membership') {
+            previousTotalRevenue += item.total || 0;
+          }
+        });
+      });
+
+      // Calculate trend
+      const trend = previousTotalRevenue > 0 
+        ? ((totalRevenue - previousTotalRevenue) / previousTotalRevenue) * 100 
+        : 0;
+
+      // Convert to array for display
+      const revenueByPlan = Object.entries(planRevenue).map(([plan_name, data]) => ({
+        plan_name,
+        count: data.count,
+        revenue: data.revenue
+      }));
+
+      setMembershipRevenue({
+        totalRevenue,
+        totalMemberships,
+        revenueByPlan,
+        trend
+      });
+
+      // Update previous metrics
+      setPreviousMetrics(prev => ({
+        ...prev,
+        membershipRevenue: previousTotalRevenue
+      }));
+    } catch (error) {
+      console.error('Error fetching membership revenue:', error);
     }
   };
   const revenueBreakdown: Array<{
@@ -749,6 +846,90 @@ const CeoDashboard = () => {
                 variant="success" 
               />
             </div>
+
+            {/* Membership Revenue Card */}
+            <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Membership Revenue
+                </CardTitle>
+                <CardDescription>
+                  Track revenue from assigned memberships
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Total Revenue</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatCurrency(membershipRevenue.totalRevenue)}
+                      </p>
+                      {membershipRevenue.trend !== 0 && (
+                        <Badge variant={membershipRevenue.trend > 0 ? "default" : "destructive"} className="text-xs">
+                          {membershipRevenue.trend > 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                          {membershipRevenue.trend > 0 ? '+' : ''}{membershipRevenue.trend.toFixed(1)}%
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Total Memberships Sold</p>
+                      <p className="text-2xl font-bold">{membershipRevenue.totalMemberships}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Avg. Membership Value</p>
+                      <p className="text-2xl font-bold">
+                        {formatCurrency(
+                          membershipRevenue.totalMemberships > 0 
+                            ? membershipRevenue.totalRevenue / membershipRevenue.totalMemberships 
+                            : 0
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Revenue by Plan */}
+                  {membershipRevenue.revenueByPlan.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold">Revenue by Membership Plan</h4>
+                      <div className="space-y-3">
+                        {membershipRevenue.revenueByPlan.map((plan) => (
+                          <div key={plan.plan_name} className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="h-4 w-4 text-primary" />
+                                <span className="text-sm font-medium">{plan.plan_name}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge variant="outline" className="text-xs">
+                                  {plan.count} sold
+                                </Badge>
+                                <span className="text-sm font-bold">
+                                  {formatCurrency(plan.revenue)}
+                                </span>
+                              </div>
+                            </div>
+                            <Progress 
+                              value={(plan.revenue / membershipRevenue.totalRevenue) * 100} 
+                              className="h-2" 
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {membershipRevenue.totalMemberships === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm">No membership sales in this period</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Enhanced Revenue Breakdown */}
