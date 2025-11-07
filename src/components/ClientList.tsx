@@ -175,10 +175,10 @@ const ClientList = () => {
         
         const client = clients.find(c => c.id === clientId);
         
-        // Get current check-in session time first
+        // Get current ACTIVE check-in session (must be checked_in and NOT checked_out)
         const { data: checkInData } = await supabase
           .from('check_ins')
-          .select('checked_in_at')
+          .select('checked_in_at, id')
           .eq('client_id', clientId)
           .eq('status', 'checked_in')
           .is('checked_out_at', null)
@@ -186,29 +186,23 @@ const ClientList = () => {
           .limit(1)
           .maybeSingle();
 
-        const checkInTime = checkInData?.checked_in_at;
-
-        // Determine the time range for orders
-        let startTime: string;
-        if (checkInTime) {
-          startTime = checkInTime;
-        } else {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('updated_at')
-            .eq('id', clientId)
-            .single();
-          
-          startTime = clientData?.updated_at || new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+        if (!checkInData) {
+          toast.error('No active check-in session found for this client');
+          setPendingCheckoutClient(null);
+          return;
         }
 
+        const checkInTime = checkInData.checked_in_at;
+        const sessionStartTime = checkInTime;
+
         // Check for pending or preparing orders - MUST complete before checkout
+        // Only check orders from the CURRENT active session
         const { data: pendingOrders } = await supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
           .in('status', ['pending', 'preparing'])
-          .gte('created_at', startTime)
+          .gte('created_at', sessionStartTime)
           .lte('created_at', new Date().toISOString());
 
         if (pendingOrders && pendingOrders.length > 0) {
@@ -228,17 +222,19 @@ const ClientList = () => {
         // Fetch orders from the current session
         let receiptItems: any[] = [];
 
-        // Only fetch orders created AFTER the current check-in time (not from previous sessions)
+        // CRITICAL: Only fetch orders created DURING the current active check-in session
+        // Orders must be created AFTER the session started (checked_in_at) and BEFORE checkout
         const { data: orders } = await supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
           .in('status', ['completed', 'served', 'ready'])
-          .gte('created_at', checkInTime) // Use checkInTime instead of startTime to get only current session
+          .gte('created_at', sessionStartTime) // Only orders from THIS session
           .lte('created_at', new Date().toISOString())
           .order('created_at', { ascending: true });
 
-        console.log('📦 Orders found for checkout (current session only):', orders);
+        console.log('📦 Current session start time:', sessionStartTime);
+        console.log('📦 Orders found for current session only:', orders);
 
         receiptItems = orders?.map(order => ({
           name: order.item_name,
@@ -252,7 +248,7 @@ const ClientList = () => {
           : 0;
 
         // Check for assigned ticket in this session (look back a few seconds to account for timing)
-        const ticketLookbackTime = new Date(new Date(startTime).getTime() - 10000).toISOString(); // 10 seconds before
+        const ticketLookbackTime = new Date(new Date(sessionStartTime).getTime() - 10000).toISOString(); // 10 seconds before
         console.log('🎫 Looking for ticket assigned between:', ticketLookbackTime, 'and now');
         const { data: assignedTicket, error: ticketError } = await supabase
           .from('client_tickets')
