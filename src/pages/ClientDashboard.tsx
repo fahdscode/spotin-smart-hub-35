@@ -328,23 +328,11 @@ export default function ClientDashboard() {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      // Query check_ins table which is the main source of truth for check-ins
-      const { data, error } = await supabase
-        .from('check_ins')
-        .select('*')
-        .eq('client_id', clientId)
-        .gte('checked_in_at', thirtyDaysAgo.toISOString());
-      
-      if (error) {
-        console.error('Error fetching check-ins last 30 days:', error);
-        setCheckInsLast30Days(0);
-        return;
-      }
-      
+      const {
+        data
+      } = await supabase.from('check_in_logs').select('*').eq('client_id', clientId).eq('action', 'checked_in').gte('timestamp', thirtyDaysAgo.toISOString());
       setCheckInsLast30Days(data?.length || 0);
     } catch (error) {
-      console.error('Exception fetching check-ins:', error);
       setCheckInsLast30Days(0);
     }
   };
