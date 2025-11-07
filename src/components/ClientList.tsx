@@ -228,17 +228,17 @@ const ClientList = () => {
         // Fetch orders from the current session
         let receiptItems: any[] = [];
 
-        // Only fetch orders created AFTER the current check-in time (not from previous sessions)
+        // Fetch all completed/served orders in the session time range
         const { data: orders } = await supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
           .in('status', ['completed', 'served', 'ready'])
-          .gte('created_at', checkInTime) // Use checkInTime instead of startTime to get only current session
+          .gte('created_at', startTime)
           .lte('created_at', new Date().toISOString())
           .order('created_at', { ascending: true });
 
-        console.log('📦 Orders found for checkout (current session only):', orders);
+        console.log('📦 Orders found for checkout:', orders);
 
         receiptItems = orders?.map(order => ({
           name: order.item_name,
