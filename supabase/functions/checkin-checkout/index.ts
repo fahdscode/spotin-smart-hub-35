@@ -91,12 +91,13 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
       // ========== CHECKOUT PROCESS ==========
       console.log('Starting checkout process for client:', client.id)
 
-      // 1. Close all open receipts for this client
+      // 1. Close ALL open receipts for this client (not just 'completed')
       const { data: closedReceipts } = await supabase
         .from('receipts')
         .update({ status: 'closed' })
         .eq('user_id', client.id)
-        .eq('status', 'completed')
+        .neq('status', 'closed')
+        .neq('status', 'cancelled')
         .select()
 
       console.log('Closed receipts:', closedReceipts?.length || 0)
@@ -131,12 +132,13 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
       // ========== CHECK-IN PROCESS ==========
       console.log('Starting check-in process for client:', client.id)
 
-      // SAFETY CLEANUP: Close any lingering open receipts from previous sessions
+      // SAFETY CLEANUP: Close ALL open receipts from previous sessions
       await supabase
         .from('receipts')
         .update({ status: 'closed' })
         .eq('user_id', client.id)
-        .eq('status', 'completed')
+        .neq('status', 'closed')
+        .neq('status', 'cancelled')
 
       // SAFETY CLEANUP: Cancel any lingering pending orders
       await supabase
@@ -242,12 +244,13 @@ async function handleManualCheckout(supabase: any, clientId: string, checkoutByU
     // ========== MANUAL CHECKOUT PROCESS ==========
     console.log('Starting manual checkout for client:', clientId)
 
-    // 1. Close all open receipts for this client
+    // 1. Close ALL open receipts for this client (not just 'completed')
     const { data: closedReceipts } = await supabase
       .from('receipts')
       .update({ status: 'closed' })
       .eq('user_id', clientId)
-      .eq('status', 'completed')
+      .neq('status', 'closed')
+      .neq('status', 'cancelled')
       .select()
 
     console.log('Closed receipts:', closedReceipts?.length || 0)
