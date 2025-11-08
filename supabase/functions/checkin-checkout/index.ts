@@ -88,13 +88,36 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
 
   try {
     if (client.active) {
-      // Check out: set active to false
+      // ========== CHECKOUT PROCESS ==========
+      console.log('Starting checkout process for client:', client.id)
+
+      // 1. Close all open receipts for this client
+      const { data: closedReceipts } = await supabase
+        .from('receipts')
+        .update({ status: 'closed' })
+        .eq('user_id', client.id)
+        .eq('status', 'completed')
+        .select()
+
+      console.log('Closed receipts:', closedReceipts?.length || 0)
+
+      // 2. Cancel all pending orders
+      const { data: cancelledOrders } = await supabase
+        .from('session_line_items')
+        .update({ status: 'cancelled' })
+        .eq('user_id', client.id)
+        .eq('status', 'pending')
+        .select()
+
+      console.log('Cancelled pending orders:', cancelledOrders?.length || 0)
+
+      // 3. Set client active status to false
       await supabase
         .from('clients')
         .update({ active: false, updated_at: new Date().toISOString() })
         .eq('id', client.id)
 
-      // Update check-in record to mark session as closed
+      // 4. Close the check-in session
       await supabase
         .from('check_ins')
         .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
@@ -102,17 +125,37 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
         .eq('status', 'checked_in')
         .is('checked_out_at', null)
 
-      // Cancel all pending orders for this client
+      console.log('Checkout completed successfully')
+
+    } else {
+      // ========== CHECK-IN PROCESS ==========
+      console.log('Starting check-in process for client:', client.id)
+
+      // SAFETY CLEANUP: Close any lingering open receipts from previous sessions
+      await supabase
+        .from('receipts')
+        .update({ status: 'closed' })
+        .eq('user_id', client.id)
+        .eq('status', 'completed')
+
+      // SAFETY CLEANUP: Cancel any lingering pending orders
       await supabase
         .from('session_line_items')
         .update({ status: 'cancelled' })
         .eq('user_id', client.id)
         .eq('status', 'pending')
 
-      console.log('Cancelled pending orders for client:', client.id)
+      // SAFETY CLEANUP: Close any lingering open check-in sessions
+      await supabase
+        .from('check_ins')
+        .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
+        .eq('client_id', client.id)
+        .eq('status', 'checked_in')
+        .is('checked_out_at', null)
 
-    } else {
-      // Check in: set active to true
+      console.log('Safety cleanup completed')
+
+      // Now create fresh check-in session
       await supabase
         .from('clients')
         .update({ active: true, updated_at: new Date().toISOString() })
@@ -127,6 +170,8 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
           status: 'checked_in',
           checked_in_at: new Date().toISOString()
         })
+
+      console.log('Fresh check-in session created')
     }
 
     // Log the action
@@ -194,13 +239,36 @@ async function handleManualCheckout(supabase: any, clientId: string, checkoutByU
   }
 
   try {
-    // Update client active status
+    // ========== MANUAL CHECKOUT PROCESS ==========
+    console.log('Starting manual checkout for client:', clientId)
+
+    // 1. Close all open receipts for this client
+    const { data: closedReceipts } = await supabase
+      .from('receipts')
+      .update({ status: 'closed' })
+      .eq('user_id', clientId)
+      .eq('status', 'completed')
+      .select()
+
+    console.log('Closed receipts:', closedReceipts?.length || 0)
+
+    // 2. Cancel all pending orders
+    const { data: cancelledOrders } = await supabase
+      .from('session_line_items')
+      .update({ status: 'cancelled' })
+      .eq('user_id', clientId)
+      .eq('status', 'pending')
+      .select()
+
+    console.log('Cancelled pending orders:', cancelledOrders?.length || 0)
+
+    // 3. Update client active status
     await supabase
       .from('clients')
       .update({ active: false, updated_at: new Date().toISOString() })
       .eq('id', clientId)
 
-    // Update check-in record to mark session as closed
+    // 4. Close the check-in session
     await supabase
       .from('check_ins')
       .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
@@ -208,14 +276,7 @@ async function handleManualCheckout(supabase: any, clientId: string, checkoutByU
       .eq('status', 'checked_in')
       .is('checked_out_at', null)
 
-    // Cancel all pending orders for this client
-    await supabase
-      .from('session_line_items')
-      .update({ status: 'cancelled' })
-      .eq('user_id', clientId)
-      .eq('status', 'pending')
-
-    console.log('Cancelled pending orders for client:', clientId)
+    console.log('Manual checkout completed successfully')
 
     // Log the action
     try {
