@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket, CreditCard, Banknote, Building2, Laptop } from "lucide-react";
+import { Search, Filter, MoreHorizontal, User, Phone, Mail, Briefcase, CheckCircle, XCircle, Edit, Eye, Printer, Ban, Trash2, Plus, ChevronDown, ChevronUp, LogOut, Ticket, CreditCard, Banknote, Building2, Laptop, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -156,6 +156,24 @@ const ClientList = () => {
 
     toast.success(`Added ${drink.name} to checkout`);
   };
+
+  const removeItemFromCheckout = (itemIndex: number) => {
+    if (!receiptData) return;
+
+    const removedItem = receiptData.items[itemIndex];
+    const updatedItems = receiptData.items.filter((_, index) => index !== itemIndex);
+    const newSubtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    
+    setReceiptData({
+      ...receiptData,
+      items: updatedItems,
+      subtotal: newSubtotal,
+      total: newSubtotal - receiptData.discount
+    });
+
+    toast.success(`Removed ${removedItem.name} from checkout`);
+  };
+
 
   // Get unique categories from drinks
   const categories = ["all", ...Array.from(new Set(drinks.map(d => d.category)))];
@@ -1314,7 +1332,7 @@ const ClientList = () => {
                     </div>
                   ) : (
                     receiptData.items.map((item: any, index: number) => (
-                      <div key={index} className="p-3 flex justify-between items-center">
+                      <div key={index} className="p-3 flex justify-between items-center gap-3">
                         <div className="flex-1">
                           <p className="font-medium">{item.name}</p>
                           <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
@@ -1323,6 +1341,15 @@ const ClientList = () => {
                           <p className="font-semibold">{formatCurrency(item.total)}</p>
                           <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItemFromCheckout(index)}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))
                   )}
