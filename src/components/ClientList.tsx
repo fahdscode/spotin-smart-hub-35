@@ -194,7 +194,7 @@ const ClientList = () => {
         const client = clients.find(c => c.id === clientId);
         
         // Get current check-in session time first
-        const { data: checkInData } = await supabase
+        const { data: sessionCheckInData } = await supabase
           .from('check_ins')
           .select('checked_in_at')
           .eq('client_id', clientId)
@@ -204,7 +204,7 @@ const ClientList = () => {
           .limit(1)
           .maybeSingle();
 
-        const checkInTime = checkInData?.checked_in_at;
+        const checkInTime = sessionCheckInData?.checked_in_at;
 
         // Determine the time range for orders
         let startTime: string;
@@ -246,17 +246,29 @@ const ClientList = () => {
         // Fetch orders from the current session
         let receiptItems: any[] = [];
 
-        // Only fetch orders created AFTER the current check-in time (not from previous sessions)
+        // Get the most recent check-in with SINGLE call
+        const { data: checkInData } = await supabase
+          .from('check_ins')
+          .select('checked_in_at')
+          .eq('client_id', clientId)
+          .eq('status', 'checked_in')
+          .is('checked_out_at', null)
+          .order('checked_in_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const currentSessionStartTime = checkInData?.checked_in_at || new Date().toISOString();
+
+        // Fetch ONLY orders from current session (after latest check-in)
         const { data: orders } = await supabase
           .from('session_line_items')
           .select('*')
           .eq('user_id', clientId)
           .in('status', ['completed', 'served', 'ready'])
-          .gte('created_at', checkInTime) // Use checkInTime instead of startTime to get only current session
-          .lte('created_at', new Date().toISOString())
+          .gte('created_at', currentSessionStartTime)  // Only current session
           .order('created_at', { ascending: true });
 
-        console.log('📦 Orders found for checkout (current session only):', orders);
+        console.log('📦 Orders found for checkout (current session only):', orders, 'Session start:', currentSessionStartTime);
 
         receiptItems = orders?.map(order => ({
           name: order.item_name,
@@ -375,13 +387,15 @@ const ClientList = () => {
         .maybeSingle();
 
       if (activeMembership) {
-        // Client has membership - check in directly without ticket
-        const { error } = await supabase
-          .from('clients')
-          .update({ active: true })
-          .eq('id', clientId);
+        // CALL THE EDGE FUNCTION - don't bypass it!
+        const { data, error } = await supabase.functions.invoke('checkin-checkout', {
+          body: { 
+            action: 'checkin', 
+            client_id: clientId
+          }
+        });
 
-        if (error) {
+        if (error || !data?.success) {
           console.error('Error checking in client:', error);
           toast.error("Failed to check in client");
           return;

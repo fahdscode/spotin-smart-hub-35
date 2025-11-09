@@ -33,6 +33,9 @@ Deno.serve(async (req) => {
     if (action === 'checkout' && client_id) {
       // Manual checkout using client_id
       result = await handleManualCheckout(supabaseClient, client_id, scanned_by_user_id)
+    } else if (action === 'checkin' && client_id) {
+      // NEW: Handle check-in by client_id (for membership clients)
+      result = await handleManualCheckin(supabaseClient, client_id, scanned_by_user_id)
     } else {
       // Barcode-based toggle check-in/out
       result = await handleBarcodeToggle(supabaseClient, barcode, scanned_by_user_id)
@@ -250,6 +253,92 @@ async function handleBarcodeToggle(supabase: any, barcode: string, scannedByUser
       success: false,
       error: 'Failed to update client status. Please try again.',
       details: updateError instanceof Error ? updateError.message : 'Unknown error'
+    }
+  }
+}
+
+async function handleManualCheckin(supabase: any, clientId: string, checkinByUserId?: string) {
+  console.log('Processing manual check-in:', clientId)
+
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .select('id, client_code, full_name, phone, email, barcode, is_active, active')
+    .eq('id', clientId)
+    .eq('is_active', true)
+    .single()
+
+  if (clientError || !client) {
+    return {
+      success: false,
+      error: 'Client not found or inactive.'
+    }
+  }
+
+  if (client.active) {
+    return {
+      success: false,
+      error: 'Client is already checked in.'
+    }
+  }
+
+  try {
+    console.log('🟢 Starting manual check-in for client:', clientId)
+
+    // CRITICAL CLEANUP: Close all old sessions before creating new one
+    await performFullSessionCleanup(supabase, clientId)
+
+    const checkInTime = new Date().toISOString()
+    
+    await supabase
+      .from('clients')
+      .update({ active: true, updated_at: checkInTime })
+      .eq('id', clientId)
+
+    // Create new check-in record
+    const { data: newCheckIn } = await supabase
+      .from('check_ins')
+      .insert({
+        client_id: clientId,
+        user_id: checkinByUserId || clientId,
+        status: 'checked_in',
+        checked_in_at: checkInTime
+      })
+      .select()
+      .single()
+
+    console.log('✅ Manual check-in completed at:', checkInTime, '- Session ID:', newCheckIn?.id)
+
+    // Log the action
+    await supabase
+      .from('check_in_logs')
+      .insert({
+        client_id: clientId,
+        action: 'checked_in',
+        scanned_barcode: client.barcode,
+        scanned_by_user_id: checkinByUserId,
+        notes: 'Manual check-in by staff (membership client)'
+      })
+
+    return {
+      success: true,
+      message: 'Client checked in successfully',
+      client: {
+        id: client.id,
+        client_code: client.client_code,
+        full_name: client.full_name,
+        phone: client.phone,
+        email: client.email,
+        barcode: client.barcode,
+        active: true
+      }
+    }
+
+  } catch (error) {
+    console.error('Error during check-in:', error)
+    return {
+      success: false,
+      error: 'System error during check-in.',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
