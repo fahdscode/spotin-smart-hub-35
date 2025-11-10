@@ -329,12 +329,14 @@ export default function ClientDashboard() {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // Query check_ins table which is the main source of truth for check-ins
+      // Query check_ins table and count distinct check-in sessions
+      // Each check-in creates a new record, so we count all records in the last 30 days
       const { data, error } = await supabase
         .from('check_ins')
-        .select('*')
+        .select('id, checked_in_at')
         .eq('client_id', clientId)
-        .gte('checked_in_at', thirtyDaysAgo.toISOString());
+        .gte('checked_in_at', thirtyDaysAgo.toISOString())
+        .order('checked_in_at', { ascending: false });
       
       if (error) {
         console.error('Error fetching check-ins last 30 days:', error);
@@ -342,6 +344,7 @@ export default function ClientDashboard() {
         return;
       }
       
+      // Count total check-in records (each represents a visit)
       setCheckInsLast30Days(data?.length || 0);
     } catch (error) {
       console.error('Exception fetching check-ins:', error);
