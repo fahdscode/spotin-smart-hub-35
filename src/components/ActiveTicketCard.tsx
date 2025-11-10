@@ -106,31 +106,24 @@ export const ActiveTicketCard = ({
     try {
       const drink = availableDrinks.find(d => d.id === selectedDrink);
       
-      // Create order with price = 0
-      const { error: orderError } = await supabase
-        .from('session_line_items')
-        .insert({
-          user_id: clientId,
-          item_name: drink.name,
-          quantity: 1,
-          price: 0,
-          status: 'pending',
-          notes: `Free drink from ticket: ${ticketData.ticket_name}`
-        });
-      
-      if (orderError) throw orderError;
-      
-      // Update ticket as claimed
-      const { error: ticketError } = await supabase
-        .from('client_tickets')
-        .update({
-          free_drink_claimed: true,
-          free_drink_claimed_at: new Date().toISOString(),
-          claimed_drink_name: drink.name
-        })
-        .eq('id', ticketData.id);
-      
-      if (ticketError) throw ticketError;
+      if (!drink) {
+        toast.error('Selected drink not found');
+        return;
+      }
+
+      // Use edge function to claim free drink (handles RLS policies)
+      const { data, error } = await supabase.functions.invoke('claim-free-drink', {
+        body: {
+          ticket_id: ticketData.id,
+          client_id: clientId,
+          drink_id: drink.id,
+          drink_name: drink.name,
+          ticket_name: ticketData.ticket_name
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to claim drink');
       
       toast.success(`Your ${drink.name} has been ordered! Check with the barista.`);
       setShowDrinkDialog(false);
