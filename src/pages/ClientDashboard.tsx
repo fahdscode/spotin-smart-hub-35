@@ -869,8 +869,12 @@ export default function ClientDashboard() {
               <Card>
                 <CardContent className="pt-6 text-center">
                   <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold">{cart.length}</div>
-                  <p className="text-sm text-muted-foreground">{t('clientDashboard.cart')}</p>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('clientDashboard.cart')} ({cart.length} {cart.length === 1 ? 'item' : 'items'})
+                  </p>
                 </CardContent>
               </Card>
             </div>
