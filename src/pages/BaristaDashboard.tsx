@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CancellationReasonDialog } from "@/components/CancellationReasonDialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -328,29 +328,43 @@ const BaristaDashboard = () => {
       });
     }
   };
-  const cancelOrder = async (orderId: string) => {
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+
+  const handleCancelOrderClick = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancellationDialogOpen(true);
+  };
+
+  const cancelOrder = async (reason: string, category: string) => {
+    if (!orderToCancel) return;
+    
     try {
       // Get order details first to send notification
-      const orderToCancel = orders.find(o => o.id === orderId);
+      const orderDetails = orders.find(o => o.id === orderToCancel);
       
-      // Use RPC function to cancel order
-      const { data, error } = await supabase.rpc('cancel_order_item', {
-        p_order_id: orderId
-      });
+      // Get current user for cancelled_by field
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Update order with cancellation details
+      const { error: updateError } = await supabase
+        .from('session_line_items')
+        .update({
+          status: 'cancelled',
+          cancellation_reason: reason,
+          cancelled_by: user?.id,
+          cancelled_at: new Date().toISOString()
+        })
+        .eq('id', orderToCancel);
 
-      if (error) throw error;
-
-      const result = data as { success: boolean; message?: string };
-      if (!result?.success) {
-        throw new Error(result?.message || 'Failed to cancel order');
-      }
+      if (updateError) throw updateError;
       
       // Send email notification to client if order details are available
-      if (orderToCancel) {
+      if (orderDetails) {
         const { data: clientData } = await supabase
           .from('clients')
           .select('email, full_name')
-          .eq('id', orderToCancel.user_id)
+          .eq('id', orderDetails.user_id)
           .single();
 
         if (clientData?.email) {
@@ -365,9 +379,10 @@ const BaristaDashboard = () => {
                   <p>Dear ${clientData.full_name || 'Customer'},</p>
                   <p>We regret to inform you that your order has been cancelled:</p>
                   <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <p style="margin: 5px 0;"><strong>Item:</strong> ${orderToCancel.item_name}</p>
-                    <p style="margin: 5px 0;"><strong>Quantity:</strong> ${orderToCancel.quantity}</p>
-                    ${orderToCancel.table_number ? `<p style="margin: 5px 0;"><strong>Table:</strong> ${orderToCancel.table_number}</p>` : ''}
+                    <p style="margin: 5px 0;"><strong>Item:</strong> ${orderDetails.item_name}</p>
+                    <p style="margin: 5px 0;"><strong>Quantity:</strong> ${orderDetails.quantity}</p>
+                    ${orderDetails.table_number ? `<p style="margin: 5px 0;"><strong>Table:</strong> ${orderDetails.table_number}</p>` : ''}
+                    <p style="margin: 5px 0;"><strong>Reason:</strong> ${reason}</p>
                   </div>
                   <p>If you have any questions, please don't hesitate to contact our staff.</p>
                   <p style="margin-top: 30px;">Best regards,<br><strong>SpotIN Team</strong></p>
@@ -383,11 +398,12 @@ const BaristaDashboard = () => {
       
       toast({
         title: "Order Cancelled",
-        description: result.message || "Order cancelled and client notified"
+        description: "Order cancelled and client notified"
       });
 
       // Refresh orders list
       fetchOrders();
+      setOrderToCancel(null);
     } catch (error: any) {
       playError();
       toast({
@@ -530,48 +546,20 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>}
                           <div className="flex gap-2">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button className="flex-1" variant="professional">
-                                  Start Preparing
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Start Preparing Order</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to start preparing {order.item_name} for {order.customerName}?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => updateOrderStatus(order.id, "preparing")}>
-                                    Start Preparing
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Cancel Order</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to cancel the order for {order.item_name}? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => cancelOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Cancel Order
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button 
+                              className="flex-1" 
+                              variant="professional"
+                              onClick={() => updateOrderStatus(order.id, "preparing")}
+                            >
+                              Start Preparing
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleCancelOrderClick(order.id)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>;
                   })}
@@ -610,48 +598,20 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>}
                           <div className="flex gap-2">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button className="flex-1" variant="accent">
-                                  Mark as Ready
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Mark Order as Ready</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Confirm that {order.item_name} for {order.customerName} is ready for pickup?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Not Ready</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => updateOrderStatus(order.id, "ready")}>
-                                    Mark as Ready
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Cancel Order</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to cancel the order for {order.item_name}? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Keep Order</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => cancelOrder(order.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Cancel Order
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button 
+                              className="flex-1" 
+                              variant="accent"
+                              onClick={() => updateOrderStatus(order.id, "ready")}
+                            >
+                              Mark as Ready
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleCancelOrderClick(order.id)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>;
                   })}
@@ -819,6 +779,14 @@ const BaristaDashboard = () => {
             selectedClient?.ticketInfo?.includes_free_drink && 
             !selectedClient?.ticketInfo?.free_drink_claimed
           }
+        />
+
+        {/* Cancellation Reason Dialog */}
+        <CancellationReasonDialog
+          open={cancellationDialogOpen}
+          onOpenChange={setCancellationDialogOpen}
+          onConfirm={cancelOrder}
+          itemName={orderToCancel ? orders.find(o => o.id === orderToCancel)?.item_name : undefined}
         />
       </div>
     </div>;

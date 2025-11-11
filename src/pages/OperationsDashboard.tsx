@@ -28,6 +28,7 @@ import PromotionsManagement from "@/components/PromotionsManagement";
 import TopProductsSales from "@/components/TopProductsSales";
 import { ProductPaymentsReport } from "@/components/ProductPaymentsReport";
 import { OperationsReport } from "@/components/OperationsReport";
+import { CancellationReasonReport } from "@/components/CancellationReasonReport";
 import { useNavigate } from "react-router-dom";
 import { useStockData } from "@/hooks/useStockData";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -350,6 +351,7 @@ const OperationsDashboard = () => {
 
           {/* Cancelled Receipts Tab */}
           <TabsContent value="cancelled" className="space-y-6">
+            <CancellationReasonReport />
             <CancelledReceipts />
           </TabsContent>
 

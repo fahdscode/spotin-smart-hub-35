@@ -1427,6 +1427,9 @@ export type Database = {
       }
       session_line_items: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           id: string
           item_name: string
@@ -1438,6 +1441,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           item_name: string
@@ -1449,6 +1455,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           item_name?: string
