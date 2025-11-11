@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Clock, Coffee, Ticket, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
-import { TicketExpiryCountdown } from './TicketExpiryCountdown';
+
 import { toast } from 'sonner';
 interface ActiveTicketData {
   id: string;
@@ -141,11 +141,6 @@ export const ActiveTicketCard = ({
   if (!ticketData) {
     return null;
   }
-  const getUrgencyColor = (): 'default' | 'destructive' | 'secondary' => {
-    if (ticketData.hours_remaining < 2) return 'destructive';
-    if (ticketData.hours_remaining < 6) return 'secondary';
-    return 'default';
-  };
   return <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -153,8 +148,8 @@ export const ActiveTicketCard = ({
             <Ticket className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Active Day Pass</CardTitle>
           </div>
-          <Badge variant={getUrgencyColor()}>
-            {ticketData.hours_remaining < 1 ? 'Expiring Soon' : `${Math.floor(ticketData.hours_remaining)}h remaining`}
+          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+            Active
           </Badge>
         </div>
       </CardHeader>
@@ -197,19 +192,12 @@ export const ActiveTicketCard = ({
           </div>
         )}
 
-        <TicketExpiryCountdown purchaseTime={new Date(ticketData.purchase_date)} expiryHours={24} />
-
-        {ticketData.hours_remaining < 2 && <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-            <div className="flex-1 text-sm">
-              <p className="font-medium text-destructive">Ticket Expiring Soon</p>
-              <p className="text-xs text-muted-foreground">
-                Your ticket will expire in less than 2 hours
-              </p>
-            </div>
-          </div>}
-
-        
+        <div className="p-3 bg-background/50 rounded-lg border border-border/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>Valid until check-out</span>
+          </div>
+        </div>
       </CardContent>
 
       <Dialog open={showDrinkDialog} onOpenChange={setShowDrinkDialog}>
