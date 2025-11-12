@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import SpotinHeader from '@/components/SpotinHeader';
 import BarcodeCard from '@/components/BarcodeCard';
 import ClientEvents from '@/components/ClientEvents';
@@ -15,7 +16,9 @@ import SatisfactionPopup from '@/components/SatisfactionPopup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { ActiveTicketCard } from '@/components/ActiveTicketCard';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut } from 'lucide-react';
+import { WelcomeCardSkeleton, StatsCardSkeleton, ActiveTicketSkeleton, OrderCardSkeleton, ProductCardSkeleton } from '@/components/client/DashboardSkeleton';
+import { EmptyState } from '@/components/client/EmptyStates';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
@@ -90,6 +93,7 @@ export default function ClientDashboard() {
   // Core state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [tableNumber, setTableNumber] = useState<string>('');
@@ -144,10 +148,17 @@ export default function ClientDashboard() {
       return;
     }
     if (clientData?.id) {
-      fetchAllData(clientData.id);
-      fetchCheckInStatus(clientData.id);
-      fetchLastTableNumber(clientData.id);
       setLoading(false);
+      setDataLoading(true);
+      
+      // Fetch all data concurrently
+      Promise.all([
+        fetchAllData(clientData.id),
+        fetchCheckInStatus(clientData.id),
+        fetchLastTableNumber(clientData.id)
+      ]).finally(() => {
+        setDataLoading(false);
+      });
 
       // Set up real-time subscription for client status updates
       const clientChannel = supabase.channel('client-status-changes').on('postgres_changes', {
@@ -195,38 +206,42 @@ export default function ClientDashboard() {
   }, [isAuthenticated, userRole, clientData, navigate]);
   const fetchAllData = async (clientId: string) => {
     try {
-      // Fetch drinks
-      const {
-        data: drinksData
-      } = await supabase.from('drinks').select('*').eq('is_available', true).order('category');
-      if (drinksData) {
-        const availableDrinks = drinksData.filter(d => d.category !== 'day_use_ticket');
+      // Fetch all data concurrently for better performance
+      const [
+        drinksData,
+        lastOrdersData
+      ] = await Promise.all([
+        supabase.from('drinks').select('*').eq('is_available', true).order('category'),
+        supabase.rpc('get_client_last_orders', {
+          p_user_id: clientId,
+          p_limit: 3
+        })
+      ]);
+
+      if (drinksData.data) {
+        const availableDrinks = drinksData.data.filter(d => d.category !== 'day_use_ticket');
         setDrinks(availableDrinks);
-        loadFavoritesFromOrders(clientId, availableDrinks);
-        loadBestSellingProducts(availableDrinks);
+        
+        // Load additional data based on drinks
+        await Promise.all([
+          loadFavoritesFromOrders(clientId, availableDrinks),
+          loadBestSellingProducts(availableDrinks)
+        ]);
         loadCategories(availableDrinks);
       }
 
-      // Fetch last orders
-      const {
-        data: lastOrdersData
-      } = await supabase.rpc('get_client_last_orders', {
-        p_user_id: clientId,
-        p_limit: 3
-      });
-      if (lastOrdersData && Array.isArray(lastOrdersData)) {
-        setLastOrders(lastOrdersData as unknown as LastOrder[]);
+      if (lastOrdersData.data && Array.isArray(lastOrdersData.data)) {
+        setLastOrders(lastOrdersData.data as unknown as LastOrder[]);
       }
 
-      // Fetch pending orders
-      await fetchPendingOrders(clientId);
-
-      // Fetch check-ins and analytics
-      fetchCheckInsLast30Days(clientId);
-      fetchMembershipStatus(clientId);
-      fetchCheckInStatus(clientId);
-      fetchClientAnalytics(clientId);
-      fetchRecentTransactions(clientId);
+      // Fetch remaining data concurrently
+      await Promise.all([
+        fetchPendingOrders(clientId),
+        fetchCheckInsLast30Days(clientId),
+        fetchMembershipStatus(clientId),
+        fetchClientAnalytics(clientId),
+        fetchRecentTransactions(clientId)
+      ]);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -743,22 +758,39 @@ export default function ClientDashboard() {
             <Coffee className="h-4 w-4" />
             <span className="text-xs">{t('clientDashboard.home')}</span>
           </Button>
-          <Button variant={currentView === 'order' ? 'default' : 'ghost'} size="sm" onClick={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (isCheckedIn) {
-            ClientSound.playTap();
-            setCurrentView('order');
-          } else {
-            ClientSound.playError();
-          }
-        }} className="flex flex-col items-center gap-1 h-auto py-2 relative transition-transform active:scale-95" disabled={!isCheckedIn} type="button">
-            <ShoppingCart className="h-4 w-4" />
-            <span className="text-xs">{t('clientDashboard.order')}</span>
-            {cart.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse">
-                {cart.length}
-              </Badge>}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant={currentView === 'order' ? 'default' : 'ghost'} size="sm" onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isCheckedIn) {
+                    ClientSound.playTap();
+                    setCurrentView('order');
+                  } else {
+                    ClientSound.playError();
+                    toast({
+                      title: "Check-in Required",
+                      description: "Please check in at reception before placing orders.",
+                      variant: "destructive"
+                    });
+                  }
+                }} className="flex flex-col items-center gap-1 h-auto py-2 relative transition-transform active:scale-95" disabled={!isCheckedIn} type="button">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="text-xs">{t('clientDashboard.order')}</span>
+                  {!isCheckedIn && <Info className="h-3 w-3 absolute -top-1 -right-1 text-destructive" />}
+                  {cart.length > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse">
+                      {cart.length}
+                    </Badge>}
+                </Button>
+              </TooltipTrigger>
+              {!isCheckedIn && (
+                <TooltipContent>
+                  <p>Check in at reception to order</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <Button variant={currentView === 'events' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -791,17 +823,37 @@ export default function ClientDashboard() {
             <Coffee className="h-4 w-4 mr-2" />
             {t('dashboard.quickActions')}
           </Button>
-          <Button variant={currentView === 'order' ? 'default' : 'outline'} onClick={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (isCheckedIn) setCurrentView('order');
-        }} className="relative" disabled={!isCheckedIn} type="button">
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {t('clientDashboard.orderDrinks')}
-            {cart.length > 0 && <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                {cart.length}
-              </Badge>}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant={currentView === 'order' ? 'default' : 'outline'} onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isCheckedIn) {
+                    setCurrentView('order');
+                  } else {
+                    toast({
+                      title: "Check-in Required",
+                      description: "Please check in at reception before placing orders.",
+                      variant: "destructive"
+                    });
+                  }
+                }} className="relative" disabled={!isCheckedIn} type="button">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  {t('clientDashboard.orderDrinks')}
+                  {!isCheckedIn && <Info className="h-4 w-4 ml-2 text-destructive" />}
+                  {cart.length > 0 && <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                      {cart.length}
+                    </Badge>}
+                </Button>
+              </TooltipTrigger>
+              {!isCheckedIn && (
+                <TooltipContent>
+                  <p>Check in at reception to order</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <Button variant={currentView === 'events' ? 'default' : 'outline'} onClick={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -821,11 +873,14 @@ export default function ClientDashboard() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-6">
         {/* Home View */}
-        {currentView === 'home' && <div className="space-y-6">
+        {currentView === 'home' && <div className="space-y-6 animate-fade-in">
             {/* Welcome Section */}
-            <Card className="bg-gradient-to-r from-primary/10 to-primary/5 animate-fade-in">
+            {dataLoading ? (
+              <WelcomeCardSkeleton />
+            ) : (
+            <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16 transition-transform hover:scale-110 duration-300">
@@ -843,8 +898,16 @@ export default function ClientDashboard() {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Client Status & Quick Stats */}
+            {dataLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatsCardSkeleton />
+                <StatsCardSkeleton />
+                <StatsCardSkeleton />
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className={isCheckedIn ? "border-success/30 bg-success/10" : "border-destructive/30 bg-destructive/10"}>
                 <CardContent className="pt-6 text-center">
@@ -881,9 +944,14 @@ export default function ClientDashboard() {
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Active Ticket Card */}
-            {isCheckedIn && clientData?.id && <ActiveTicketCard clientId={clientData.id} />}
+            {dataLoading && isCheckedIn ? (
+              <ActiveTicketSkeleton />
+            ) : (
+              isCheckedIn && clientData?.id && <ActiveTicketCard clientId={clientData.id} />
+            )}
 
             {/* Quick Actions */}
             <div className="space-y-4">
@@ -891,7 +959,10 @@ export default function ClientDashboard() {
                   
                 </Card>}
 
-              {isCheckedIn && cart.length === 0 && lastOrders.length > 0 && <Card className="border-primary/20">
+              {dataLoading ? (
+                <OrderCardSkeleton />
+              ) : isCheckedIn && cart.length === 0 && lastOrders.length > 0 ? (
+                <Card className="border-primary/20">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <RotateCcw className="h-5 w-5" />
@@ -902,7 +973,7 @@ export default function ClientDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {lastOrders.slice(0, 2).map((order, index) => <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    {lastOrders.slice(0, 2).map((order, index) => <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all">
                         <div>
                           <p className="font-medium">
                             {new Date(order.order_date).toLocaleDateString()}
@@ -917,12 +988,21 @@ export default function ClientDashboard() {
                         </Button>
                       </div>)}
                   </CardContent>
-                </Card>}
+                </Card>
+              ) : isCheckedIn && cart.length === 0 && lastOrders.length === 0 && !dataLoading ? (
+                <EmptyState type="orders" onAction={() => setCurrentView('order')} />
+              ) : null}
 
 
 
               {/* Best Selling Products */}
-              {bestSellingProducts.length > 0 && <Card>
+              {dataLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ProductCardSkeleton />
+                  <ProductCardSkeleton />
+                </div>
+              ) : bestSellingProducts.length > 0 ? (
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Star className="h-5 w-5 text-yellow-500" />
@@ -947,10 +1027,14 @@ export default function ClientDashboard() {
                         </div>)}
                     </div>
                   </CardContent>
-                </Card>}
+                </Card>
+              ) : null}
 
               {/* Favorites */}
-              {favoriteDrinks.length > 0 && <Card>
+              {dataLoading ? (
+                <OrderCardSkeleton />
+              ) : favoriteDrinks.length > 0 ? (
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Heart className="h-5 w-5" />
@@ -971,12 +1055,15 @@ export default function ClientDashboard() {
                         </div>)}
                     </div>
                   </CardContent>
-                </Card>}
+                </Card>
+              ) : !dataLoading ? (
+                <EmptyState type="favorites" onAction={() => setCurrentView('order')} />
+              ) : null}
             </div>
           </div>}
 
         {/* Order View */}
-        {currentView === 'order' && <div className="space-y-6">
+        {currentView === 'order' && <div className="space-y-6 animate-fade-in">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -1044,7 +1131,10 @@ export default function ClientDashboard() {
               </Card>}
 
             {/* Current Pending Orders */}
-            {pendingOrders.length > 0 && <Card>
+            {dataLoading ? (
+              <OrderCardSkeleton />
+            ) : pendingOrders.length > 0 ? (
+              <Card>
                 <CardHeader>
                   <CardTitle>{t('clientDashboard.currentOrders')}</CardTitle>
                   <CardDescription>{t('clientDashboard.ordersBeingPrepared')}</CardDescription>
@@ -1067,9 +1157,19 @@ export default function ClientDashboard() {
                       </div>
                     </div>)}
                 </CardContent>
-              </Card>}
+              </Card>
+            ) : !dataLoading && pendingOrders.length === 0 && cart.length === 0 ? (
+              <EmptyState type="pending" />
+            ) : null}
 
             {/* Drinks Menu */}
+            {dataLoading ? (
+              <div className="grid gap-4">
+                <ProductCardSkeleton />
+                <ProductCardSkeleton />
+                <ProductCardSkeleton />
+              </div>
+            ) : (
             <div className="grid gap-4">
               {filteredDrinks.map(drink => <Card key={drink.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-4">
@@ -1090,6 +1190,7 @@ export default function ClientDashboard() {
                   </CardContent>
                 </Card>)}
             </div>
+            )}
 
             {/* Order History Section */}
             <div>
@@ -1099,7 +1200,7 @@ export default function ClientDashboard() {
           </div>}
 
         {/* Profile View */}
-        {currentView === 'profile' && <div className="space-y-6">
+        {currentView === 'profile' && <div className="space-y-6 animate-fade-in">
             {/* Profile Info */}
             <Card>
               <CardHeader>
@@ -1309,7 +1410,7 @@ export default function ClientDashboard() {
           </div>}
 
         {/* Events View */}
-        {currentView === 'events' && <div className="space-y-6">
+        {currentView === 'events' && <div className="space-y-6 animate-fade-in">
             <ClientEvents clientData={clientData} />
           </div>}
       </div>
