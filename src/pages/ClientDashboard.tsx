@@ -1410,7 +1410,7 @@ export default function ClientDashboard() {
           </div>}
 
         {/* Events View */}
-        {currentView === 'events' && <div className="space-y-6">
+        {currentView === 'events' && <div className="space-y-6 animate-fade-in">
             <ClientEvents clientData={clientData} />
           </div>}
       </div>
