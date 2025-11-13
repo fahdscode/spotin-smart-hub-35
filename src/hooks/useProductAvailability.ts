@@ -41,7 +41,7 @@ export const useProductAvailability = () => {
     try {
       setLoading(true);
       
-      // Fetch products with their ingredients and stock information
+      // Fetch products with their ingredients and stock information, excluding tickets
       const { data: productsData, error: productsError } = await supabase
         .from('drinks')
         .select(`
@@ -58,6 +58,7 @@ export const useProductAvailability = () => {
           )
         `)
         .eq('is_available', true)
+        .neq('category', 'day_use_ticket')
         .order('category', { ascending: true });
 
       if (productsError) throw productsError;
@@ -72,16 +73,18 @@ export const useProductAvailability = () => {
           .from('drinks')
           .select('*')
           .eq('is_available', true)
+          .neq('category', 'day_use_ticket')
           .not('id', 'in', `(${productIds.join(',')})`)
           .order('category', { ascending: true });
         productsWithoutIngredients = result.data;
         noIngredientsError = result.error;
       } else {
-        // If no products with ingredients, fetch all available products
+        // If no products with ingredients, fetch all available products (excluding tickets)
         const result = await supabase
           .from('drinks')
           .select('*')
           .eq('is_available', true)
+          .neq('category', 'day_use_ticket')
           .order('category', { ascending: true });
         productsWithoutIngredients = result.data;
         noIngredientsError = result.error;
