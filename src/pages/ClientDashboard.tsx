@@ -18,7 +18,8 @@ import { ClientOrderHistory } from '@/components/ClientOrderHistory';
 import { ActiveTicketCard } from '@/components/ActiveTicketCard';
 import { WelcomeCardSkeleton, StatsCardSkeleton, ActiveTicketSkeleton, OrderCardSkeleton, ProductCardSkeleton } from '@/components/client/DashboardSkeleton';
 import { EmptyState } from '@/components/client/EmptyStates';
-import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut, Info } from 'lucide-react';
+import LoyaltyProgram from '@/components/client/LoyaltyProgram';
+import { Coffee, Clock, Star, Plus, Minus, Search, RotateCcw, ShoppingCart, Heart, User, Receipt, QrCode, Calendar, BarChart3, MapPin, Package, Mail, Phone, LogOut, Info, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from 'react-i18next';
@@ -94,7 +95,7 @@ export default function ClientDashboard() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'order' | 'profile' | 'events' | 'loyalty'>('home');
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [tableNumber, setTableNumber] = useState<string>('');
   const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
@@ -791,6 +792,15 @@ export default function ClientDashboard() {
               )}
             </Tooltip>
           </TooltipProvider>
+          <Button variant={currentView === 'loyalty' ? 'default' : 'ghost'} size="sm" onClick={e => {
+          e.preventDefault();
+          e.stopPropagation();
+          ClientSound.playTap();
+          setCurrentView('loyalty');
+        }} className="flex flex-col items-center gap-1 h-auto py-2 transition-transform active:scale-95" type="button">
+            <Award className="h-4 w-4" />
+            <span className="text-xs">Loyalty</span>
+          </Button>
           <Button variant={currentView === 'events' ? 'default' : 'ghost'} size="sm" onClick={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -854,6 +864,14 @@ export default function ClientDashboard() {
               )}
             </Tooltip>
           </TooltipProvider>
+          <Button variant={currentView === 'loyalty' ? 'default' : 'outline'} onClick={e => {
+          e.preventDefault();
+          e.stopPropagation();
+          setCurrentView('loyalty');
+        }} type="button">
+            <Award className="h-4 w-4 mr-2" />
+            Loyalty Program
+          </Button>
           <Button variant={currentView === 'events' ? 'default' : 'outline'} onClick={e => {
           e.preventDefault();
           e.stopPropagation();
@@ -1407,6 +1425,11 @@ export default function ClientDashboard() {
                 </Button>
               </CardContent>
             </Card>
+          </div>}
+
+        {/* Loyalty Program View */}
+        {currentView === 'loyalty' && clientData?.id && <div className="space-y-6 animate-fade-in">
+            <LoyaltyProgram clientId={clientData.id} />
           </div>}
 
         {/* Events View */}
