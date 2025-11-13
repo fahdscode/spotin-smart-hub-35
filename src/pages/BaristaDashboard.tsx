@@ -16,15 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import OrderingCycleStatus from "@/components/OrderingCycleStatus";
-import { 
-  playNewOrder, 
-  playStartPreparing, 
-  playOrderReady, 
-  playOrderCompleted, 
-  playOrderCancelled,
-  playError,
-  playMultipleOrders
-} from "@/lib/baristaSounds";
+import { playNewOrder, playStartPreparing, playOrderReady, playOrderCompleted, playOrderCancelled, playError, playMultipleOrders } from "@/lib/baristaSounds";
 interface Client {
   id: string;
   client_code: string;
@@ -69,26 +61,28 @@ const BaristaDashboard = () => {
 
   // Track previous order count to detect new orders
   const [previousOrderCount, setPreviousOrderCount] = useState(0);
-
   const fetchClientTicketInfo = async (clientId: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_client_ticket_info', { p_client_id: clientId });
-      
+      const {
+        data,
+        error
+      } = await supabase.rpc('get_client_ticket_info', {
+        p_client_id: clientId
+      });
       if (error) throw error;
       return data as any;
     } catch (error) {
       console.error('Error fetching ticket info:', error);
-      return { has_active_ticket: false };
+      return {
+        has_active_ticket: false
+      };
     }
   };
-
   const handleClientSelect = async (client: Client | null) => {
     if (!client) {
       setSelectedClient(null);
       return;
     }
-    
     setLoadingTicketInfo(true);
     const ticketInfo = await fetchClientTicketInfo(client.id);
     setSelectedClient({
@@ -161,14 +155,13 @@ const BaristaDashboard = () => {
           notes: order.notes
         };
       }) || [];
-      
+
       // Check for multiple new orders
       const pendingCount = formattedOrders.filter(o => o.status === 'pending').length;
       if (pendingCount > previousOrderCount && pendingCount >= 3) {
         playMultipleOrders();
       }
       setPreviousOrderCount(pendingCount);
-      
       setOrders(formattedOrders);
     } catch (error: any) {
       toast({
@@ -221,18 +214,11 @@ const BaristaDashboard = () => {
         error: drinkError
       } = await supabase.from('drinks').select('price').eq('name', itemName).single();
       if (drinkError) throw drinkError;
-      
+
       // Check if this qualifies as a free drink
-      const isFreeDrink = 
-        selectedClient.ticketInfo?.includes_free_drink &&
-        !selectedClient.ticketInfo?.free_drink_claimed &&
-        drinkData.price <= (selectedClient.ticketInfo?.max_free_drink_price || 0);
-      
+      const isFreeDrink = selectedClient.ticketInfo?.includes_free_drink && !selectedClient.ticketInfo?.free_drink_claimed && drinkData.price <= (selectedClient.ticketInfo?.max_free_drink_price || 0);
       const finalPrice = isFreeDrink ? 0 : drinkData.price;
-      const orderNote = isFreeDrink 
-        ? `Free drink from ticket: ${selectedClient.ticketInfo?.ticket_name}${note ? ' | ' + note : ''}`
-        : note?.trim() || null;
-      
+      const orderNote = isFreeDrink ? `Free drink from ticket: ${selectedClient.ticketInfo?.ticket_name}${note ? ' | ' + note : ''}` : note?.trim() || null;
       const {
         error
       } = await supabase.from('session_line_items').insert({
@@ -245,21 +231,18 @@ const BaristaDashboard = () => {
         notes: orderNote
       });
       if (error) throw error;
-      
+
       // If it was a free drink, update the ticket
       if (isFreeDrink && selectedClient.ticketInfo) {
-        const { error: ticketError } = await supabase
-          .from('client_tickets')
-          .update({
-            free_drink_claimed: true,
-            free_drink_claimed_at: new Date().toISOString(),
-            claimed_drink_name: itemName
-          })
-          .eq('client_id', selectedClient.id)
-          .eq('is_active', true);
-        
+        const {
+          error: ticketError
+        } = await supabase.from('client_tickets').update({
+          free_drink_claimed: true,
+          free_drink_claimed_at: new Date().toISOString(),
+          claimed_drink_name: itemName
+        }).eq('client_id', selectedClient.id).eq('is_active', true);
         if (ticketError) console.error('Error updating ticket:', ticketError);
-        
+
         // Refresh client ticket info
         const updatedTicketInfo = await fetchClientTicketInfo(selectedClient.id);
         setSelectedClient({
@@ -267,16 +250,13 @@ const BaristaDashboard = () => {
           ticketInfo: updatedTicketInfo
         });
       }
-      
       setIsQuickAddOpen(false);
 
       // Play notification sound for new order
       playNewOrder();
       toast({
         title: isFreeDrink ? "Free Drink Added! 🎉" : "Item Added",
-        description: isFreeDrink 
-          ? `Free ${itemName} added for ${selectedClient.full_name}`
-          : `${itemName} added for ${selectedClient.full_name}`
+        description: isFreeDrink ? `Free ${itemName} added for ${selectedClient.full_name}` : `${itemName} added for ${selectedClient.full_name}`
       });
 
       // Refresh orders list
@@ -297,7 +277,7 @@ const BaristaDashboard = () => {
         status: newStatus
       }).eq('id', orderId);
       if (error) throw error;
-      
+
       // Play appropriate sound based on status
       switch (newStatus) {
         case 'preparing':
@@ -311,7 +291,6 @@ const BaristaDashboard = () => {
           playOrderCompleted();
           break;
       }
-      
       toast({
         title: "Order Updated",
         description: `Order status updated to ${newStatus}`
@@ -330,43 +309,39 @@ const BaristaDashboard = () => {
   };
   const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
-
   const handleCancelOrderClick = (orderId: string) => {
     setOrderToCancel(orderId);
     setCancellationDialogOpen(true);
   };
-
   const cancelOrder = async (reason: string, category: string) => {
     if (!orderToCancel) return;
-    
     try {
       // Get order details first to send notification
       const orderDetails = orders.find(o => o.id === orderToCancel);
-      
-      // Get current user for cancelled_by field
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Update order with cancellation details
-      const { error: updateError } = await supabase
-        .from('session_line_items')
-        .update({
-          status: 'cancelled',
-          cancellation_reason: reason,
-          cancelled_by: user?.id,
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', orderToCancel);
 
+      // Get current user for cancelled_by field
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+
+      // Update order with cancellation details
+      const {
+        error: updateError
+      } = await supabase.from('session_line_items').update({
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_by: user?.id,
+        cancelled_at: new Date().toISOString()
+      }).eq('id', orderToCancel);
       if (updateError) throw updateError;
-      
+
       // Send email notification to client if order details are available
       if (orderDetails) {
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('email, full_name')
-          .eq('id', orderDetails.user_id)
-          .single();
-
+        const {
+          data: clientData
+        } = await supabase.from('clients').select('email, full_name').eq('id', orderDetails.user_id).single();
         if (clientData?.email) {
           // Send cancellation email
           await supabase.functions.invoke('send-emails', {
@@ -392,10 +367,9 @@ const BaristaDashboard = () => {
           });
         }
       }
-      
+
       // Play cancellation sound
       playOrderCancelled();
-      
       toast({
         title: "Order Cancelled",
         description: "Order cancelled and client notified"
@@ -455,10 +429,7 @@ const BaristaDashboard = () => {
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/")} size="sm">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
+            
             <div>
               <h1 className="text-3xl font-bold text-foreground">Barista Station</h1>
               <p className="text-muted-foreground">Manage drink orders and queue efficiently</p>
@@ -546,18 +517,10 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>}
                           <div className="flex gap-2">
-                            <Button 
-                              className="flex-1" 
-                              variant="professional"
-                              onClick={() => updateOrderStatus(order.id, "preparing")}
-                            >
+                            <Button className="flex-1" variant="professional" onClick={() => updateOrderStatus(order.id, "preparing")}>
                               Start Preparing
                             </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleCancelOrderClick(order.id)}
-                            >
+                            <Button variant="destructive" size="sm" onClick={() => handleCancelOrderClick(order.id)}>
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </div>
@@ -598,18 +561,10 @@ const BaristaDashboard = () => {
                               <strong>Note:</strong> {order.notes}
                             </p>}
                           <div className="flex gap-2">
-                            <Button 
-                              className="flex-1" 
-                              variant="accent"
-                              onClick={() => updateOrderStatus(order.id, "ready")}
-                            >
+                            <Button className="flex-1" variant="accent" onClick={() => updateOrderStatus(order.id, "ready")}>
                               Mark as Ready
                             </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleCancelOrderClick(order.id)}
-                            >
+                            <Button variant="destructive" size="sm" onClick={() => handleCancelOrderClick(order.id)}>
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </div>
@@ -674,10 +629,7 @@ const BaristaDashboard = () => {
               <CardContent className="space-y-4">
                 <ClientSelector onClientSelect={handleClientSelect} selectedClientId={selectedClient?.id} />
                 
-                {selectedClient?.ticketInfo?.has_active_ticket && 
-                 selectedClient?.ticketInfo?.includes_free_drink && 
-                 !selectedClient?.ticketInfo?.free_drink_claimed && (
-                  <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-500/50 border-2">
+                {selectedClient?.ticketInfo?.has_active_ticket && selectedClient?.ticketInfo?.includes_free_drink && !selectedClient?.ticketInfo?.free_drink_claimed && <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-500/50 border-2">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         <div className="bg-green-500 p-2 rounded-full">
@@ -701,13 +653,9 @@ const BaristaDashboard = () => {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
                 
-                {selectedClient?.ticketInfo?.has_active_ticket && 
-                 selectedClient?.ticketInfo?.includes_free_drink && 
-                 selectedClient?.ticketInfo?.free_drink_claimed && (
-                  <Card className="bg-muted/50 border-muted">
+                {selectedClient?.ticketInfo?.has_active_ticket && selectedClient?.ticketInfo?.includes_free_drink && selectedClient?.ticketInfo?.free_drink_claimed && <Card className="bg-muted/50 border-muted">
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -716,25 +664,15 @@ const BaristaDashboard = () => {
                         </p>
                       </div>
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
                 
-                {selectedClient && (
-                  <div className="space-y-2">
+                {selectedClient && <div className="space-y-2">
                     <Label htmlFor="quickTableNumber" className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       Table Number (optional)
                     </Label>
-                    <Input
-                      id="quickTableNumber"
-                      type="text"
-                      placeholder="Enter table number"
-                      value={quickTableNumber}
-                      onChange={(e) => setQuickTableNumber(e.target.value)}
-                      className="text-center"
-                    />
-                  </div>
-                )}
+                    <Input id="quickTableNumber" type="text" placeholder="Enter table number" value={quickTableNumber} onChange={e => setQuickTableNumber(e.target.value)} className="text-center" />
+                  </div>}
 
                 <Button variant="default" className="w-full" disabled={!selectedClient} onClick={() => setIsQuickAddOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -757,37 +695,13 @@ const BaristaDashboard = () => {
         </div>
 
         {/* Quick Item Selector Dialog */}
-        <QuickItemSelector 
-          isOpen={isQuickAddOpen} 
-          onClose={() => setIsQuickAddOpen(false)} 
-          selectedClient={selectedClient} 
-          onItemSelect={addQuickItem}
-          maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price}
-          hasFreeDrink={
-            selectedClient?.ticketInfo?.includes_free_drink && 
-            !selectedClient?.ticketInfo?.free_drink_claimed
-          }
-        />
+        <QuickItemSelector isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} selectedClient={selectedClient} onItemSelect={addQuickItem} maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price} hasFreeDrink={selectedClient?.ticketInfo?.includes_free_drink && !selectedClient?.ticketInfo?.free_drink_claimed} />
 
         {/* Client Product Editor Dialog */}
-        <ClientProductEditor 
-          isOpen={isEditProductsOpen} 
-          onClose={() => setIsEditProductsOpen(false)} 
-          selectedClient={selectedClient}
-          maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price}
-          hasFreeDrink={
-            selectedClient?.ticketInfo?.includes_free_drink && 
-            !selectedClient?.ticketInfo?.free_drink_claimed
-          }
-        />
+        <ClientProductEditor isOpen={isEditProductsOpen} onClose={() => setIsEditProductsOpen(false)} selectedClient={selectedClient} maxFreeDrinkPrice={selectedClient?.ticketInfo?.max_free_drink_price} hasFreeDrink={selectedClient?.ticketInfo?.includes_free_drink && !selectedClient?.ticketInfo?.free_drink_claimed} />
 
         {/* Cancellation Reason Dialog */}
-        <CancellationReasonDialog
-          open={cancellationDialogOpen}
-          onOpenChange={setCancellationDialogOpen}
-          onConfirm={cancelOrder}
-          itemName={orderToCancel ? orders.find(o => o.id === orderToCancel)?.item_name : undefined}
-        />
+        <CancellationReasonDialog open={cancellationDialogOpen} onOpenChange={setCancellationDialogOpen} onConfirm={cancelOrder} itemName={orderToCancel ? orders.find(o => o.id === orderToCancel)?.item_name : undefined} />
       </div>
     </div>;
 };
