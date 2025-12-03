@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_color: string
+          category: string
+          created_at: string | null
+          description: string
+          description_ar: string | null
+          display_order: number | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          name: string
+          name_ar: string | null
+          points_reward: number | null
+          requirement_type: string
+          requirement_value: number
+        }
+        Insert: {
+          badge_color?: string
+          category?: string
+          created_at?: string | null
+          description: string
+          description_ar?: string | null
+          display_order?: number | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_ar?: string | null
+          points_reward?: number | null
+          requirement_type: string
+          requirement_value: number
+        }
+        Update: {
+          badge_color?: string
+          category?: string
+          created_at?: string | null
+          description?: string
+          description_ar?: string | null
+          display_order?: number | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string | null
+          points_reward?: number | null
+          requirement_type?: string
+          requirement_value?: number
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string | null
@@ -379,6 +430,45 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "check_ins_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_achievements: {
+        Row: {
+          achievement_id: string
+          client_id: string
+          id: string
+          notified: boolean | null
+          unlocked_at: string | null
+        }
+        Insert: {
+          achievement_id: string
+          client_id: string
+          id?: string
+          notified?: boolean | null
+          unlocked_at?: string | null
+        }
+        Update: {
+          achievement_id?: string
+          client_id?: string
+          id?: string
+          notified?: boolean | null
+          unlocked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_achievements_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
@@ -1735,6 +1825,10 @@ export type Database = {
       }
       cancel_order_item: { Args: { p_order_id: string }; Returns: Json }
       check_admin_exists: { Args: never; Returns: boolean }
+      check_and_award_achievements: {
+        Args: { p_client_id: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: { p_ip_address?: unknown; p_phone: string }
         Returns: boolean
@@ -1762,6 +1856,7 @@ export type Database = {
       generate_reset_token: { Args: { p_phone: string }; Returns: Json }
       generate_unique_barcode: { Args: never; Returns: string }
       get_available_tickets: { Args: never; Returns: Json }
+      get_client_achievements: { Args: { p_client_id: string }; Returns: Json }
       get_client_active_ticket: { Args: { p_client_id: string }; Returns: Json }
       get_client_by_id: { Args: { client_id: string }; Returns: Json }
       get_client_check_in_status: {
