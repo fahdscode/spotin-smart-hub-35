@@ -1794,11 +1794,16 @@ export type Database = {
         Returns: Json
       }
       get_client_memberships: { Args: never; Returns: Json }
+      get_client_monthly_rank: { Args: { p_client_id: string }; Returns: Json }
       get_client_status: { Args: { client_id: string }; Returns: string }
       get_client_ticket_info: { Args: { p_client_id: string }; Returns: Json }
       get_current_user_role: { Args: never; Returns: string }
       get_event_analytics: {
         Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
+      }
+      get_monthly_leaderboard: {
+        Args: { p_limit?: number; p_month?: string }
         Returns: Json
       }
       get_product_sales_trends: {
