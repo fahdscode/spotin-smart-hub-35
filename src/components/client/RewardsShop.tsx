@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Gift, Coins, History, CheckCircle2, Clock, XCircle, Sparkles, ShoppingBag, Percent, TrendingUp, AlertCircle, Trophy } from 'lucide-react';
+import { Gift, Coins, History, CheckCircle2, Clock, XCircle, Sparkles, ShoppingBag, Percent, TrendingUp, AlertCircle, Trophy, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalizedFields } from '@/hooks/useLocalizedFields';
 import { formatCurrency } from '@/lib/currency';
 import { useTranslation } from 'react-i18next';
 import PointsLeaderboard from './PointsLeaderboard';
+import AchievementBadges from './AchievementBadges';
 
 interface Reward {
   id: string;
@@ -260,24 +261,33 @@ export default function RewardsShop({ clientId }: RewardsShopProps) {
 
       {/* Tabs for Rewards and History */}
       <Tabs defaultValue="rewards" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="rewards">
-            <ShoppingBag className="h-4 w-4 mr-1" />
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="rewards" className="text-xs sm:text-sm">
+            <ShoppingBag className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Rewards</span>
           </TabsTrigger>
-          <TabsTrigger value="leaderboard">
-            <Trophy className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Leaders</span>
+          <TabsTrigger value="badges" className="text-xs sm:text-sm">
+            <Award className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Badges</span>
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="h-4 w-4 mr-1" />
+          <TabsTrigger value="leaderboard" className="text-xs sm:text-sm">
+            <Trophy className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Rank</span>
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs sm:text-sm">
+            <History className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">History</span>
           </TabsTrigger>
-          <TabsTrigger value="redemptions">
-            <Gift className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">My Rewards</span>
+          <TabsTrigger value="redemptions" className="text-xs sm:text-sm">
+            <Gift className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Claimed</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* Achievement Badges */}
+        <TabsContent value="badges">
+          <AchievementBadges clientId={clientId} />
+        </TabsContent>
 
         {/* Leaderboard */}
         <TabsContent value="leaderboard">
