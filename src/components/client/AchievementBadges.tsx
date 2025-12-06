@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import NotificationPermissionCard from './NotificationPermissionCard';
 import { 
   Award, ShoppingBag, Coffee, Heart, Star, Coins, 
   PiggyBank, Trophy, MapPin, Home, Building, Wallet, 
@@ -54,9 +56,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 const AchievementBadges = ({ clientId }: AchievementBadgesProps) => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { showAchievementUnlocked, showAchievementProgress, permission } = usePushNotifications();
   const isArabic = i18n.language === 'ar';
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previousAchievements, setPreviousAchievements] = useState<Achievement[]>([]);
 
   const getLocalizedText = (item: Achievement, field: 'name' | 'description') => {
     if (isArabic && item[`${field}_ar` as keyof Achievement]) {
@@ -70,16 +74,20 @@ const AchievementBadges = ({ clientId }: AchievementBadgesProps) => {
     checkForNewAchievements();
   }, [clientId]);
 
-  const fetchAchievements = async () => {
+  const fetchAchievements = async (): Promise<Achievement[] | null> => {
     try {
       const { data, error } = await supabase.rpc('get_client_achievements', {
         p_client_id: clientId
       });
 
       if (error) throw error;
-      setAchievements((data as unknown as Achievement[]) || []);
+      const achievementData = (data as unknown as Achievement[]) || [];
+      setPreviousAchievements(achievements);
+      setAchievements(achievementData);
+      return achievementData;
     } catch (error) {
       console.error('Error fetching achievements:', error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -99,13 +107,48 @@ const AchievementBadges = ({ clientId }: AchievementBadgesProps) => {
       };
 
       if (result.newly_unlocked && result.newly_unlocked.length > 0) {
+        // Show in-app toast
         toast({
           title: '🎉 ' + t('achievementUnlocked', 'Achievement Unlocked!'),
           description: result.points_awarded > 0 
             ? t('earnedBonusPoints', `You earned ${result.points_awarded} bonus points!`)
             : t('checkYourBadges', 'Check your new badges!'),
         });
-        await fetchAchievements();
+        
+        // Fetch updated achievements to get names for push notification
+        const updatedAchievements = await fetchAchievements();
+        
+        // Send push notification for each newly unlocked achievement
+        if (permission === 'granted' && updatedAchievements) {
+          for (const achievementId of result.newly_unlocked) {
+            const achievement = updatedAchievements.find(a => a.id === achievementId);
+            if (achievement) {
+              showAchievementUnlocked(
+                getLocalizedText(achievement, 'name'),
+                achievement.points_reward > 0 ? achievement.points_reward : undefined
+              );
+            }
+          }
+        }
+      } else {
+        // Check for achievements close to unlocking (80%+ progress)
+        if (permission === 'granted' && achievements.length > 0) {
+          const closeToUnlocking = achievements.filter(a => {
+            if (a.is_unlocked) return false;
+            const progress = (a.current_progress / a.requirement_value) * 100;
+            return progress >= 80 && progress < 100;
+          });
+          
+          // Notify about one achievement that's close
+          if (closeToUnlocking.length > 0 && Math.random() < 0.3) { // 30% chance to avoid spam
+            const achievement = closeToUnlocking[0];
+            showAchievementProgress(
+              getLocalizedText(achievement, 'name'),
+              achievement.current_progress,
+              achievement.requirement_value
+            );
+          }
+        }
       }
     } catch (error) {
       console.error('Error checking achievements:', error);
@@ -153,6 +196,9 @@ const AchievementBadges = ({ clientId }: AchievementBadgesProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Notification Permission Card */}
+      <NotificationPermissionCard />
+      
       {/* Summary Card */}
       <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30">
         <CardContent className="p-4">
