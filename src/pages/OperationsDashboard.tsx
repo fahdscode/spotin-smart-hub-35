@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban, Download, Tag } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, ShoppingCart, TrendingDown, AlertTriangle, CheckCircle, XCircle, Plus, Minus, Bell, FileText, Building, Users, Calendar, Truck, Zap, Home, Users2, BarChart3, Calculator, Ticket, Ban, Download, Tag, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import BillManagement from "@/components/BillManagement";
 import RolesManagement from "@/components/RolesManagement";
 import CancelledReceipts from "@/components/CancelledReceipts";
 import PromotionsManagement from "@/components/PromotionsManagement";
+import AchievementsManagement from "@/components/AchievementsManagement";
 import TopProductsSales from "@/components/TopProductsSales";
 import { ProductPaymentsReport } from "@/components/ProductPaymentsReport";
 import { OperationsReport } from "@/components/OperationsReport";
@@ -197,6 +198,10 @@ const OperationsDashboard = () => {
               <Tag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Sales
             </TabsTrigger>
+            <TabsTrigger value="achievements" className="text-xs sm:text-sm hidden lg:flex">
+              <Trophy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              Badges
+            </TabsTrigger>
             <TabsTrigger value="cancelled" className="text-xs sm:text-sm hidden lg:flex">
               <Ban className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Cancelled
@@ -358,6 +363,11 @@ const OperationsDashboard = () => {
           {/* Promotions & Sales Tab */}
           <TabsContent value="promotions" className="space-y-6">
             <PromotionsManagement />
+          </TabsContent>
+
+          {/* Achievements Management Tab */}
+          <TabsContent value="achievements" className="space-y-6">
+            <AchievementsManagement />
           </TabsContent>
 
           {/* User Roles Tab */}
